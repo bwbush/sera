@@ -58,7 +58,7 @@ fRegion = SField
 type Year = Int
 
 
-type FYear = '("Year [yr]", Year)
+type FYear = '("Year", Year)
 
 
 fYear :: SField FYear

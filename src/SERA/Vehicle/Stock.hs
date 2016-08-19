@@ -29,6 +29,7 @@ import Data.Matrix (fromList, inverse, matrix, multStd, toList)
 import Data.Vinyl.Core ((<+>))
 import Data.Vinyl.Derived (FieldRec, (=:))
 import Data.Vinyl.Lens (rcast)
+import Debug.Trace (trace)
 import SERA.Types (FRegion, Year, fYear)
 import SERA.Vehicle.Stock.Types (SalesStockRecord, StockRecord, SurvivalFunction)
 import SERA.Vehicle.Types (Classification, Sales, Stock, FClassification, fClassification, fSales, fStock)
@@ -74,6 +75,8 @@ inverseSurvivalFunction survival classification years =
   let
     n = length years
     m = matrix n n $ \(i, j) -> if i >= j then survival classification $ i - j else 0
-    Right mi = inverse m
+    Right mi =
+      trace ("Computing sales from stock for " ++ show classification ++ ".")
+        $ inverse m
   in
     toList . multStd mi . fromList n 1

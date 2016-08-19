@@ -91,7 +91,7 @@ instance ToJSON Classification where
   toJSON = toJSON . classification
 
 
-type FClassification = '("Vehicle Classification", Classification)
+type FClassification = '("Classification", Classification)
 
 
 fClassification :: SField FClassification
