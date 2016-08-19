@@ -76,7 +76,7 @@ inverseSurvivalFunction survival classification years =
     n = length years
     m = matrix n n $ \(i, j) -> if i >= j then survival classification $ i - j else 0
     Right mi =
-      trace ("Computing sales from stock for " ++ show classification ++ ".")
+      trace ("Computing sales from stock for \"" ++ show classification ++ "\".")
         $ inverse m
   in
     toList . multStd mi . fromList n 1
