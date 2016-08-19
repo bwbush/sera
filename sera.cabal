@@ -1,0 +1,69 @@
+name: sera
+version: 1.0.0.0
+cabal-version: >= 1.10
+build-type: Simple
+license: AllRightsReserved
+license-file: LICENSE
+copyright: (c) 2013-2016 National Renewable Energy Laboratory
+maintainer: Brian W Bush <brian.bush@nrel.gov>
+stability: Stable
+homepage: https://github.nrel.gov/haskell/sera
+bug-reports: https://github.nrel.gov/haskell/sera/issues
+synopsis: the synopsis
+
+description: the description
+category: Energy
+author: Brian W Bush <brian.bush@nrel.gov>
+data-dir: data
+data-files: 
+
+source-repository head
+  type: git
+  location: git@github.nrel.gov:haskell/sera.git
+ 
+library
+  hs-source-dirs  : src
+  exposed-modules : SERA.Types
+                    SERA.Vehicle.MHD.Census2002
+                    SERA.Vehicle.MHD.EMFAC2010
+                    SERA.Vehicle.MHD.Mitchell20141106
+                    SERA.Vehicle.MHD.TEDB32
+                    SERA.Vehicle.Stock
+                    SERA.Vehicle.Stock.Travel
+                    SERA.Vehicle.Stock.Types
+                    SERA.Vehicle.Types
+                    VISION.Survival
+  build-depends   : base >= 4 && < 5
+                  , aeson
+                  , containers
+                  , daft
+                  , data-default
+                  , matrix
+                  , mtl
+                  , raft
+                  , tostring
+                  , vector
+                  , vinyl
+                  , yaml
+  exposed         : True
+  buildable       : True
+  default-language: Haskell2010
+  ghc-options     : -O2 -Wall
+
+executable sera
+  hs-source-dirs  : src
+  main-is         : Main.hs
+  build-depends   : base
+                  , aeson
+                  , containers
+                  , daft
+                  , data-default
+                  , matrix
+                  , raft
+                  , tostring
+                  , vector
+                  , vinyl
+                  , yaml
+  buildable       : True
+  default-language: Haskell2010
+  ghc-options     : -O2 -rtsopts -Wall
