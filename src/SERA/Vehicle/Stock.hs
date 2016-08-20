@@ -13,7 +13,9 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds                 #-}
+
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 
 module SERA.Vehicle.Stock (
@@ -22,14 +24,15 @@ module SERA.Vehicle.Stock (
 
 
 import Control.Arrow ((&&&))
+import Control.Parallel.Strategies (rpar)
 import Data.List.Util (replicateHead)
 import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Function.MapReduce (aggregate, groupExtract, groupReduceFlattenByKey)
+import Data.Daft.MapReduce.Parallel (aggregate, groupExtract, groupReduceFlattenByKey)
 import Data.Matrix (fromList, inverse, matrix, multStd, toList)
 import Data.Vinyl.Core ((<+>))
 import Data.Vinyl.Derived (FieldRec, (=:))
 import Data.Vinyl.Lens (rcast)
-import Debug.Trace (trace)
+import SERA (trace')
 import SERA.Types (FRegion, Year, fYear)
 import SERA.Vehicle.Stock.Types (SalesStockRecord, StockRecord, SurvivalFunction)
 import SERA.Vehicle.Types (Classification, Sales, Stock, FClassification, fClassification, fSales, fStock)
@@ -45,7 +48,7 @@ inferSales padding survival =
     inferForClassification :: Classification -> [StockRecord] -> [SalesStockRecord]
     inferForClassification classification classifiedStock =
       let
-        (year0, year1) = aggregate (fYear <:) (minimum &&& maximum) classifiedStock
+        (year0, year1) = aggregate rpar (fYear <:) (minimum &&& maximum) classifiedStock
         years = [year0 - padding .. year1]
         inverseSurvival = inverseSurvivalFunction survival classification years
         inferForRegion :: FieldRec '[FRegion, FClassification] -> [StockRecord] -> [SalesStockRecord]
@@ -53,30 +56,46 @@ inferSales padding survival =
           let
             stock =
               replicateHead padding
-                $ groupExtract (fYear <:) (fStock <:) regionalStock -- FIXME: Check for missing values.
+                $ groupExtract rpar (fYear <:) (fStock <:) regionalStock -- FIXME: Check for missing values.
             sales = inverseSurvival stock
           in
             zipWith3
               (\year' sales' stock' -> regionClassification <+> fYear =: year' <+> fSales =: sales' <+> fStock =: stock')
               years sales stock
       in
-        groupReduceFlattenByKey rcast inferForRegion classifiedStock
+        groupReduceFlattenByKey rpar rcast inferForRegion classifiedStock
   in
-    groupReduceFlattenByKey (fClassification <:) inferForClassification
+    groupReduceFlattenByKey rpar (fClassification <:) inferForClassification
 
 
--- | Invert a survival function.
+-- | Invert a survival function, using matrix inversion.
+inverseSurvivalFunction' :: SurvivalFunction -- ^ The survival function.
+                        -> Classification   -- ^ The vehicles being classified.
+                        -> [Year]           -- ^ The years for which to invert.
+                        -> [Stock]          -- ^ The vehicle stock to be inverted.
+                        -> [Sales]          -- ^ The vehicle sales.
+inverseSurvivalFunction' survival classification years =
+  let
+    n = length years
+    m = matrix n n $ \(i, j) -> if i >= j then survival classification $ i - j else 0
+    Right mi = -- FIXME: Use a fast inversion formula for lower triangular matrices.
+      trace' ("Computing sales from stock for \"" ++ show classification ++ "\".")
+        $ inverse m
+  in
+    toList . multStd mi . fromList n 1
+
+
+-- | Invert a survival function, using back substitution.
 inverseSurvivalFunction :: SurvivalFunction -- ^ The survival function.
                         -> Classification   -- ^ The vehicles being classified.
                         -> [Year]           -- ^ The years for which to invert.
                         -> [Stock]          -- ^ The vehicle stock to be inverted.
                         -> [Sales]          -- ^ The vehicle sales.
-inverseSurvivalFunction survival classification years =
+inverseSurvivalFunction survival classification _ =
   let
-    n = length years
-    m = matrix n n $ \(i, j) -> if i >= j then survival classification $ i - j else 0
-    Right mi =
-      trace ("Computing sales from stock for \"" ++ show classification ++ "\".")
-        $ inverse m
+    dot = (sum .) . zipWith (*)
+    s0 : ss = map (survival classification) [0..]
+    invert sales []               = sales
+    invert sales (stock : stocks) = invert ((stock - ss `dot` sales) / s0 : sales) stocks
   in
-    toList . multStd mi . fromList n 1
+    reverse . invert []
