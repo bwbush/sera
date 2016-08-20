@@ -14,12 +14,14 @@
 
 
 {-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE FlexibleContexts          #-}
 
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 
 module SERA.Vehicle.Stock (
   inferSales
+, inferMarketShares
 ) where
 
 
@@ -27,18 +29,18 @@ import Control.Arrow ((&&&))
 import Control.Parallel.Strategies (rpar)
 import Data.List.Util (replicateHead)
 import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Daft.MapReduce.Parallel (aggregate, groupExtract, groupReduceFlattenByKey)
+import Data.Daft.MapReduce.Parallel (aggregate, groupExtract, groupReduceByKey, groupReduceFlattenByKey)
 import Data.Matrix (fromList, inverse, matrix, multStd, toList)
 import Data.Vinyl.Core ((<+>))
 import Data.Vinyl.Derived (FieldRec, (=:))
 import Data.Vinyl.Lens (rcast)
 import SERA (trace')
-import SERA.Types (FRegion, Year, fYear)
-import SERA.Vehicle.Stock.Types (SalesStockRecord, StockRecord, SurvivalFunction)
-import SERA.Vehicle.Types (Classification, Sales, Stock, FClassification, fClassification, fSales, fStock)
+import SERA.Types (FRegion, FYear, Year, fYear)
+import SERA.Vehicle.Stock.Types (MarketSharesRecord, NewVehiclesRecord, SalesStockRecord, StockRecord, SurvivalFunction)
+import SERA.Vehicle.Types (Classification, FClassification, Sales, Stock, fClassification, fMarketShare, fModelYear, fSales, fStock)
 
 
--- | Infer sales from stock.
+-- | Infer vehicle sales from vehicle stock.
 inferSales :: Int                -- ^ Number of prior years to generate sales for the stock.
            -> SurvivalFunction   -- ^ The vehicle survival function.
            -> [StockRecord]      -- ^ The vehicle stock records.
@@ -68,12 +70,36 @@ inferSales padding survival =
     groupReduceFlattenByKey rpar (fClassification <:) inferForClassification
 
 
+-- | Infer regional total sales and market shares from vehicle sales.
+inferMarketShares :: [SalesStockRecord]                          -- ^ The vehicle sales and stock records.
+                  -> ([NewVehiclesRecord], [MarketSharesRecord]) -- ^ The regional total sales and market shares.
+inferMarketShares =
+  let
+    inferForRegionYear :: FieldRec '[FRegion, FYear] -> [SalesStockRecord] -> (NewVehiclesRecord, [MarketSharesRecord])
+    inferForRegionYear regionYear salesStocks =
+      let
+        model = fModelYear =: (fYear <: regionYear)
+        sales = aggregate rpar (fSales <:) sum salesStocks
+      in
+        (
+          rcast $ regionYear <+> model <+> fSales =: sales
+        , [
+            rcast $ x <+> model <+> fMarketShare =: (fSales <: x / sales)
+          |
+            x <- salesStocks
+          ]
+        )
+  in
+    (map fst &&& concatMap snd)
+      . groupReduceByKey rpar rcast inferForRegionYear
+
+
 -- | Invert a survival function, using matrix inversion.
 inverseSurvivalFunction' :: SurvivalFunction -- ^ The survival function.
-                        -> Classification   -- ^ The vehicles being classified.
-                        -> [Year]           -- ^ The years for which to invert.
-                        -> [Stock]          -- ^ The vehicle stock to be inverted.
-                        -> [Sales]          -- ^ The vehicle sales.
+                         -> Classification   -- ^ The vehicles being classified.
+                         -> [Year]           -- ^ The years for which to invert.
+                         -> [Stock]          -- ^ The vehicle stock to be inverted.
+                         -> [Sales]          -- ^ The vehicle sales.
 inverseSurvivalFunction' survival classification years =
   let
     n = length years

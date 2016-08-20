@@ -64,7 +64,7 @@ fAge = SField
 type ModelYear = Int
 
 
-type FModelYear = '("Model Year [yr]", ModelYear)
+type FModelYear = '("Model Year", ModelYear)
 
 
 fModelYear :: SField FModelYear

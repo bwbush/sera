@@ -44,7 +44,7 @@ vehicleStock :: SERA
 vehicleStock =
   VehicleStock
     &= name "stock"
-    &= help "Model vehicle stock."
+    &= help "Compute vehicle stock."
     &= details []
 
 
