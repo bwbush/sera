@@ -5,75 +5,78 @@
 
 module SERA.Service.VehicleStock (
 -- * Configuration
-  ConfigStock(..)
-, ConfigSurvival(..)
+  ConfigInvertStock(..)
+, SurvivalData(..)
 -- * Computation
 , computeStock
 , invertStock
 ) where
 
 
+import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
-import Data.Aeson.Types (FromJSON(..), ToJSON(..), Value(String), withText)
-import Data.Daft.Vinyl.FieldRec (readFieldRecFile, writeFieldRecFile)
+import Data.Aeson.Types (FromJSON, ToJSON)
+import Data.Daft.Source (DataSource(..), maybeWithSource)
+import Data.Daft.Vinyl.FieldRec (readFieldRecSource, writeFieldRecSource)
+import Data.Default (Default(..))
 import Data.Maybe (fromMaybe)
 import Data.String (IsString)
-import Data.Text (pack, unpack)
+import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
+import SERA.Service ()
 import SERA.Vehicle.Stock (inferMarketShares, inferSales)
 import VISION.Survival (survivalFunction)
 
 
-data ConfigSurvival =
-    VisionSurvival
-  | SurvivalFile FilePath
-    deriving (Eq, Generic, Ord, Read, Show)
+data SurvivalData = VISION_LDV | VISION_MHDV
+  deriving (Bounded, Enum, Eq, Generic, Ord, Read, Show)
 
-instance FromJSON ConfigSurvival where
-  parseJSON = withText "ConfigSurvival" $ \x -> case x of
-                                                  "VISION" -> return VisionSurvival
-                                                  filePath -> return . SurvivalFile $ unpack filePath
+instance FromJSON SurvivalData
 
-instance ToJSON ConfigSurvival where
-  toJSON VisionSurvival          = String "VISION"
-  toJSON (SurvivalFile filePath) = String . pack $ "FILE " ++ filePath
+instance ToJSON SurvivalData
+
+instance Default SurvivalData where
+  def = VISION_LDV
 
 
-data ConfigStock =
-  ConfigStock
-  {
-    stockFile         :: FilePath
-  , salesStockFile    :: FilePath
-  , regionalSalesFile :: FilePath
-  , marketSharesFile  :: FilePath
-  , survival          :: Maybe ConfigSurvival 
-  , priorYears        :: Maybe Int
-  }
-    deriving (Eq, Generic, Ord, Read, Show)
-
-instance FromJSON ConfigStock
-
-instance ToJSON ConfigStock
-
-
-computeStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
-computeStock ConfigStock{..} =
+computeStock :: (IsString e, MonadError e m, MonadIO m) => ConfigInvertStock -> m ()
+computeStock ConfigInvertStock{..} =
   undefined
 
 
-invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
-invertStock ConfigStock{..} =
+data ConfigInvertStock =
+  ConfigInvertStock
+  {
+    stockSource         :: DataSource Void
+  , salesStockSource    :: Maybe (DataSource Void)
+  , regionalSalesSource :: Maybe (DataSource Void)
+  , marketSharesSource  :: Maybe (DataSource Void)
+  , survivalSource      :: Maybe (DataSource SurvivalData)
+  , priorYears          :: Maybe Int
+  }
+    deriving (Eq, Generic, Ord, Read, Show)
+
+instance FromJSON ConfigInvertStock
+
+instance ToJSON ConfigInvertStock
+
+
+invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigInvertStock -> m ()
+invertStock ConfigInvertStock{..} =
   do
-    inform $ "Reading vehicle stocks from " ++ show stockFile ++ " . . ."
-    stock <- readFieldRecFile stockFile
+    inform $ "Reading vehicle stocks from " ++ show stockSource ++ " . . ."
+    stock <- readFieldRecSource stockSource
     inform "Computing vehicle sales . . ."
     let
       sales = inferSales (fromMaybe 0 priorYears) survivalFunction stock
       (regionalSales, shares) = inferMarketShares sales
-    inform $ "Writing vehicle sales and stocks to " ++ show salesStockFile ++ " . . ."
-    writeFieldRecFile salesStockFile sales
-    inform $ "Writing regional sales to " ++ show regionalSalesFile ++ " . . ."
-    writeFieldRecFile regionalSalesFile regionalSales
-    inform $ "Writing market shares to " ++ show marketSharesFile ++ " . . ."
-    writeFieldRecFile marketSharesFile shares
+    maybeWithSource salesStockSource $ \source -> do
+      inform $ "Writing vehicle sales and stocks to " ++ show source ++ " . . ."
+      void $ writeFieldRecSource source sales
+    maybeWithSource regionalSalesSource $ \source -> do
+      inform $ "Writing regional sales to " ++ show source ++ " . . ."
+      void $ writeFieldRecSource source regionalSales
+    maybeWithSource marketSharesSource $ \source -> do
+      inform $ "Writing market shares to " ++ show source ++ " . . ."
+      void $ writeFieldRecSource source shares
