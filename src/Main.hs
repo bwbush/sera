@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE RecordWildCards    #-}
 
+{-# OPTIONS_GHC -fno-warn-missing-fields #-}
+
 
 module Main (
   main
@@ -14,13 +16,16 @@ import Data.Data (Data)
 import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
 import SERA (stringVersion)
-import SERA.Service.VehicleStock (invertStock)
+import SERA.Service.VehicleStock (calculateStock, invertStock)
 import System.Console.CmdArgs (Typeable, (&=), argPos, cmdArgs, def, details, help, modes, name, program, summary, typ)
 import System.Environment (getArgs, withArgs)
 
 
 data SERA =
     VehicleStock
+    {
+      configuration :: FilePath
+    } 
   | InvertVehicleStock
     {
       configuration :: FilePath
@@ -43,6 +48,11 @@ sera =
 vehicleStock :: SERA
 vehicleStock =
   VehicleStock
+  {
+    configuration  = def
+                  &= typ "YAML_CONFIGURATION"
+                  &= argPos 1
+  }
     &= name "stock"
     &= help "Compute vehicle stock."
     &= details []
@@ -52,9 +62,6 @@ invertVehicleStock :: SERA
 invertVehicleStock =
   InvertVehicleStock
   {
-    configuration  = def
-                  &= typ "YAML_CONFIGURATION"
-                  &= argPos 1
   }
     &= name "invert-stock"
     &= help "Invert a table of vehicle stock, computing sales from stock."
@@ -115,7 +122,10 @@ decodeYaml =
 
 dispatch :: (IsString e, MonadError e m, MonadIO m) => SERA -> m ()
 
-dispatch VehicleStock = undefined
+dispatch VehicleStock{..} =
+  do
+    configuration' <- decodeYaml configuration
+    calculateStock configuration'
 
 dispatch InvertVehicleStock{..} =
   do

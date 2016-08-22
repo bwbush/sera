@@ -5,10 +5,10 @@
 
 module SERA.Service.VehicleStock (
 -- * Configuration
-  ConfigInvertStock(..)
+  ConfigStock(..)
 , SurvivalData(..)
 -- * Computation
-, computeStock
+, calculateStock
 , invertStock
 ) where
 
@@ -16,7 +16,7 @@ module SERA.Service.VehicleStock (
 import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Source (DataSource(..), maybeWithSource)
+import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldRec (readFieldRecSource, writeFieldRecSource)
 import Data.Default (Default(..))
 import Data.Maybe (fromMaybe)
@@ -25,11 +25,11 @@ import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
-import SERA.Vehicle.Stock (inferMarketShares, inferSales)
+import SERA.Vehicle.Stock (computeStock, inferMarketShares, inferSales)
 import VISION.Survival (survivalFunction)
 
 
-data SurvivalData = VISION_LDV | VISION_MHDV
+data SurvivalData = VISION_LDV | VISION_HDV
   deriving (Bounded, Enum, Eq, Generic, Ord, Read, Show)
 
 instance FromJSON SurvivalData
@@ -40,30 +40,39 @@ instance Default SurvivalData where
   def = VISION_LDV
 
 
-computeStock :: (IsString e, MonadError e m, MonadIO m) => ConfigInvertStock -> m ()
-computeStock ConfigInvertStock{..} =
-  undefined
-
-
-data ConfigInvertStock =
-  ConfigInvertStock
+data ConfigStock =
+  ConfigStock
   {
     stockSource         :: DataSource Void
-  , salesStockSource    :: Maybe (DataSource Void)
-  , regionalSalesSource :: Maybe (DataSource Void)
-  , marketSharesSource  :: Maybe (DataSource Void)
+  , salesStockSource    :: DataSource Void
+  , regionalSalesSource :: DataSource Void
+  , marketSharesSource  :: DataSource Void
   , survivalSource      :: Maybe (DataSource SurvivalData)
   , priorYears          :: Maybe Int
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
-instance FromJSON ConfigInvertStock
+instance FromJSON ConfigStock
 
-instance ToJSON ConfigInvertStock
+instance ToJSON ConfigStock
 
 
-invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigInvertStock -> m ()
-invertStock ConfigInvertStock{..} =
+calculateStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
+calculateStock ConfigStock{..} =
+  do
+    inform $ "Reading regional sales from " ++ show regionalSalesSource ++ " . . ."
+    regionalSales <- readFieldRecSource regionalSalesSource
+    inform $ "Reading market shares from " ++ show marketSharesSource ++ " . . . "
+    marketShares <- readFieldRecSource marketSharesSource
+    let
+      sales = computeStock survivalFunction regionalSales marketShares
+    withSource salesStockSource $ \source -> do
+      inform $ "Writing vehicle sales and stocks to " ++ show source ++ " . . ."
+      void $ writeFieldRecSource source sales
+
+
+invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
+invertStock ConfigStock{..} =
   do
     inform $ "Reading vehicle stocks from " ++ show stockSource ++ " . . ."
     stock <- readFieldRecSource stockSource
@@ -71,12 +80,12 @@ invertStock ConfigInvertStock{..} =
     let
       sales = inferSales (fromMaybe 0 priorYears) survivalFunction stock
       (regionalSales, shares) = inferMarketShares sales
-    maybeWithSource salesStockSource $ \source -> do
+    withSource salesStockSource $ \source -> do
       inform $ "Writing vehicle sales and stocks to " ++ show source ++ " . . ."
       void $ writeFieldRecSource source sales
-    maybeWithSource regionalSalesSource $ \source -> do
+    withSource regionalSalesSource $ \source -> do
       inform $ "Writing regional sales to " ++ show source ++ " . . ."
       void $ writeFieldRecSource source regionalSales
-    maybeWithSource marketSharesSource $ \source -> do
+    withSource marketSharesSource $ \source -> do
       inform $ "Writing market shares to " ++ show source ++ " . . ."
       void $ writeFieldRecSource source shares

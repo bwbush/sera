@@ -20,7 +20,8 @@
 
 
 module SERA.Vehicle.Stock (
-  inferSales
+  computeStock
+, inferSales
 , inferMarketShares
 ) where
 
@@ -28,16 +29,50 @@ module SERA.Vehicle.Stock (
 import Control.Arrow ((&&&))
 import Control.Parallel.Strategies (rpar)
 import Data.List.Util (replicateHead)
-import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Daft.Vinyl.FieldRec ((<:), naturalJoin)
 import Data.Daft.MapReduce.Parallel (aggregate, groupExtract, groupReduceByKey, groupReduceFlattenByKey)
 import Data.Matrix (fromList, inverse, matrix, multStd, toList)
+import Data.Proxy (Proxy(..))
 import Data.Vinyl.Core ((<+>))
 import Data.Vinyl.Derived (FieldRec, (=:))
 import Data.Vinyl.Lens (rcast)
 import SERA (trace')
 import SERA.Types (FRegion, FYear, Year, fYear)
 import SERA.Vehicle.Stock.Types (MarketSharesRecord, NewVehiclesRecord, SalesStockRecord, StockRecord, SurvivalFunction)
-import SERA.Vehicle.Types (Classification, FClassification, Sales, Stock, fClassification, fMarketShare, fModelYear, fSales, fStock)
+import SERA.Vehicle.Types (Classification, FClassification, FMarketShare, FModelYear, FSales, Sales, Stock, fClassification, fMarketShare, fModelYear, fSales, fStock)
+
+
+computeStock :: SurvivalFunction
+             -> [NewVehiclesRecord]
+             -> [MarketSharesRecord]
+             -> [SalesStockRecord]
+computeStock survival newVehicles marketShares =
+  let
+    computeForRegionClassification :: FieldRec '[FRegion, FClassification] -> [FieldRec '[FRegion, FClassification, FModelYear, FSales]] -> [SalesStockRecord]
+    computeForRegionClassification regionClassification classifiedSales =
+      let
+        classification = fClassification <: regionClassification
+        stock []               = []
+        stock ss@(_ : ss') = sum (zipWith (\x y -> x * survival classification y) ss [0..]) : stock ss'
+        recs = groupExtract rpar (fModelYear <:) id classifiedSales
+        sales = map (fSales <:) recs
+      in
+        [
+          rcast $ rec <+> fStock =: y <+> fYear =: (fModelYear <: rec)
+        |
+          (rec, y) <- zip recs . reverse . stock $ reverse sales
+        ]
+  in
+    groupReduceFlattenByKey rpar rcast computeForRegionClassification
+      [
+        let
+          sale = fSales <: rec * fMarketShare <: rec
+        in
+          rcast $ rec <+> fSales =: sale
+      |
+        rec <- naturalJoin (Proxy :: Proxy '[FRegion, FModelYear]) newVehicles marketShares
+            :: [FieldRec '[FRegion, FClassification, FModelYear, FSales, FMarketShare]]
+      ]
 
 
 -- | Infer vehicle sales from vehicle stock.
