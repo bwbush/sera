@@ -32,9 +32,8 @@ module SERA.Vehicle.Stock (
 
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
-import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Vinyl.Core ((<+>))
-import Data.Vinyl.Derived (FieldRec, (=:))
+import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
+import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (rcast)
 import SERA.Types (FRegion, FYear, Year, fYear)
 import SERA.Vehicle.Stock.Types (MarketSharesRecord, NewVehiclesRecord, SalesStockRecord, StockRecord, SurvivalFunction)
@@ -62,13 +61,14 @@ universe cube =
 
 
 -- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'rcast $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
+
+
 saleFromShare :: k -> FieldRec '[FSales, FMarketShare] -> FieldRec '[FSales]
-saleFromShare _ rec = fSales =: (fSales <: rec * fMarketShare <: rec)
+saleFromShare _ rec = fSales =: fSales <: rec * fMarketShare <: rec
 
 
--- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'rcast $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
 sumSales :: k -> [FieldRec '[FSales, FSurvival]] -> FieldRec '[FSales, FStock]
-sumSales _ xs = fSales =: (fSales <: last xs) <+> fStock =: sum ((\x -> fSales <: x * fSurvival <: x) <$> xs)
+sumSales _ xs = fSales =: fSales <: last xs <+> fStock =: sum ((\x -> fSales <: x * fSurvival <: x) <$> xs)
 
 
 computeStock :: SurvivalCube
