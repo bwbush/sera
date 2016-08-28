@@ -18,14 +18,17 @@ import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldRec (readFieldRecSource, writeFieldRecSource)
+import Data.Daft.Vinyl.FieldCube (fromRecords, toRecords)
 import Data.Default (Default(..))
+import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import Data.String (IsString)
+import Data.Vinyl.Lens (rcast)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
-import SERA.Vehicle.Stock (computeStock, inferMarketShares, inferSales)
+import SERA.Vehicle.Stock (computeStock, inferMarketShares, inferSales, universe)
 import VISION.Survival (survivalFunction)
 
 
@@ -61,14 +64,15 @@ calculateStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
 calculateStock ConfigStock{..} =
   do
     inform $ "Reading regional sales from " ++ show regionalSalesSource ++ " . . ."
-    regionalSales <- readFieldRecSource regionalSalesSource
+    regionalSales <- fromRecords <$> readFieldRecSource regionalSalesSource
     inform $ "Reading market shares from " ++ show marketSharesSource ++ " . . . "
-    marketShares <- readFieldRecSource marketSharesSource
+    marketShares <- fromRecords <$> readFieldRecSource marketSharesSource
     let
       sales = computeStock survivalFunction regionalSales marketShares
+      reporting = nub (rcast <$> universe marketShares)
     withSource salesStockSource $ \source -> do
       inform $ "Writing vehicle sales and stocks to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source sales
+      void $ writeFieldRecSource source $ toRecords reporting sales
 
 
 invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
@@ -78,7 +82,7 @@ invertStock ConfigStock{..} =
     stock <- readFieldRecSource stockSource
     inform "Computing vehicle sales . . ."
     let
-      sales = inferSales (fromMaybe 0 priorYears) survivalFunction stock
+      sales = inferSales (fromMaybe 0 priorYears) undefined stock -- survivalFunction stock
       (regionalSales, shares) = inferMarketShares sales
     withSource salesStockSource $ \source -> do
       inform $ "Writing vehicle sales and stocks to " ++ show source ++ " . . ."

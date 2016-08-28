@@ -15,98 +15,73 @@
 
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE TypeOperators             #-}
 
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 
 module SERA.Vehicle.Stock (
-  computeStock
+  RegionalSalesCube
+, MarketSharesCube
+, universe
+, computeStock
 , inferSales
 , inferMarketShares
 ) where
 
 
-import Control.Arrow ((&&&))
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.List.Util (replicateHead)
-import Data.Proxy (Proxy(..))
 import Data.Vinyl.Core ((<+>))
 import Data.Vinyl.Derived (FieldRec, (=:))
 import Data.Vinyl.Lens (rcast)
-import SERA (trace')
 import SERA.Types (FRegion, FYear, Year, fYear)
 import SERA.Vehicle.Stock.Types (MarketSharesRecord, NewVehiclesRecord, SalesStockRecord, StockRecord, SurvivalFunction)
-import SERA.Vehicle.Types (Classification, FAge, FClassification, FMarketShare, FModelYear, FSales, FStock, FSurvival, Sales, Stock, fAge, fClassification, fMarketShare, fModelYear, fSales, fStock, fSurvival)
+import SERA.Vehicle.Types (Classification, FClassification, FMarketShare, FModelYear, FSales, FStock, FSurvival, Sales, Stock, fMarketShare, fModelYear, fSales, fStock, fSurvival)
 
 
-type SurvivalCube = FieldCube '[FClassification, FAge] '[FSurvival]
-
-type NewVehiclesCube = FieldCube '[FRegion, FModelYear] '[FSales]
-
-type MarketSharesCube = FieldCube '[FRegion, FClassification, FModelYear] '[FMarketShare]
-
-type SalesCube = FieldCube '[FRegion, FClassification, FModelYear] '[FSales]
-
-type StockCube = FieldCube '[FRegion, FClassification, FYear] '[FStock]
-
-type SalesStocksCube = FieldCube '[FRegion, FClassification, FYear] '[FSales, FStock]
+type SurvivalCube      = '[FClassification, FModelYear, FYear]          ↝ '[FSurvival]
+type RegionalSalesCube = '[FRegion,                         FModelYear] ↝ '[FSales]
+type MarketSharesCube  = '[FRegion,        FClassification, FModelYear] ↝ '[FMarketShare]
+type SalesCube         = '[FRegion,        FModelYear, FClassification] ↝ '[FSales]
+type StockCube         = '[FRegion, FYear, FClassification, FModelYear] ↝ '[FSales, FStock]
+type StockCube'        = '[FRegion, FYear, FClassification, FModelYear] ↝ '[FSales, FSurvival]
+type SalesStocksCube   = '[FRegion, FClassification, FYear]             ↝ '[FSales, FStock]
 
 
-saleFromShare :: FieldRec '[FSales, FMarketShare] -> FieldRec '[FSales]
-saleFromShare rec = fSales =: (fSales <: rec * fMarketShare <: rec)
+universe :: MarketSharesCube -> [FieldRec '[FRegion, FModelYear, FClassification, FYear]]
+universe cube =
+  [
+    rmc <+> y
+  |
+    rmc <- projectKeys rcast                          cube :: [FieldRec '[FRegion, FModelYear, FClassification]]
+  , y   <- projectKeys ((fYear =:) . (fModelYear <:)) cube
+  , fModelYear <: rmc <= fYear <: y
+  ]
 
 
-modelYearToYear :: FieldCube '[FRegion, FClassification, FModelYear] v -> FieldCube '[FRegion, FClassification, FYear] v
-modelYearToYear =
-  rekey Rekeyer{..}
-    where
-      rekeyer   rec = rcast $ rec <+> fYear      =: (fModelYear <: rec)
-      unrekeyer rec = rcast $ rec <+> fModelYear =: (fYear      <: rec)
+-- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'rcast $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
+saleFromShare :: k -> FieldRec '[FSales, FMarketShare] -> FieldRec '[FSales]
+saleFromShare _ rec = fSales =: (fSales <: rec * fMarketShare <: rec)
 
 
-joinByAge = undefined
+-- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'rcast $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
+sumSales :: k -> [FieldRec '[FSales, FSurvival]] -> FieldRec '[FSales, FStock]
+sumSales _ xs = fSales =: (fSales <: last xs) <+> fStock =: sum ((\x -> fSales <: x * fSurvival <: x) <$> xs)
 
 
 computeStock :: SurvivalCube
-             -> NewVehiclesCube
+             -> RegionalSalesCube
              -> MarketSharesCube
              -> SalesStocksCube
-computeStock survival newVehicles marketShares =
+computeStock survival regionalSales marketShares =
   let
-    sales = π (const saleFromShare) $ newVehicles ⋈  marketShares :: SalesCube
-    stock = undefined :: StockCube
+    support = universe marketShares
+    sales = π saleFromShare $ regionalSales ⋈  marketShares
+    stock = κ support sumSales $ sales ⋈  survival
   in
-    modelYearToYear sales ⋈  stock
-{-
-    computeForRegionClassification :: FieldRec '[FRegion, FClassification] -> [FieldRec '[FRegion, FClassification, FModelYear, FSales]] -> [SalesStockRecord]
-    computeForRegionClassification regionClassification classifiedSales =
-      let
-        classification = fClassification <: regionClassification
-        stock []               = []
-        stock ss@(_ : ss') = sum (zipWith (\x y -> x * survival classification y) ss [0..]) : stock ss'
-        recs = groupExtract rpar (fModelYear <:) id classifiedSales
-        sales = map (fSales <:) recs
-      in
-        [
-          rcast $ rec <+> fStock =: y <+> fYear =: (fModelYear <: rec)
-        |
-          (rec, y) <- zip recs . reverse . stock $ reverse sales
-        ]
-  in
-    groupReduceFlattenByKey rpar rcast computeForRegionClassification
-      [
-        let
-          sale = fSales <: rec * fMarketShare <: rec
-        in
-          rcast $ rec <+> fSales =: sale
-      |
-        rec <- naturalJoin (Proxy :: Proxy '[FRegion, FModelYear]) newVehicles marketShares
-            :: [FieldRec '[FRegion, FClassification, FModelYear, FSales, FMarketShare]]
-      ]
--}
+      stock
 
 
 -- | Infer vehicle sales from vehicle stock.
@@ -114,7 +89,7 @@ inferSales :: Int                -- ^ Number of prior years to generate sales fo
            -> SurvivalFunction   -- ^ The vehicle survival function.
            -> [StockRecord]      -- ^ The vehicle stock records.
            -> [SalesStockRecord] -- ^ The vehicle sales and stock records.
-inferSales padding survival =
+inferSales _padding _survival =
   undefined
 {-
   let

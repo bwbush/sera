@@ -117,7 +117,8 @@ main =
 decodeYaml :: (FromJSON a, IsString e, MonadError e m, MonadIO m) => FilePath -> m a
 decodeYaml =
   (either (throwError . fromString . displayException) return =<<)
-    . (liftIO . decodeFileEither)
+    . liftIO
+    . decodeFileEither
 
 
 dispatch :: (IsString e, MonadError e m, MonadIO m) => SERA -> m ()

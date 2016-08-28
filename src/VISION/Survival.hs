@@ -1,19 +1,30 @@
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+
+
 module VISION.Survival (
   survivalFunction
 ) where
 
 
-import SERA.Vehicle.Stock.Types (SurvivalFunction)
-import SERA.Vehicle.Types (Age)
+import Data.Daft.DataCube (fromFunction)
+import Data.Daft.Vinyl.FieldCube (type (↝))
+import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Vinyl.Derived ((=:))
+import SERA.Types (FYear, fYear)
+import SERA.Vehicle.Types (FClassification, FModelYear, FSurvival, Survival, fModelYear, fSurvival)
 
-import Data.Map.Strict (Map, fromList, lookupGE)
+import Data.Map.Strict (Map, fromList, lookupLE)
 
 
-survivalFunction :: SurvivalFunction
-survivalFunction _ age = maybe 0 snd $ age `lookupGE` survivalTable
+survivalFunction :: '[FClassification, FModelYear, FYear] ↝ '[FSurvival]
+survivalFunction =
+  fromFunction $ \rec ->
+     ((fSurvival =:) . snd)
+       <$> (fYear <: rec - fModelYear <: rec) `lookupLE` survivalTable
 
 
-survivalTable :: Map Age Double
+survivalTable :: Map Int Survival
 survivalTable =
   fromList
     $ zip [0..]
