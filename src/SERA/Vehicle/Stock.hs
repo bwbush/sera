@@ -49,6 +49,12 @@ type StockCube'        = '[FRegion, FYear, FClassification, FModelYear] ↝ '[FS
 type SalesStocksCube   = '[FRegion, FClassification, FYear]             ↝ '[FSales, FStock]
 
 
+type AnnualTravelCube   = '[FRegion, FClassification, FAge] ↝ '[FAnnualTravel]
+type EmissionFactorCube = '[FClassification, FModelYear, FEmission] ↝ '[FEmissionRate]
+type FuelEfficiencyCube = '[FClassification, FModelYear] ↝ '[FFuelEfficiency]
+type FuelSplitCube      = '[FRegion, FYear, FClassification, FFuel] ↝ '[FFractionTravel]
+
+
 universe :: MarketSharesCube -> [FieldRec '[FRegion, FModelYear, FClassification, FYear]]
 universe cube =
   [

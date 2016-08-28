@@ -51,6 +51,10 @@ data ConfigStock =
   , regionalSalesSource :: DataSource Void
   , marketSharesSource  :: DataSource Void
   , survivalSource      :: Maybe (DataSource SurvivalData)
+  , annualTravelSource  :: Maybe (DataSource AnnualTravel)
+  , fuelEfficiencyCube  :: DataSource Void
+  , fuelSplitCube       :: DataSource Void
+  , emissionFactorCube  :: DataSource Void
   , priorYears          :: Maybe Int
   }
     deriving (Eq, Generic, Ord, Read, Show)
