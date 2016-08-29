@@ -21,8 +21,6 @@
 
 
 module SERA.Vehicle.Stock (
-  RegionalSalesCube
-, MarketSharesCube
 , universe
 , computeStock
 , inferSales
@@ -40,19 +38,6 @@ import SERA.Vehicle.Stock.Types (MarketSharesRecord, NewVehiclesRecord, SalesSto
 import SERA.Vehicle.Types (Classification, FClassification, FMarketShare, FModelYear, FSales, FStock, FSurvival, Sales, Stock, fMarketShare, fModelYear, fSales, fStock, fSurvival)
 
 
-type SurvivalCube      = '[FClassification, FModelYear, FYear]          ↝ '[FSurvival]
-type RegionalSalesCube = '[FRegion,                         FModelYear] ↝ '[FSales]
-type MarketSharesCube  = '[FRegion,        FClassification, FModelYear] ↝ '[FMarketShare]
-type SalesCube         = '[FRegion,        FModelYear, FClassification] ↝ '[FSales]
-type StockCube         = '[FRegion, FYear, FClassification, FModelYear] ↝ '[FSales, FStock]
-type StockCube'        = '[FRegion, FYear, FClassification, FModelYear] ↝ '[FSales, FSurvival]
-type SalesStocksCube   = '[FRegion, FClassification, FYear]             ↝ '[FSales, FStock]
-
-
-type AnnualTravelCube   = '[FRegion, FClassification, FAge] ↝ '[FAnnualTravel]
-type EmissionFactorCube = '[FClassification, FModelYear, FEmission] ↝ '[FEmissionRate]
-type FuelEfficiencyCube = '[FClassification, FModelYear] ↝ '[FFuelEfficiency]
-type FuelSplitCube      = '[FRegion, FYear, FClassification, FFuel] ↝ '[FFractionTravel]
 
 
 universe :: MarketSharesCube -> [FieldRec '[FRegion, FModelYear, FClassification, FYear]]

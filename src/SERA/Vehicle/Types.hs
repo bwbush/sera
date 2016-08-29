@@ -5,39 +5,62 @@
 
 
 module SERA.Vehicle.Types (
+-- * Age
   Age
 , FAge
 , fAge
+-- * Model year
 , ModelYear
 , FModelYear
 , fModelYear
+-- * Vehicle classification
 , Classification(..)
 , FClassification
 , fClassification
+-- * Fuel type
 , Fuel(..)
 , FFuel
 , fFuel
+-- * Market share
 , MarketShare
 , FMarketShare
 , fMarketShare
+-- * Emission type
+, Emission
+, FEmission
+, fEmission
+-- * Vehicle sales
 , Sales
 , FSales
 , fSales
+-- * Vehicle stock
 , Stock
 , FStock
 , fStock
+-- * Fuel split
 , FuelSplit
 , FFuelSplit
 , fFuelSplit
+-- * Vehicle survival
 , Survival
 , FSurvival
 , fSurvival
+-- * Vehicle travel
 , AnnualTravel
 , FAnnualTravel
 , fAnnualTravel
-, FuelEconomy
-, FFuelEconomy
-, fFuelEconomy
+-- * Fuel efficiency
+, FuelEfficiency
+, FFuelEfficiency
+, fFuelEfficiency
+-- * Fractional travel
+, FractionTravel
+, FFractionTravel
+, fFractionTravel
+-- * Emission factor
+, EmissionFactor
+, FEmissionFactor
+, fEmissionFactor
 ) where
 
 
@@ -107,7 +130,9 @@ instance Read Fuel where
     | otherwise         = const $ return . (, []) . Fuel
 
 instance Show Fuel where
-  show = show . fuel
+  show
+    | quotedStringTypes = show . fuel
+    | otherwise         = fuel
 
 instance FromJSON Fuel where
   parseJSON = withText "SERA.Vehicle.Types.Fuel" $ return . Fuel . toString
@@ -121,6 +146,32 @@ type FFuel = '("Fuel Type", Fuel)
 
 fFuel :: SField FFuel
 fFuel = SField
+
+
+newtype Emission = Emission {emission :: String}
+  deriving (Default, Eq, Generic, Ord)
+
+instance Read Emission where
+  readsPrec
+    | quotedStringTypes = (fmap (first Emission) .) . readsPrec
+    | otherwise         = const $ return . (, []) . Emission
+
+instance Show Emission where
+  show
+    | quotedStringTypes = show . emission
+    | otherwise         = emission
+
+instance FromJSON Emission where
+  parseJSON = withText "SERA.Vehicle.Types.Emission" $ return . Emission . toString
+
+instance ToJSON Emission where
+  toJSON = toJSON . emission
+
+
+type FEmission = '("Emission", Emission)
+
+fEmission :: SField Emission
+fEmission = SField
 
 
 type Sales = Double
@@ -183,11 +234,31 @@ fAnnualTravel :: SField FAnnualTravel
 fAnnualTravel = SField
 
 
-type FuelEconomy = Double
+type FuelEfficiency = Double
 
 
-type FFuelEconomy = '("Fuel Economy [mi/gge]", FuelEconomy)
+type FFuelEfficiency = '("Fuel Efficiency [mi/gge]", FuelEfficiency)
 
 
-fFuelEconomy :: SField FFuelEconomy
-fFuelEconomy = SField
+fFuelEfficiency :: SField FFuelEfficiency
+fFuelEfficiency = SField
+
+
+type FractionTravel = Double
+
+
+type FFractionTravel = '("Fraction Travel [mi/mi]", FractionTravel)
+
+
+fFractionTravel :: SField FFractionTravel
+fFractionTravel = SField
+
+
+type EmissionFactor = Double
+
+
+type FEmissionFactor = '("Emission Factor [g/gge]", EmissionFactor)
+
+
+fEmissionFactor :: SField FEmissionFactor
+fEmissionFactor = SField
