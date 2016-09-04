@@ -1,0 +1,7 @@
+Vocation	Vehicle	Fuel	Fraction of Travel [mi/mi]
+commercial	VCC 21400 (GAS LHD1)	GAS	1
+industrial	VCC 21400 (GAS LHD1)	GAS	1
+industrial	VCC 22400 (DSL LHD1)	DSL	1
+agricultural	VCC 22601 (DSL T6 Ag)	DSL	1
+commercial	VCC 24724 (NG T7 SWCVng)	NG	0.6
+commercial	VCC 24724 (NG T7 SWCVng)	ELEC	0.4

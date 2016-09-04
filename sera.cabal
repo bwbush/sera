@@ -1,5 +1,5 @@
 name: sera
-version: 1.0.8.0
+version: 1.0.8.1
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -14,8 +14,20 @@ synopsis: the synopsis
 description: the description
 category: Energy
 author: Brian W Bush <brian.bush@nrel.gov>
-data-dir: data
+data-dir: examples
 data-files: 
+          vehicle-stock/configuration.yaml
+          vehicle-stock/regional-sales.tsv
+          vehicle-stock/market-share.tsv
+          vehicle-stock/annual-travel.tsv
+          vehicle-stock/fuel-split.tsv
+          vehicle-stock/fuel-efficiency.tsv
+          vehicle-stock/emission-rate.tsv
+          vehicle-stock/sales.tsv
+          vehicle-stock/stock.tsv
+          vehicle-stock/energy.tsv
+          vehicle-stock/emission.tsv
+          vehicle-stock/verification.xlsx
 
 source-repository head
   type: git
