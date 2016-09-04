@@ -46,8 +46,8 @@ universe cube =
   [
     fYear =: year <+> rec <+> fAge =: year - fModelYear <: rec
   |
-    let (year0, year1) = (minimum &&& maximum) (projectKeys (fModelYear <:) cube :: [Int])
-  , rec <- projectKeys id cube
+    let (year0, year1) = (minimum &&& maximum) (projectKnownKeys (fModelYear <:) cube :: [Int])
+  , rec <- projectKnownKeys id cube
   , year <- [year0..year1]
   ]
 
