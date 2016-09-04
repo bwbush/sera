@@ -1,33 +1,68 @@
+-----------------------------------------------------------------------------
+--
+-- Module      :  SERA.Vehicle.MHD.TEDB32
+-- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- License     :  All Rights Reserved
+--
+-- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
+-- Stability   :  Stable
+-- Portability :  Portable
+--
+-- | Medium and heavy duty vehicle data from the Transportation Energy Data Book, Version 32.
+--
+-----------------------------------------------------------------------------
+
+
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+
+
 module SERA.Vehicle.MHD.TEDB32 (
-  classifications
-, fuelEconomyRegressed
-, fuelEconomyTabulated
+-- * Vehicle types
+  vehicles
+-- * Tabulated functions
+, fuelEfficiencyTabulated
+, fuelEfficiencyRegression
+-- * Raw data
+, tables5p1and5p2
 ) where
 
 
-import Control.Arrow (first, second)
-import Data.Daft.Lookup (LookupTable, asLookupTable, keys, lookupOrd, lookupReal)
-import Data.List.Util (sortedGroups)
-import SERA.Vehicle.Stock.Types (FuelEconomyFunction)
-import SERA.Vehicle.Types (Classification(Classification), FuelEconomy, ModelYear)
+import Control.Arrow (first)
+import Data.Daft.DataCube (fromFunction)
+import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
+import Data.Daft.Vinyl.FieldRec ((=:), (<:), readFieldRecs)
+import Data.Map.Strict (Map, fromList, keys)
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (rcast)
+import SERA.Vehicle.Types (FFuelEfficiency, fFuelEfficiency, FModelYear, fModelYear, Vehicle(Vehicle), FVehicle, fVehicle)
+
+import qualified Data.Map.Strict as M (lookup)
 
 
-classifications :: [Classification]
-classifications = keys regressions5p1and5p2
+-- | Vehicle types.
+vehicles :: [Vehicle]
+vehicles = keys regressions5p1and5p2
 
 
-fuelEconomyRegressed :: FuelEconomyFunction
-fuelEconomyRegressed _region classification modelYear _fuel =
-  let
-    (m, b) = classification `lookupOrd` regressions5p1and5p2
-  in
-    m * fromIntegral modelYear + b
+-- | Fuel efficiency via linear regression.
+fuelEfficiencyRegression :: '[FVehicle, FModelYear] ↝ '[FFuelEfficiency]
+fuelEfficiencyRegression =
+  fromFunction $ \rec ->
+    do
+      let
+        classification = fVehicle <: rec
+        modelYear = fModelYear <: rec
+      (m, b) <- classification `M.lookup` regressions5p1and5p2
+      return
+        $ fFuelEfficiency =: m * fromIntegral modelYear + b
 
 
-regressions5p1and5p2 :: LookupTable Classification (Double, Double)
+-- | Regression coefficients for fuel efficiency.
+regressions5p1and5p2 :: Map Vehicle (Double, Double)
 regressions5p1and5p2 =
-  asLookupTable
-    $ fmap (first (Classification . ("Class " ++) . show))
+  fromList
+    $ fmap (first (Vehicle . ("Class " ++) . show))
     [
       (3 :: Int, (0.0771, -142.87))
     , (4       , (0.0624, -115.65))
@@ -38,21 +73,23 @@ regressions5p1and5p2 =
     ]
 
 
-fuelEconomyTabulated :: FuelEconomyFunction
-fuelEconomyTabulated _region classification modelYear _fuel = modelYear `lookupReal` (classification `lookupOrd` tables5p1and5p2)
+-- | Fuel efficiency via lookup table.
+fuelEfficiencyTabulated :: '[FVehicle, FModelYear] ↝ '[FFuelEfficiency]
+fuelEfficiencyTabulated = fromRecords $ rcast <$> tables5p1and5p2
 
 
-tables5p1and5p2 :: LookupTable Classification (LookupTable ModelYear FuelEconomy)
-tables5p1and5p2 =
-  asLookupTable
-    . fmap (second asLookupTable)
-    $ sortedGroups
-    [
-      (classification, (modelYear - 1, fuelEconomy))
-    |
-      (modelYear, fuelEconomies) <- rawData
-    , (classification, fuelEconomy) <- zip classifications fuelEconomies
-    ]
+-- | Raw data from Transportation Energy Data Book, Tables 5.1 and 5.2.
+tables5p1and5p2 :: [FieldRec '[FVehicle, FModelYear, FFuelEfficiency]]
+Right tables5p1and5p2 =
+  readFieldRecs
+    $ ["Vehicle", "Model Year", "FuelEfficiency [mi/gge]"]
+    : [
+        [show classification, show (modelYear - 1), show fuelEconomy]
+      |
+        (modelYear, fuelEconomies) <- rawData
+      , (classification, fuelEconomy) <- zip vehicles fuelEconomies
+      ]
+    :: Either String [FieldRec '[FVehicle, FModelYear, FFuelEfficiency]]
     where
       rawData =
         [
@@ -102,3 +139,4 @@ tables5p1and5p2 =
         , (2013, [12.33,  9.96,  9.26,  8.22,  7.86,  5.88])
         , (2014, [12.41, 10.02,  9.32,  8.27,  7.88,  5.90])
         ]
+        :: [(Int, [Double])]

@@ -1,42 +1,70 @@
+-----------------------------------------------------------------------------
+--
+-- Module      :  SERA.Vehicle.MHD.Census2002
+-- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- License     :  All Rights Reserved
+--
+-- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
+-- Stability   :  Stable
+-- Portability :  Portable
+--
+-- | Medium and heavy duty vehicle data from the Census Bureau, circa 2002.
+--
+-----------------------------------------------------------------------------
+
+
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+
+
 module SERA.Vehicle.MHD.Census2002 (
-  classifications
-, annualTravelFunction
-, fuelEconomyFunction
+-- * Vehicle types
+  vehicles
+-- * Tabulated functions
+, annualTravel
+, fuelEfficiency
+-- * Raw data
+, table
 ) where
 
 
-import Control.Arrow (first)
-import Data.Daft.Lookup (LookupTable, asLookupTable, keys, lookupOrd)
-import SERA.Vehicle.Stock.Types (AnnualTravelFunction, FuelEconomyFunction)
-import SERA.Vehicle.Types (AnnualTravel, Classification(Classification), FuelEconomy)
+import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
+import Data.Daft.Vinyl.FieldRec ((<:), readFieldRecs)
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (rcast)
+import SERA.Vehicle.Types (FAnnualTravel, FFuelEfficiency, Vehicle, FVehicle, fVehicle)
 
 
-classifications :: [Classification]
-classifications = keys table
+-- | Vehicle types.
+vehicles :: [Vehicle]
+vehicles = (fVehicle <:) <$> table
 
 
--- [mi/veh]
-annualTravelFunction :: AnnualTravelFunction
-annualTravelFunction _region classification _age _fuel = fst $ classification `lookupOrd` table
+-- | Annual travel.
+annualTravel :: '[FVehicle] ↝ '[FAnnualTravel]
+annualTravel = fromRecords $ rcast <$> table
 
 
--- [mi/gge]
-fuelEconomyFunction :: FuelEconomyFunction
-fuelEconomyFunction _region classification _age _fuel = snd $ classification `lookupOrd` table
+-- | Fuel efficiency.
+fuelEfficiency :: '[FVehicle] ↝ '[FFuelEfficiency]
+fuelEfficiency = fromRecords $ rcast <$> table
 
 
--- Source: U.S. Department of Commerce, Bureau of the Census, 2002 Vehicle Inventory and Use Survey, Microdata File on CD, 2005.  (Additional resources:  www.census.gov/svsd/www.tiusview.html)
-table :: LookupTable Classification (AnnualTravel, FuelEconomy)
-table =
-  asLookupTable
-    $ fmap (first $ Classification . ("Class " ++) . show)
+-- | Raw data.
+-- |
+-- | Source: U.S. Department of Commerce, Bureau of the Census, 2002 Vehicle Inventory and Use Survey, Microdata File on CD, 2005.  (Additional resources:  www.census.gov/svsd/www.tiusview.html)
+table :: [FieldRec '[FVehicle, FAnnualTravel, FFuelEfficiency]]
+Right table =
+  readFieldRecs
     [
-      (1 :: Int, (11822, 17.6))
-    , (2       , (12684, 14.3))
-    , (3       , (14094, 10.5))
-    , (4       , (15441,  8.5))
-    , (5       , (11645,  7.9))
-    , (6       , (12671,  7.0))
-    , (7       , (30708,  6.4))
-    , (8       , (45739,  5.7))
+      ["Vehicle", "Annual Travel [mi/yr]", "Fuel Efficiency [mi/gge]"]
+    , ["Class 1",                 "11822",                     "17.6"]
+    , ["Class 2",                 "12684",                     "14.3"]
+    , ["Class 3",                 "14094",                     "10.5"]
+    , ["Class 4",                 "15441",                      "8.5"]
+    , ["Class 5",                 "11645",                      "7.9"]
+    , ["Class 6",                 "12671",                      "7.0"]
+    , ["Class 7",                 "30708",                      "6.4"]
+    , ["Class 8",                 "45739",                      "5.7"]
     ]
+  :: Either String [FieldRec '[FVehicle, FAnnualTravel, FFuelEfficiency]]

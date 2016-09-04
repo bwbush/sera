@@ -1,5 +1,5 @@
 name: sera
-version: 1.0.7.1
+version: 1.0.8.0
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -32,7 +32,6 @@ library
                     SERA.Vehicle.MHD.Mitchell20141106
                     SERA.Vehicle.MHD.TEDB32
                     SERA.Vehicle.Stock
-                    SERA.Vehicle.Stock.Travel
                     SERA.Vehicle.Stock.Types
                     SERA.Vehicle.Types
                     VISION.Survival
@@ -62,6 +61,8 @@ executable sera
                   , containers
                   , daft
                   , data-default
+                  , directory
+                  , filepath
                   , mtl
                   , raft
                   , text

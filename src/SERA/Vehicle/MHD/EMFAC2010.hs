@@ -1,36 +1,61 @@
+-----------------------------------------------------------------------------
+--
+-- Module      :  SERA.Vehicle.MHD.EMFAC2010
+-- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- License     :  All Rights Reserved
+--
+-- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
+-- Stability   :  Stable
+-- Portability :  Portable
+--
+-- | Medium and heavy duty vehicle data from the EMFAC, circa 2002.
+--
+-----------------------------------------------------------------------------
+
+
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+
+
 module SERA.Vehicle.MHD.EMFAC2010 (
-  classifications
-, annualTravelFunction
+-- * Vehicle types
+  vehicles
+-- * Tabulated functions
+, annualTravel
+-- * Raw data
+, table6p7
 ) where
 
 
-import Control.Arrow (second)
-import Data.Daft.Lookup (LookupTable, asLookupTable, lookupOrd, lookupReal)
-import Data.List.Util (sortedGroups)
-import SERA.Vehicle.Stock.Types (AnnualTravelFunction)
-import SERA.Vehicle.Types (Age, AnnualTravel, Classification(Classification))
+import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
+import Data.Daft.Vinyl.FieldRec (readFieldRecs)
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (rcast)
+import SERA.Vehicle.Types (FAge, FAnnualTravel, Vehicle(..), FVehicle)
 
 
-classifications :: [Classification]
-classifications = Classification . ("Class " ++) . show <$> ([8,7..3] :: [Int])
+-- | Vehicle types.
+vehicles :: [Vehicle]
+vehicles = Vehicle . ("Class " ++) . show <$> ([8,7..3] :: [Int])
 
 
--- [mi/veh]
-annualTravelFunction :: AnnualTravelFunction
-annualTravelFunction _region classification age _fuel = age `lookupReal` (classification `lookupOrd` table6p7)
+-- | Annual travel.
+annualTravel :: '[FVehicle] ↝ '[FAnnualTravel]
+annualTravel = fromRecords $ rcast <$> table6p7
 
 
-table6p7 :: LookupTable Classification (LookupTable Age AnnualTravel)
-table6p7 =
-  asLookupTable
-    . fmap (second asLookupTable)
-    $ sortedGroups
-    [
-      (classification, (age - 1, annualTravel))
-    |
-      (age, annualTravels) <- raw
-    , (classification, annualTravel) <- zip classifications annualTravels
-    ]
+-- | Raw data from EMFAC 2010 Table 6.7.
+table6p7 :: [FieldRec '[FVehicle, FAge, FAnnualTravel]]
+Right table6p7 =
+  readFieldRecs
+    $ ["Vehicle", "Age [yr]", "Annual Travel [mi/yr]"]
+    : [
+         [show classification, show age, show distance]
+      |
+        (age, annualTravels) <- raw
+      , (classification, distance) <- zip vehicles annualTravels
+      ]
+    :: Either String [FieldRec '[FVehicle, FAge, FAnnualTravel]]
     where
       raw :: [(Int, [Double])]
       raw =

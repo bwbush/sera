@@ -15,66 +15,130 @@
 
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeOperators             #-}
 
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 
 module SERA.Vehicle.Stock (
-, universe
+-- * Computations
+  universe
 , computeStock
 , inferSales
 , inferMarketShares
 ) where
 
 
+import Control.Arrow ((&&&))
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (rcast)
-import SERA.Types (FRegion, FYear, Year, fYear)
-import SERA.Vehicle.Stock.Types (MarketSharesRecord, NewVehiclesRecord, SalesStockRecord, StockRecord, SurvivalFunction)
-import SERA.Vehicle.Types (Classification, FClassification, FMarketShare, FModelYear, FSales, FStock, FSurvival, Sales, Stock, fMarketShare, fModelYear, fSales, fStock, fSurvival)
+import SERA.Types (FRegion, FYear, fYear)
+import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, SalesCube, StockCube, SurvivalCube)
+import SERA.Vehicle.Types (FAge, fAge, FAnnualTravel, fAnnualTravel, FEmission, fEmission, FEmissionRate, fEmissionRate, FEnergy, fEnergy, FFuel, FFuelEfficiency, fFuelEfficiency, FFuelSplit, fFuelSplit, FMarketShare, fMarketShare, FModelYear, fModelYear, FPollutant, FSales, fSales, FStock, fStock, FSurvival, fSurvival, FTravel, fTravel, FVehicle, FVocation)
 
 
-
-
-universe :: MarketSharesCube -> [FieldRec '[FRegion, FModelYear, FClassification, FYear]]
+universe :: '[FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] ↝ v -> [FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant, FAge]]
 universe cube =
   [
-    rmc <+> y
+    fYear =: year <+> rec <+> fAge =: year - fModelYear <: rec
   |
-    rmc <- projectKeys rcast                          cube :: [FieldRec '[FRegion, FModelYear, FClassification]]
-  , y   <- projectKeys ((fYear =:) . (fModelYear <:)) cube
-  , fModelYear <: rmc <= fYear <: y
+    let (year0, year1) = (minimum &&& maximum) (projectKeys (fModelYear <:) cube :: [Int])
+  , rec <- projectKeys id cube
+  , year <- [year0..year1]
   ]
+
+
+byYear :: '[FRegion, FModelYear, FVocation, FVehicle, FAge, FFuel] ↝ v -> '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel] ↝ v
+byYear =
+  rekey
+    $ Rekeyer{..}
+    where
+      rekeyer   rec = rcast (rec <+> fYear =: fAge  <: rec + fModelYear <: rec)
+      unrekeyer rec = rcast (rec <+> fAge  =: fYear <: rec - fModelYear <: rec)
 
 
 -- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'rcast $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
 
 
-saleFromShare :: k -> FieldRec '[FSales, FMarketShare] -> FieldRec '[FSales]
-saleFromShare _ rec = fSales =: fSales <: rec * fMarketShare <: rec
-
-
-sumSales :: k -> [FieldRec '[FSales, FSurvival]] -> FieldRec '[FSales, FStock]
-sumSales _ xs = fSales =: fSales <: last xs <+> fStock =: sum ((\x -> fSales <: x * fSurvival <: x) <$> xs)
-
-
-computeStock :: SurvivalCube
-             -> RegionalSalesCube
-             -> MarketSharesCube
-             -> SalesStocksCube
-computeStock survival regionalSales marketShares =
+driving :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge, FFuel] -> FieldRec '[FSales, FMarketShare, FSurvival, FAnnualTravel, FFuelSplit, FFuelEfficiency] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
+driving key rec =
   let
-    support = universe marketShares
-    sales = π saleFromShare $ regionalSales ⋈  marketShares
-    stock = κ support sumSales $ sales ⋈  survival
+    sales = fSales <: rec * fMarketShare <: rec * fFuelSplit <: rec
+    sales' = if fAge <: key == 0 then sales else 0
+    stock = sales * fSurvival <: rec
+    travel = stock * fAnnualTravel <: rec
+    energy = travel / fFuelEfficiency <: rec
   in
-      stock
+        fSales    =: sales'
+    <+> fStock    =: stock
+    <+> fTravel   =: travel
+    <+> fEnergy   =: energy
 
 
+emitting :: FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] -> FieldRec '[FSales, FStock, FTravel, FEnergy, FEmissionRate] -> FieldRec '[FEmission]
+emitting _ rec = fEmission =: fEnergy <: rec * fEmissionRate <: rec
+
+
+total :: k -> [FieldRec '[FSales, FStock, FTravel, FEnergy]] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
+total _ xs =
+      fSales  =: sum ((fSales  <:) <$> xs)
+  <+> fStock  =: sum ((fStock  <:) <$> xs)
+  <+> fTravel =: sum ((fTravel <:) <$> xs)
+  <+> fEnergy =: sum ((fEnergy <:) <$> xs)
+
+
+totalEmission :: k -> [FieldRec '[FEmission]] -> FieldRec '[FEmission]
+totalEmission _ xs =
+      fEmission =: sum ((fEmission <:) <$> xs)
+
+
+computeStock :: RegionalSalesCube
+             -> MarketShareCube
+             -> SurvivalCube
+             -> AnnualTravelCube
+             -> FuelSplitCube
+             -> FuelEfficiencyCube
+             -> EmissionRateCube
+             -> (SalesCube, StockCube, EnergyCube, EmissionCube)
+computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate =
+  let
+    support =
+      universe $
+          marketShares
+        ⋈ emissionRate
+    stock =
+      byYear $
+        π driving $
+          regionalSales
+        ⋈ marketShares
+        ⋈ survival
+        ⋈ annualTravel
+        ⋈ fuelSplit
+        ⋈ fuelEfficiency
+    emission =
+      π emitting $
+        stock
+      ⋈ emissionRate
+  in
+    (
+      κ support              total  stock
+    , κ support              total  stock
+    , κ support ((rcast .) . total) stock
+    , κ support totalEmission       emission
+    )
+
+
+inferMarketShares = undefined
+
+
+inferSales = undefined
+
+
+{-
 -- | Infer vehicle sales from vehicle stock.
 inferSales :: Int                -- ^ Number of prior years to generate sales for the stock.
            -> SurvivalFunction   -- ^ The vehicle survival function.
@@ -149,3 +213,5 @@ inverseSurvivalFunction survival classification _ =
     invert sales (stock : stocks) = invert ((stock - ss `dot` sales) / s0 : sales) stocks
   in
     reverse . invert []
+
+-}

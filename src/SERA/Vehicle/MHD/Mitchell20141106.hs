@@ -1,36 +1,60 @@
+-----------------------------------------------------------------------------
+--
+-- Module      :  SERA.Vocation.MHD.Mitchell20141106
+-- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- License     :  All Rights Reserved
+--
+-- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
+-- Stability   :  Stable
+-- Portability :  Portable
+--
+-- | Medium and heavy duty vehicle data from George Mitchell of NREL, circa 2014.
+--
+-----------------------------------------------------------------------------
+
+
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+
+
 module SERA.Vehicle.MHD.Mitchell20141106 (
-  classifications
-, annualTravelFunction
+-- * Vocation types
+  vocations
+-- * Tabulated functions
+, annualTravel
+-- * Raw data
+, table
 ) where
 
 
-import Control.Arrow (second)
-import Data.Daft.Lookup (LookupTable, asLookupTable, lookupOrd, lookupReal)
-import Data.List.Util (sortedGroups)
-import SERA.Vehicle.Stock.Types (AnnualTravelFunction)
-import SERA.Vehicle.Types (Age, AnnualTravel, Classification(Classification))
+import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
+import Data.Daft.Vinyl.FieldRec (readFieldRecs)
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (rcast)
+import SERA.Vehicle.Types (FAge, FAnnualTravel, Vocation(..), FVocation)
 
 
-classifications :: [Classification]
-classifications = Classification . ("Class " ++) . show <$> ['A'..'K']
+-- | Vocation types.
+vocations :: [Vocation]
+vocations = Vocation . ("Category " ++) . show <$> ['A'..'K']
 
 
--- [mi/veh]
-annualTravelFunction :: AnnualTravelFunction
-annualTravelFunction _region classification age _fuel = age `lookupReal` (classification `lookupOrd` table)
+-- | Annual travel.
+annualTravel :: '[FVocation] ↝ '[FAnnualTravel]
+annualTravel = fromRecords $ rcast <$> table
 
 
-table :: LookupTable Classification (LookupTable Age AnnualTravel)
-table =
-  asLookupTable
-    . fmap (second asLookupTable)
-    $ sortedGroups
-    [
-      (classification, (age - 1, annualTravel))
-    |
-      (age, annualTravels) <- raw
-    , (classification, annualTravel) <- zip classifications annualTravels
-    ]
+table :: [FieldRec '[FVocation, FAge, FAnnualTravel]]
+Right table =
+  readFieldRecs
+    $ ["Vocation", "Age [yr]", "Annual Travel [mi/yr]"]
+    : [
+        [show classification, show (age - 1), show distance]
+      |
+        (age, annualTravels) <- raw
+      , (classification, distance) <- zip vocations annualTravels
+      ]
+    :: Either String [FieldRec '[FVocation, FAge, FAnnualTravel]]
     where
       raw :: [(Int, [Double])]
       raw =

@@ -1,3 +1,18 @@
+-----------------------------------------------------------------------------
+--
+-- Module      :  SERA.Types
+-- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- License     :  All Rights Reserved
+--
+-- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
+-- Stability   :  Stable
+-- Portability :  Portable
+--
+-- | Types for modeling.
+--
+-----------------------------------------------------------------------------
+
+
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -6,12 +21,15 @@
 
 
 module SERA.Types (
+-- * Geographic regions
   Region(..)
 , FRegion
 , fRegion
+-- * Calendar year
 , Year
 , FYear
 , fYear
+-- * Configuration
 , quotedStringTypes
 ) where
 
@@ -24,10 +42,12 @@ import Data.Vinyl.Derived (SField(..))
 import GHC.Generics (Generic)
 
 
+-- | Whether to quote string types in 'Show' and 'Read' instances.
 quotedStringTypes :: Bool
 quotedStringTypes = False
 
 
+-- | Data type for geographic regions.
 newtype Region = Region {region :: String}
   deriving (Default, Eq, Generic, Ord)
 
@@ -48,18 +68,23 @@ instance ToJSON Region where
   toJSON = toJSON . region
 
 
+-- | Field type for geographic regions.
 type FRegion = '("Region", Region)
 
 
+-- | Field label for geographic regions.
 fRegion :: SField FRegion
 fRegion = SField
 
 
+-- | Data type for calendar years.
 type Year = Int
 
 
+-- | Field type for calendar years.
 type FYear = '("Year", Year)
 
 
+-- | Field label for calendar years.
 fYear :: SField FYear
 fYear = SField

@@ -15,10 +15,12 @@ import Data.Aeson.Types (FromJSON)
 import Data.Data (Data)
 import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
-import SERA (stringVersion)
+import SERA (inform, stringVersion)
 import SERA.Service.VehicleStock (calculateStock, invertStock)
 import System.Console.CmdArgs (Typeable, (&=), argPos, cmdArgs, def, details, help, modes, name, program, summary, typ)
+import System.Directory (setCurrentDirectory)
 import System.Environment (getArgs, withArgs)
+import System.FilePath (takeDirectory)
 
 
 data SERA =
@@ -126,6 +128,8 @@ dispatch :: (IsString e, MonadError e m, MonadIO m) => SERA -> m ()
 dispatch VehicleStock{..} =
   do
     configuration' <- decodeYaml configuration
+    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
+    liftIO . setCurrentDirectory $ takeDirectory configuration
     calculateStock configuration'
 
 dispatch InvertVehicleStock{..} =
