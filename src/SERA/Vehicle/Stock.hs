@@ -34,6 +34,7 @@ import Control.Arrow ((&&&))
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
+import Data.List (nub)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (rcast)
 import SERA.Types (FRegion, FYear, fYear)
@@ -64,6 +65,7 @@ byYear =
 -- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'rcast $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
 
 
+{-
 driving :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge, FFuel] -> FieldRec '[FSales, FMarketShare, FSurvival, FAnnualTravel, FFuelSplit, FFuelEfficiency] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
 driving key rec =
   let
@@ -77,6 +79,45 @@ driving key rec =
     <+> fStock    =: stock
     <+> fTravel   =: travel
     <+> fEnergy   =: energy
+-}
+
+
+driving :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge] -> FieldRec '[FSales, FMarketShare, FSurvival] -> FieldRec '[FSales, FStock]
+driving key rec =
+  let
+    sales = fSales <: rec * fMarketShare <: rec
+    sales' = if fAge <: key == 0 then sales else 0
+    stock = sales * fSurvival <: rec
+  in
+        fSales =: sales'
+    <+> fStock =: stock
+
+
+traveling :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge] -> FieldRec '[FSales, FStock, FAnnualTravel] -> FieldRec '[FSales, FStock, FTravel]
+traveling _ rec =
+  let
+    sales = fSales <: rec
+    stock = fStock <: rec
+    travel = stock * fAnnualTravel <: rec
+  in
+        fSales  =: sales
+    <+> fStock  =: stock
+    <+> fTravel =: travel
+
+
+consuming :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge, FFuel] -> FieldRec '[FSales, FStock, FTravel, FFuelSplit, FFuelEfficiency] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
+consuming _ rec =
+  let
+    split = fFuelSplit <: rec
+    sales = split * fSales <: rec
+    stock = split * fStock <: rec
+    travel = split * fTravel <: rec
+    energy = travel / fFuelEfficiency <: rec
+  in
+        fSales  =: sales
+    <+> fStock  =: stock
+    <+> fTravel =: travel
+    <+> fEnergy =: energy
 
 
 emitting :: FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] -> FieldRec '[FSales, FStock, FTravel, FEnergy, FEmissionRate] -> FieldRec '[FEmission]
@@ -107,6 +148,42 @@ computeStock :: RegionalSalesCube
 computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate =
   let
     support =
+      universe
+        $ marketShares
+        ⋈ emissionRate
+    stock =
+      π driving
+        $ regionalSales
+        ⋈ marketShares
+        ⋈ survival
+    support' = nub $ rcast <$> support
+    stock' = reify support' stock
+    travel =
+      π traveling
+        $ stock'
+        ⋈ annualTravel
+    support'' = nub $ rcast <$> support
+    travel' = reify support'' travel
+    energy =
+      π consuming
+        $ travel'
+        ⋈ fuelSplit
+        ⋈ fuelEfficiency
+    energy' = byYear energy
+    emission =
+      π emitting
+      $ energy'
+      ⋈ emissionRate
+  in
+    (
+      κ support              total  energy'
+    , κ support              total  energy'
+    , κ support ((rcast .) . total) energy'
+    , κ support totalEmission       emission
+    )
+{-
+  let
+    support =
       universe $
           marketShares
         ⋈ emissionRate
@@ -130,6 +207,7 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
     , κ support ((rcast .) . total) stock
     , κ support totalEmission       emission
     )
+-}
 
 
 inferMarketShares = undefined
