@@ -33,16 +33,14 @@ import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldRec (readFieldRecSource, writeFieldRecSource)
-import Data.Daft.Vinyl.FieldCube ((⋈), fromRecords, toRecords)
+import Data.Daft.Vinyl.FieldCube (fromRecords, toKnownRecords)
 import Data.Default (Default(..))
-import Data.List (nub)
 import Data.String (IsString)
-import Data.Vinyl.Lens (rcast)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
-import SERA.Vehicle.Stock (computeStock, universe)
+import SERA.Vehicle.Stock (computeStock)
 import VISION.Survival (survivalMHD)
 
 
@@ -97,19 +95,18 @@ calculateStock ConfigStock{..} =
     emissionRate <- fromRecords <$> readFieldRecSource emissionRateSource
     let
       (sales, stock, energy, emission) = computeStock regionalSales marketShare survivalMHD annualTravel fuelSplit fuelEfficiency emissionRate
-      support = universe $ marketShare ⋈ emissionRate
     withSource salesSource $ \source -> do
       inform $ "Writing vehicle sales to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toRecords (nub $ rcast <$> support) sales
+      void $ writeFieldRecSource source $ toKnownRecords sales
     withSource stockSource $ \source -> do
       inform $ "Writing vehicle stocks to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toRecords (nub $ rcast <$> support) stock
+      void $ writeFieldRecSource source $ toKnownRecords stock
     withSource energySource $ \source -> do
       inform $ "Writing energy consumption to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toRecords (nub $ rcast <$> support) energy
+      void $ writeFieldRecSource source $ toKnownRecords energy
     withSource emissionSource $ \source -> do
       inform $ "Writing emission of pollutants to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toRecords (nub $ rcast <$> support) emission
+      void $ writeFieldRecSource source $ toKnownRecords emission
 
 
 invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()

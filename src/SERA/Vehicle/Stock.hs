@@ -42,6 +42,7 @@ import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCub
 import SERA.Vehicle.Types (FAge, fAge, FAnnualTravel, fAnnualTravel, FEmission, fEmission, FEmissionRate, fEmissionRate, FEnergy, fEnergy, FFuel, FFuelEfficiency, fFuelEfficiency, FFuelSplit, fFuelSplit, FMarketShare, fMarketShare, FModelYear, fModelYear, FPollutant, FSales, fSales, FStock, fStock, FSurvival, fSurvival, FTravel, fTravel, FVehicle, FVocation)
 
 
+{-
 universe :: '[FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] ↝ v -> [FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant, FAge]]
 universe cube =
   [
@@ -51,9 +52,22 @@ universe cube =
   , rec <- projectKnownKeys id cube
   , year <- [year0..year1]
   ]
+-}
 
 
-byYear :: '[FRegion, FModelYear, FVocation, FVehicle, FAge, FFuel] ↝ v -> '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel] ↝ v
+universe :: '[FRegion, FVocation, FVehicle, FModelYear] ↝ v -> [FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear]]
+universe cube =
+  nub
+    [
+      fYear =: year <+> rec
+    |
+      let (year0, year1) = (minimum &&& maximum) (projectKnownKeys (fModelYear <:) cube :: [Int])
+    , rec <- ω cube
+    , year <- [year0..year1]
+    ]
+
+
+byYear :: '[FRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v -> '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ v
 byYear =
   rekey
     $ Rekeyer{..}
@@ -105,7 +119,7 @@ traveling _ rec =
     <+> fTravel =: travel
 
 
-consuming :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge, FFuel] -> FieldRec '[FSales, FStock, FTravel, FFuelSplit, FFuelEfficiency] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
+consuming :: FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel] -> FieldRec '[FSales, FStock, FTravel, FFuelSplit, FFuelEfficiency] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
 consuming _ rec =
   let
     split = fFuelSplit <: rec
@@ -147,39 +161,62 @@ computeStock :: RegionalSalesCube
              -> (SalesCube, StockCube, EnergyCube, EmissionCube)
 computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate =
   let
-    support =
-      universe
-        $ marketShares
-        ⋈ emissionRate
     stock =
       π driving
         $ regionalSales
         ⋈ marketShares
         ⋈ survival
-    support' = nub $ rcast <$> support
-    stock' = reify support' stock
+      :: '[FRegion, FModelYear, FVocation, FVehicle, FAge] ↝ '[FSales, FStock]
     travel =
       π traveling
-        $ stock'
+        $ stock
         ⋈ annualTravel
-    support'' = nub $ rcast <$> support
-    travel' = reify support'' travel
+      :: '[FRegion, FModelYear, FVocation, FVehicle, FAge] ↝ '[FSales, FStock, FTravel]
+    travel' =
+      byYear travel
+      :: '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ '[FSales, FStock, FTravel]
+    support =
+      universe
+        $ marketShares
+      :: [FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear]]
+    travel'' =
+      reify (rcast <$> support) travel'
+      :: '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ '[FSales, FStock, FTravel]
     energy =
       π consuming
-        $ travel'
+        $ travel''
         ⋈ fuelSplit
         ⋈ fuelEfficiency
-    energy' = byYear energy
+      :: '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel] ↝ '[FSales, FStock, FTravel, FEnergy]
     emission =
       π emitting
-      $ energy'
+      $ energy
       ⋈ emissionRate
+      :: '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] ↝ '[FEmission]
+    support' =
+      [
+        rec <+> rec'
+      |
+        rec  <- support
+      , rec' <- ω fuelEfficiency :: [FieldRec '[FFuel]]
+      ]
+    support'' =
+      [
+        rec <+> rec'
+      |
+        rec  <- support'
+      , rec' <- ω emissionRate :: [FieldRec '[FPollutant]]
+      ]
+    result1 = κ support'               total  energy
+    result2 = κ support'               total  energy
+    result3 = κ support'  ((rcast .) . total) energy
+    result4 = κ support'' totalEmission       emission
   in
     (
-      κ support              total  energy'
-    , κ support              total  energy'
-    , κ support ((rcast .) . total) energy'
-    , κ support totalEmission       emission
+      result1
+    , result2
+    , result3
+    , result4
     )
 {-
   let
