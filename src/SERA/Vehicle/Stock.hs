@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE OverloadedLists           #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeOperators             #-}
 
@@ -23,48 +24,31 @@
 
 module SERA.Vehicle.Stock (
 -- * Computations
-  universe
-, computeStock
+  computeStock
 , inferSales
 , inferMarketShares
 ) where
 
 
-import Control.Arrow ((&&&))
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
-import Data.List (nub)
+import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (rcast)
 import SERA.Types (FRegion, FYear, fYear)
 import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, SalesCube, StockCube, SurvivalCube)
 import SERA.Vehicle.Types (FAge, fAge, FAnnualTravel, fAnnualTravel, FEmission, fEmission, FEmissionRate, fEmissionRate, FEnergy, fEnergy, FFuel, FFuelEfficiency, fFuelEfficiency, FFuelSplit, fFuelSplit, FMarketShare, fMarketShare, FModelYear, fModelYear, FPollutant, FSales, fSales, FStock, fStock, FSurvival, fSurvival, FTravel, fTravel, FVehicle, FVocation)
 
+import qualified Data.Set as S (map)
 
-{-
-universe :: '[FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] ↝ v -> [FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant, FAge]]
+
+universe :: '[FRegion, FVocation, FVehicle, FModelYear] ↝ v -> Set (FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear])
 universe cube =
-  [
-    fYear =: year <+> rec <+> fAge =: year - fModelYear <: rec
-  |
-    let (year0, year1) = (minimum &&& maximum) (projectKnownKeys (fModelYear <:) cube :: [Int])
-  , rec <- projectKnownKeys id cube
-  , year <- [year0..year1]
-  ]
--}
-
-
-universe :: '[FRegion, FVocation, FVehicle, FModelYear] ↝ v -> [FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear]]
-universe cube =
-  nub
-    [
-      fYear =: year <+> rec
-    |
-      let (year0, year1) = (minimum &&& maximum) (projectKnownKeys (fModelYear <:) cube :: [Int])
-    , rec <- ω cube
-    , year <- [year0..year1]
-    ]
+  let
+    years = S.map ((fYear =:) . (fModelYear <:)) (ω cube :: Set (FieldRec '[FModelYear]))
+  in
+    years × ω cube
 
 
 byYear :: '[FRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v -> '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ v
@@ -178,9 +162,9 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
     support =
       universe
         $ marketShares
-      :: [FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear]]
+      :: Set (FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear])
     travel'' =
-      reify (rcast <$> support) travel'
+      reify support travel'
       :: '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ '[FSales, FStock, FTravel]
     energy =
       π consuming
@@ -193,20 +177,8 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
       $ energy
       ⋈ emissionRate
       :: '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] ↝ '[FEmission]
-    support' =
-      [
-        rec <+> rec'
-      |
-        rec  <- support
-      , rec' <- ω fuelEfficiency :: [FieldRec '[FFuel]]
-      ]
-    support'' =
-      [
-        rec <+> rec'
-      |
-        rec  <- support'
-      , rec' <- ω emissionRate :: [FieldRec '[FPollutant]]
-      ]
+    support' = support × (ω fuelEfficiency :: Set (FieldRec '[FFuel]))
+    support'' = support' × (ω emissionRate :: Set (FieldRec '[FPollutant]))
     result1 = κ support'               total  energy
     result2 = κ support'               total  energy
     result3 = κ support'  ((rcast .) . total) energy
