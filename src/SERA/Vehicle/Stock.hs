@@ -35,7 +35,6 @@ import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
-import Data.Vinyl.Lens (rcast)
 import SERA.Types (FRegion, FYear, fYear)
 import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, SalesCube, StockCube, SurvivalCube)
 import SERA.Vehicle.Types (FAge, fAge, FAnnualTravel, fAnnualTravel, FEmission, fEmission, FEmissionRate, fEmissionRate, FEnergy, fEnergy, FFuel, FFuelEfficiency, fFuelEfficiency, FFuelSplit, fFuelSplit, FMarketShare, fMarketShare, FModelYear, fModelYear, FPollutant, FSales, fSales, FStock, fStock, FSurvival, fSurvival, FTravel, fTravel, FVehicle, FVocation)
@@ -48,11 +47,11 @@ byYear =
   rekey
     $ Rekeyer{..}
     where
-      rekeyer   rec = rcast (rec <+> fYear =: fAge  <: rec + fModelYear <: rec)
-      unrekeyer rec = rcast (rec <+> fAge  =: fYear <: rec - fModelYear <: rec)
+      rekeyer   rec = τ (rec <+> fYear =: fAge  <: rec + fModelYear <: rec)
+      unrekeyer rec = τ (rec <+> fAge  =: fYear <: rec - fModelYear <: rec)
 
 
--- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'rcast $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
+-- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'τ $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
 
 
 traveling :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge] -> FieldRec '[FSales, FMarketShare, FSurvival, FAnnualTravel] -> FieldRec '[FSales, FStock, FTravel]
@@ -138,10 +137,10 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
       ⋈ emissionRate
   in
     (
-      κ support'               total  energy
-    , κ support'               total  energy
-    , κ support'  ((rcast .) . total) energy
-    , κ support'' totalEmission       emission
+      κ support'           total  energy
+    , κ support'           total  energy
+    , κ support'  ((τ .) . total) energy
+    , κ support'' totalEmission   emission
     )
 
 
@@ -179,7 +178,7 @@ inferSales _padding _survival =
               (\year' sales' stock' -> regionClassification <+> fYear =: year' <+> fSales =: sales' <+> fStock =: stock')
               years sales stock
       in
-        groupReduceFlattenByKey rpar rcast inferForRegion classifiedStock
+        groupReduceFlattenByKey rpar τ inferForRegion classifiedStock
   in
     groupReduceFlattenByKey rpar (fClassification <:) inferForClassification
 -}
@@ -199,16 +198,16 @@ inferMarketShares =
         sales = aggregate rpar (fSales <:) sum salesStocks
       in
         (
-          rcast $ regionYear <+> model <+> fSales =: sales
+          τ $ regionYear <+> model <+> fSales =: sales
         , [
-            rcast $ x <+> model <+> fMarketShare =: (fSales <: x / sales)
+            τ $ x <+> model <+> fMarketShare =: (fSales <: x / sales)
           |
             x <- salesStocks
           ]
         )
   in
     (map fst &&& concatMap snd)
-      . groupReduceByKey rpar rcast inferForRegionYear
+      . groupReduceByKey rpar τ inferForRegionYear
 -}
 
 
