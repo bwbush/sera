@@ -43,6 +43,7 @@ import SERA.Vehicle.Types (Age, FAge, fAge, FAnnualTravel, fAnnualTravel, FEmiss
 import qualified Data.Set as S (map)
 
 
+-- | Add calendar year to a key.
 byYear :: '[FRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v -> '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ v
 byYear =
   rekey
@@ -55,6 +56,7 @@ byYear =
 -- FIXME: Throughout this module, use lens arithmetic to avoid all of the getting and setting.  The basic pattern can be 'τ $ . . . lens arithmetic . . . $ mconcat [ . . . records providing field . . . ]'.
 
 
+-- | Compute sales, stock, and distance traveled.
 traveling :: FieldRec '[FRegion, FModelYear, FVocation, FVehicle, FAge] -> FieldRec '[FSales, FMarketShare, FSurvival, FAnnualTravel] -> FieldRec '[FSales, FStock, FTravel]
 traveling key rec =
   let
@@ -68,6 +70,7 @@ traveling key rec =
     <+> fTravel =: travel
 
 
+-- | Compute energy consumption.
 consuming :: FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel] -> FieldRec '[FSales, FStock, FTravel, FFuelSplit, FFuelEfficiency] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
 consuming _ rec =
   let
@@ -83,10 +86,12 @@ consuming _ rec =
     <+> fEnergy =: energy
 
 
+-- | Compute the emission of pollutants.
 emitting :: FieldRec '[FYear, FRegion, FVocation, FVehicle, FModelYear, FFuel, FPollutant] -> FieldRec '[FSales, FStock, FTravel, FEnergy, FEmissionRate] -> FieldRec '[FEmission]
 emitting _ rec = fEmission =: fEnergy <: rec * fEmissionRate <: rec
 
 
+-- | Total sales, stock, travel, and energy.
 total :: k -> [FieldRec '[FSales, FStock, FTravel, FEnergy]] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
 total _ xs =
       fSales  =: sum ((fSales  <:) <$> xs)
@@ -95,19 +100,21 @@ total _ xs =
   <+> fEnergy =: sum ((fEnergy <:) <$> xs)
 
 
+-- | Total emissions.
 totalEmission :: k -> [FieldRec '[FEmission]] -> FieldRec '[FEmission]
 totalEmission _ xs =
       fEmission =: sum ((fEmission <:) <$> xs)
 
 
-computeStock :: RegionalSalesCube
-             -> MarketShareCube
-             -> SurvivalCube
-             -> AnnualTravelCube
-             -> FuelSplitCube
-             -> FuelEfficiencyCube
-             -> EmissionRateCube
-             -> (SalesCube, StockCube, EnergyCube, EmissionCube)
+-- | Compute the vehicle stock.
+computeStock :: RegionalSalesCube                                 -- ^ Regional sales.
+             -> MarketShareCube                                   -- ^ Market share.
+             -> SurvivalCube                                      -- ^ Vehicle survival.
+             -> AnnualTravelCube                                  -- ^ Annual travel.
+             -> FuelSplitCube                                     -- ^ Fuel split.
+             -> FuelEfficiencyCube                                -- ^ Fuel efficiency.
+             -> EmissionRateCube                                  -- ^ Emission rate.
+             -> (SalesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Sales, stock, energy consumed, and pollutants emitted.
 computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate =
   let
     modelYears = ω regionalSales :: Set (FieldRec '[FModelYear])
@@ -145,33 +152,39 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
     )
 
 
+-- | Field type for stock by year.
 type FStockList = '("Stock", [(Year, Stock)])
 
 
+-- | Field label for stock by year.
 fStockList :: SField FStockList
 fStockList = SField
 
 
+-- | Field type for sales by model year.
 type FSalesList = '("Sales", [(ModelYear, Sales)])
 
 
+-- | Field label for sales by model year.
 fSalesList :: SField FSalesList
 fSalesList = SField
 
 
+-- | Field type for total sales.
 type FTotalSales = '("Total Sales", Sales)
 
 
+-- | Field label for total sales.
 fTotalSales :: SField FTotalSales
 fTotalSales = SField
 
 
 -- | Infer vehicle sales from vehicle stock.
-inferSales :: Int                 -- ^ Number of prior years to generate sales for the stock.
-           -> SurvivalCube        -- ^ The vehicle survival function.
-           -> RegionalStockCube -- ^ The vehicle stock records.
-           -> (RegionalSalesCube, MarketShareCube) -- ^ The vehicle sales and stock records.
-inferSales padding survival regionalStock =
+inferSales :: Int                                  -- ^ Number of prior years to generate sales for the stock.
+           -> SurvivalCube                         -- ^ Vehicle survival.
+           -> RegionalStockCube                    -- ^ Regional vehicle stock.
+           -> (RegionalSalesCube, MarketShareCube) -- ^ Regional vehicle sales and market share.
+inferSales padding survival regionalStock = --FIXME: Implement padding.
   let
     modelYears = ((fModelYear =:) . (fYear <:)) `S.map` (ω regionalStock :: Set (FieldRec '[FYear]))
     support = ω regionalStock :: Set (FieldRec '[FYear, FRegion, FVocation, FVehicle])
@@ -210,9 +223,11 @@ inferSales padding survival regionalStock =
     )
 
 
+-- | Survival function.
 type SurvivalFunction = Vocation -> Age -> Survival
 
 
+-- | Convert a survival cube to a survival function.
 asSurvivalFunction :: SurvivalCube -> SurvivalFunction
 asSurvivalFunction cube vocation age =
   fromMaybe 0
@@ -221,10 +236,10 @@ asSurvivalFunction cube vocation age =
 
 
 -- | Invert a survival function, using back substitution.
-inverseSurvivalFunction :: SurvivalFunction -- ^ The survival function.
-                        -> Vocation         -- ^ The vehicles being classified.
-                        -> [(Year, Stock)]          -- ^ The vehicle stock to be inverted.
-                        -> [(ModelYear, Sales)]          -- ^ The vehicle sales.
+inverseSurvivalFunction :: SurvivalFunction     -- ^ The survival function.
+                        -> Vocation             -- ^ The vehicles being classified.
+                        -> [(Year, Stock)]      -- ^ The vehicle stock to be inverted.
+                        -> [(ModelYear, Sales)] -- ^ The vehicle sales.
 inverseSurvivalFunction survival vocation stocks =
   let
     (year0, year1) = (minimum &&& maximum) $ fst <$> stocks
@@ -232,8 +247,9 @@ inverseSurvivalFunction survival vocation stocks =
     stocks' = map (\y -> fromMaybe (read "NaN") (y `lookup` stocks)) years
     dot = (sum .) . zipWith (*)
     s0 : ss = map (survival vocation) [0..]
-    invert sales []               = sales
+    invert sales []                = sales
     invert sales (stock : stockss) = invert ((stock - ss `dot` sales) / s0 : sales) stockss
+    invert _     _                 = undefined
   in
     zip years
       . reverse

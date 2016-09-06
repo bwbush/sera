@@ -45,7 +45,10 @@ import SERA.Vehicle.Stock (computeStock, inferSales)
 import VISION.Survival (survivalMHD)
 
 
-data SurvivalData = VISION_LDV | VISION_HDV
+-- | Vehicle survival data.
+data SurvivalData =
+    VISION_LDV -- ^ LDV survival function from the VISION model.
+  | VISION_HDV -- ^ HDV survival function from the VISION model.
   deriving (Bounded, Enum, Eq, Generic, Ord, Read, Show)
 
 instance FromJSON SurvivalData
@@ -56,21 +59,22 @@ instance Default SurvivalData where
   def = VISION_LDV
 
 
+-- | Configuration for vehicle stock modeling.
 data ConfigStock =
   ConfigStock
   {
-    regionalSalesSource  :: DataSource Void
-  , marketShareSource    :: DataSource Void
-  , survivalSource       :: Maybe (DataSource SurvivalData)
-  , annualTravelSource   :: DataSource Void
-  , fuelSplitSource      :: DataSource Void
-  , fuelEfficiencySource :: DataSource Void
-  , emissionRateSource   :: DataSource Void
-  , salesSource          :: DataSource Void
-  , stockSource          :: DataSource Void
-  , energySource         :: DataSource Void
-  , emissionSource       :: DataSource Void
-  , priorYears           :: Maybe Int
+    regionalSalesSource  :: DataSource Void                  -- ^ Regional sales.
+  , marketShareSource    :: DataSource Void                  -- ^ Market shares.
+  , survivalSource       :: Maybe (DataSource SurvivalData)  -- ^ Vehicle survival.
+  , annualTravelSource   :: DataSource Void                  -- ^ Annual travel.
+  , fuelSplitSource      :: DataSource Void                  -- ^ Fuel splits.
+  , fuelEfficiencySource :: DataSource Void                  -- ^ Fuel efficiency.
+  , emissionRateSource   :: DataSource Void                  -- ^ Emission rates.
+  , salesSource          :: DataSource Void                  -- ^ Vehicle sales.
+  , stockSource          :: DataSource Void                  -- ^ Vehicle stock.
+  , energySource         :: DataSource Void                  -- ^ Energy consumed.
+  , emissionSource       :: DataSource Void                  -- ^ Pollutants emitted.
+  , priorYears           :: Maybe Int                        -- ^ Number of prior years to consider when inverting vehicle stock.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -79,7 +83,10 @@ instance FromJSON ConfigStock
 instance ToJSON ConfigStock
 
 
-calculateStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
+-- | Compute vehicle stock.
+calculateStock :: (IsString e, MonadError e m, MonadIO m)
+               => ConfigStock -- ^ Configuration data.
+               -> m ()        -- ^ Action to compute vehicle stock.
 calculateStock ConfigStock{..} =
   do
     inform $ "Reading regional sales from " ++ show regionalSalesSource ++ " . . ."
@@ -110,7 +117,10 @@ calculateStock ConfigStock{..} =
       void . writeFieldRecSource source $ toKnownRecords emission
 
 
-invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
+-- | Invert a vehicle stock computation.
+invertStock :: (IsString e, MonadError e m, MonadIO m)
+            => ConfigStock -- ^ Configuration data.
+            -> m ()        -- ^ Action to invert a vehicle stock computation.
 invertStock ConfigStock{..} =
   do
     inform $ "Reading regional stocks from " ++ show stockSource ++ " . . ."

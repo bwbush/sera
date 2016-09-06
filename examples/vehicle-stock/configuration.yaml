@@ -41,5 +41,3 @@ energySource:
 emissionSource:
   tag: FileData
   filePath: emission.tsv
-
-priorYears: 30

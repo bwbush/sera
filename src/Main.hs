@@ -1,3 +1,18 @@
+-----------------------------------------------------------------------------
+--
+-- Module      :  Main
+-- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- License     :  All Rights Reserved
+--
+-- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
+-- Stability   :  Stable
+-- Portability :  Portable
+--
+-- | Command-line tool for SERA.
+--
+-----------------------------------------------------------------------------
+
+
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE RecordWildCards    #-}
 
@@ -5,6 +20,7 @@
 
 
 module Main (
+-- * Entry point
   main
 ) where
 
@@ -23,6 +39,7 @@ import System.Environment (getArgs, withArgs)
 import System.FilePath (takeDirectory)
 
 
+-- | Command-line parameters.
 data SERA =
     VehicleStock
     {
@@ -35,6 +52,7 @@ data SERA =
     deriving (Data, Show, Typeable)
 
 
+-- | Command-line help.
 sera :: SERA
 sera =
   modes
@@ -47,6 +65,7 @@ sera =
       &= help "This tool provides a command-line interface to SERA functions."
 
 
+-- | Mode for computing vehicle stock.
 vehicleStock :: SERA
 vehicleStock =
   VehicleStock
@@ -60,6 +79,7 @@ vehicleStock =
     &= details []
 
 
+-- | Mode for inverting a vehicle stock computation.
 invertVehicleStock :: SERA
 invertVehicleStock =
   InvertVehicleStock
@@ -67,38 +87,10 @@ invertVehicleStock =
   }
     &= name "invert-stock"
     &= help "Invert a table of vehicle stock, computing sales from stock."
-    &= details
-       [
-         "The format of the YAML_CONFIGURATION file is as follows:"
-       , ""
-       , "    Field                             Description                                                     "
-       , "    --------------------------------  ----------------------------------------------------------------"
-       , "    stockFile     : STOCK_FILE        # name of the input vehicle stock file"
-       , "    salesStockFile: SALES_STOCK_FILE  # name of the output vehicle sales file"
-       , "    survival      : FILE filename     # name of survival function (default = VISION)"
-       , "    priorYears    : INTEGER           # number of prior years for which to compute sales (default = 0)"
-       , ""
-       , "The STOCK_FILE must be in tab-separate-value format with the following columns:"
-       , ""
-       , "    Name            Type     Description                  "
-       , "    --------------  -------  -----------------------------"
-       , "    Region          text     geographic region            "
-       , "    Classification  text     vehicle class and/or vocation"
-       , "    Year            integer  calendar year                "
-       , "    Stock [veh]     real     total number of vehicles     "
-       , ""
-       , "The SALES_STOCK_FILE will be in tab-separate-value format with the following columns:"
-       , ""
-       , "    Name            Type     Description                  "
-       , "    --------------  -------  -----------------------------"
-       , "    Region          text     geographic region            "
-       , "    Classification  text     vehicle class and/or vocation"
-       , "    Year            integer  calendar year                "
-       , "    Sales [veh]     real     number of vehicles sold      "
-       , "    Stock [veh]     real     total number of vehicles     "
-       ]
+    &= details []
 
 
+-- | Main action.
 main :: IO ()
 main =
   do
@@ -116,12 +108,15 @@ main =
         Left  e  -> putStrLn e
 
 
+-- | Decode a YAML file.
 decodeYaml :: (FromJSON a, IsString e, MonadError e m, MonadIO m) => FilePath -> m a
 decodeYaml =
   (either (throwError . fromString . displayException) return =<<)
     . liftIO
     . decodeFileEither
 
+
+-- | Dispatch a computation.
 
 dispatch :: (IsString e, MonadError e m, MonadIO m) => SERA -> m ()
 

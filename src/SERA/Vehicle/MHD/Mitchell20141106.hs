@@ -44,6 +44,7 @@ annualTravel :: '[FVocation] ↝ '[FAnnualTravel]
 annualTravel = fromRecords $ rcast <$> table
 
 
+-- | Raw data.
 table :: [FieldRec '[FVocation, FAge, FAnnualTravel]]
 Right table =
   readFieldRecs
