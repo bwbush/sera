@@ -1,5 +1,5 @@
 name: sera
-version: 1.0.8.8
+version: 1.0.8.9
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -28,6 +28,10 @@ data-files:
           vehicle-stock/energy.tsv
           vehicle-stock/emission.tsv
           vehicle-stock/verification.xlsx
+          invert-vehicle-stock/configuration.yaml
+          invert-vehicle-stock/market-share.tsv
+          invert-vehicle-stock/regional-sales.tsv
+          invert-vehicle-stock/stock.tsv
 
 source-repository head
   type: git

@@ -1,0 +1,45 @@
+regionalSalesSource:
+  tag: FileData
+  filePath: regional-sales.tsv
+
+marketShareSource:
+  tag: FileData
+  filePath: market-share.tsv
+
+survivalSource:
+  tag: BuiltinData
+  builtin: VISION_HDV
+
+annualTravelSource:
+  tag: NoData
+  contents: []
+
+fuelSplitSource:
+  tag: NoData
+  contents: []
+
+fuelEfficiencySource:
+  tag: NoData
+  contents: []
+
+emissionRateSource:
+  tag: NoData
+  contents: []
+
+salesSource:
+  tag: NoData
+  contents: []
+
+stockSource:
+  tag: FileData
+  filePath: stock.tsv
+
+energySource:
+  tag: NoData
+  contents: []
+
+emissionSource:
+  tag: NoData
+  contents: []
+
+priorYears: 30
