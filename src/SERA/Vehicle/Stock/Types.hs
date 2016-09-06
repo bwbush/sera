@@ -27,6 +27,7 @@ module SERA.Vehicle.Stock.Types (
 , FuelSplitCube
 , FuelEfficiencyCube
 , EmissionRateCube
+, RegionalStockCube
 -- * Outputs
 , SalesCube
 , StockCube
@@ -81,3 +82,7 @@ type EnergyCube         = '[FYear, FRegion, FVocation, FVehicle                 
 
 -- | Polutants emitted as a function of calendar year, region, vocation, vehicle type and fuel.
 type EmissionCube       = '[FYear, FRegion, FVocation, FVehicle                  , FFuel, FPollutant] ↝ '[                                 FEmission]
+
+
+-- | Stock as a function of year, region, vocation, and vehicle type.
+type RegionalStockCube  = '[FYear, FRegion, FVocation, FVehicle                                     ] ↝ '[FStock                                    ]

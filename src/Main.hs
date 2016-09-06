@@ -135,4 +135,6 @@ dispatch VehicleStock{..} =
 dispatch InvertVehicleStock{..} =
   do
     configuration' <- decodeYaml configuration
+    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
+    liftIO . setCurrentDirectory $ takeDirectory configuration
     invertStock configuration'

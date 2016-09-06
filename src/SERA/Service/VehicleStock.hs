@@ -35,12 +35,13 @@ import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldRec (readFieldRecSource, writeFieldRecSource)
 import Data.Daft.Vinyl.FieldCube (fromRecords, toKnownRecords)
 import Data.Default (Default(..))
+import Data.Maybe (fromMaybe)
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
-import SERA.Vehicle.Stock (computeStock)
+import SERA.Vehicle.Stock (computeStock, inferSales)
 import VISION.Survival (survivalMHD)
 
 
@@ -97,34 +98,29 @@ calculateStock ConfigStock{..} =
       (sales, stock, energy, emission) = computeStock regionalSales marketShare survivalMHD annualTravel fuelSplit fuelEfficiency emissionRate
     withSource salesSource $ \source -> do
       inform $ "Writing vehicle sales to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toKnownRecords sales
+      void . writeFieldRecSource source $ toKnownRecords sales
     withSource stockSource $ \source -> do
       inform $ "Writing vehicle stocks to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toKnownRecords stock
+      void . writeFieldRecSource source $ toKnownRecords stock
     withSource energySource $ \source -> do
       inform $ "Writing energy consumption to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toKnownRecords energy
+      void . writeFieldRecSource source $ toKnownRecords energy
     withSource emissionSource $ \source -> do
       inform $ "Writing emission of pollutants to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source $ toKnownRecords emission
+      void . writeFieldRecSource source $ toKnownRecords emission
 
 
 invertStock :: (IsString e, MonadError e m, MonadIO m) => ConfigStock -> m ()
 invertStock ConfigStock{..} =
-    undefined {-
-    inform $ "Reading vehicle stocks from " ++ show stockSource ++ " . . ."
-    stock <- readFieldRecSource stockSource
+  do
+    inform $ "Reading regional stocks from " ++ show stockSource ++ " . . ."
+    stock <- fromRecords <$> readFieldRecSource stockSource
     inform "Computing vehicle sales . . ."
     let
-      sales = inferSales (fromMaybe 0 priorYears) undefined stock -- survivalFunction stock
-      (regionalSales, shares) = inferMarketShares sales
-    withSource salesStockSource $ \source -> do
-      inform $ "Writing vehicle sales and stocks to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source sales
+      (regionalSales, marketShare) = inferSales (fromMaybe 0 priorYears) survivalMHD stock
     withSource regionalSalesSource $ \source -> do
       inform $ "Writing regional sales to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source regionalSales
-    withSource marketSharesSource $ \source -> do
+      void . writeFieldRecSource source $ toKnownRecords regionalSales
+    withSource marketShareSource $ \source -> do
       inform $ "Writing market shares to " ++ show source ++ " . . ."
-      void $ writeFieldRecSource source shares
--}
+      void . writeFieldRecSource source $ toKnownRecords marketShare

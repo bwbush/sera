@@ -26,18 +26,19 @@ module SERA.Vehicle.Stock (
 -- * Computations
   computeStock
 , inferSales
-, inferMarketShares
 ) where
 
 
+import Control.Arrow ((&&&))
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
-import Data.Vinyl.Derived (FieldRec)
-import SERA.Types (FRegion, FYear, fYear)
-import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, SalesCube, StockCube, SurvivalCube)
-import SERA.Vehicle.Types (FAge, fAge, FAnnualTravel, fAnnualTravel, FEmission, fEmission, FEmissionRate, fEmissionRate, FEnergy, fEnergy, FFuel, FFuelEfficiency, fFuelEfficiency, FFuelSplit, fFuelSplit, FMarketShare, fMarketShare, FModelYear, fModelYear, FPollutant, FSales, fSales, FStock, fStock, FSurvival, fSurvival, FTravel, fTravel, FVehicle, FVocation)
+import Data.Vinyl.Derived (FieldRec, SField(..))
+import SERA.Types (FRegion, Year, FYear, fYear)
+import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, RegionalStockCube, SalesCube, StockCube, SurvivalCube)
+import SERA.Vehicle.Types (Age, FAge, fAge, FAnnualTravel, fAnnualTravel, FEmission, fEmission, FEmissionRate, fEmissionRate, FEnergy, fEnergy, FFuel, FFuelEfficiency, fFuelEfficiency, FFuelSplit, fFuelSplit, FMarketShare, fMarketShare, ModelYear, FModelYear, fModelYear, FPollutant, Sales, FSales, fSales, Stock, FStock, fStock, Survival, FSurvival, fSurvival, FTravel, fTravel, FVehicle, Vocation, FVocation, fVocation)
 
 import qualified Data.Set as S (map)
 
@@ -144,86 +145,96 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
     )
 
 
-inferMarketShares = undefined
+type FStockList = '("Stock", [(Year, Stock)])
 
 
-inferSales = undefined
+fStockList :: SField FStockList
+fStockList = SField
 
 
-{-
+type FSalesList = '("Sales", [(ModelYear, Sales)])
+
+
+fSalesList :: SField FSalesList
+fSalesList = SField
+
+
+type FTotalSales = '("Total Sales", Sales)
+
+
+fTotalSales :: SField FTotalSales
+fTotalSales = SField
+
+
 -- | Infer vehicle sales from vehicle stock.
-inferSales :: Int                -- ^ Number of prior years to generate sales for the stock.
-           -> SurvivalFunction   -- ^ The vehicle survival function.
-           -> [StockRecord]      -- ^ The vehicle stock records.
-           -> [SalesStockRecord] -- ^ The vehicle sales and stock records.
-inferSales _padding _survival =
-  undefined
-{-
+inferSales :: Int                 -- ^ Number of prior years to generate sales for the stock.
+           -> SurvivalCube        -- ^ The vehicle survival function.
+           -> RegionalStockCube -- ^ The vehicle stock records.
+           -> (RegionalSalesCube, MarketShareCube) -- ^ The vehicle sales and stock records.
+inferSales padding survival regionalStock =
   let
-    inferForClassification :: Classification -> [StockRecord] -> [SalesStockRecord]
-    inferForClassification classification classifiedStock =
-      let
-        (year0, year1) = aggregate rpar (fYear <:) (minimum &&& maximum) classifiedStock
-        years = [year0 - padding .. year1]
-        inverseSurvival = inverseSurvivalFunction survival classification years
-        inferForRegion :: FieldRec '[FRegion, FClassification] -> [StockRecord] -> [SalesStockRecord]
-        inferForRegion regionClassification regionalStock =
-          let
-            stock =
-              replicateHead padding
-                $ groupExtract rpar (fYear <:) (fStock <:) regionalStock -- FIXME: Check for missing values.
-            sales = inverseSurvival stock
-          in
-            zipWith3
-              (\year' sales' stock' -> regionClassification <+> fYear =: year' <+> fSales =: sales' <+> fStock =: stock')
-              years sales stock
-      in
-        groupReduceFlattenByKey rpar τ inferForRegion classifiedStock
+    modelYears = ((fModelYear =:) . (fYear <:)) `S.map` (ω regionalStock :: Set (FieldRec '[FYear]))
+    support = ω regionalStock :: Set (FieldRec '[FYear, FRegion, FVocation, FVehicle])
+    support' = support × modelYears
+    support'' = τ `S.map` support' :: Set (FieldRec '[FRegion, FModelYear])
+    regionalStock' =
+      π prependYear regionalStock
+        where
+          prependYear :: FieldRec '[FYear, FRegion, FVocation, FVehicle] -> FieldRec '[FStock] -> FieldRec '[FYear, FStock]
+          prependYear = (<+>) . (fYear =:) . (fYear <:)
+    salesLists =
+      κ support invertSales regionalStock'
+        where
+          invertSales :: FieldRec '[FRegion, FVocation, FVehicle] -> [FieldRec '[FYear, FStock]] -> FieldRec '[FSalesList]
+          invertSales key recs =
+            fSalesList =:
+              inverseSurvivalFunction
+                (asSurvivalFunction survival)
+                (fVocation <: key)
+                (((fYear <:) &&& (fStock <:)) <$> recs)
+    sales =
+      δ support' disaggregateSales salesLists
+        where
+          disaggregateSales :: FieldRec '[FRegion, FVocation, FVehicle, FModelYear] -> FieldRec '[FSalesList] -> FieldRec '[FSales]
+          disaggregateSales = (((fSales =:) . fromMaybe 0) . ) . (. (fSalesList <:)) . lookup . (fModelYear <:)
+    regionalSales =
+      κ support' sumSales sales
+        where
+          sumSales = const $ (fSales =:) . sum . map (fSales <:)
+    fractionalizeSales _ rec = fMarketShare =: fSales <: rec / fTotalSales <: rec
+    regionalSales' = π (const ((fTotalSales =:) . (fSales <:))) regionalSales
   in
-    groupReduceFlattenByKey rpar (fClassification <:) inferForClassification
--}
+    (
+      regionalSales
+    , π fractionalizeSales $ sales ⋈ regionalSales'
+    )
 
 
--- | Infer regional total sales and market shares from vehicle sales.
-inferMarketShares :: [SalesStockRecord]                          -- ^ The vehicle sales and stock records.
-                  -> ([NewVehiclesRecord], [MarketSharesRecord]) -- ^ The regional total sales and market shares.
-inferMarketShares =
-  undefined
-{-
-  let
-    inferForRegionYear :: FieldRec '[FRegion, FYear] -> [SalesStockRecord] -> (NewVehiclesRecord, [MarketSharesRecord])
-    inferForRegionYear regionYear salesStocks =
-      let
-        model = fModelYear =: (fYear <: regionYear)
-        sales = aggregate rpar (fSales <:) sum salesStocks
-      in
-        (
-          τ $ regionYear <+> model <+> fSales =: sales
-        , [
-            τ $ x <+> model <+> fMarketShare =: (fSales <: x / sales)
-          |
-            x <- salesStocks
-          ]
-        )
-  in
-    (map fst &&& concatMap snd)
-      . groupReduceByKey rpar τ inferForRegionYear
--}
+type SurvivalFunction = Vocation -> Age -> Survival
+
+
+asSurvivalFunction :: SurvivalCube -> SurvivalFunction
+asSurvivalFunction cube vocation age =
+  fromMaybe 0
+    $   (fSurvival <:)
+    <$> evaluate cube (fVocation =: vocation <+> fAge =: age)
 
 
 -- | Invert a survival function, using back substitution.
 inverseSurvivalFunction :: SurvivalFunction -- ^ The survival function.
-                        -> Classification   -- ^ The vehicles being classified.
-                        -> [Year]           -- ^ The years for which to invert.
-                        -> [Stock]          -- ^ The vehicle stock to be inverted.
-                        -> [Sales]          -- ^ The vehicle sales.
-inverseSurvivalFunction survival classification _ =
+                        -> Vocation         -- ^ The vehicles being classified.
+                        -> [(Year, Stock)]          -- ^ The vehicle stock to be inverted.
+                        -> [(ModelYear, Sales)]          -- ^ The vehicle sales.
+inverseSurvivalFunction survival vocation stocks =
   let
+    (year0, year1) = (minimum &&& maximum) $ fst <$> stocks
+    years = [year0..year1]
+    stocks' = map (\y -> fromMaybe (read "NaN") (y `lookup` stocks)) years
     dot = (sum .) . zipWith (*)
-    s0 : ss = map (survival classification) [0..]
+    s0 : ss = map (survival vocation) [0..]
     invert sales []               = sales
-    invert sales (stock : stocks) = invert ((stock - ss `dot` sales) / s0 : sales) stocks
+    invert sales (stock : stockss) = invert ((stock - ss `dot` sales) / s0 : sales) stockss
   in
-    reverse . invert []
-
--}
+    zip years
+      . reverse
+      $ invert [] stocks'
