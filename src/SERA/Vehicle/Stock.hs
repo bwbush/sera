@@ -125,7 +125,7 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
     support' = support × fuels
     support'' = support' × pollutants
     travel =
-      ρ support
+      ρ support -- Reifying here requires a little more memory, but saves some time.
       $ byYear
       (
         π traveling
