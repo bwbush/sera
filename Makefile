@@ -22,3 +22,7 @@ profile-example-2:
 profile-vision:
 	cabal --jobs=8 run --ghc-options="-prof -auto-all -caf-all" -- +RTS -p -RTS stock vision/configuration.yaml
 	mv sera.prof vision/
+
+profile-vision-parallel:
+	cabal --jobs=8 run --ghc-options="-prof -auto-all -caf-all" -- +RTS -N4 -p -RTS stock vision/configuration.yaml
+	mv sera.prof vision/

@@ -202,9 +202,7 @@ inferSales {- FIXME: Implement padding. -} padding survival regionalStock =
     marketShare =
       π fractionalizeSales
       $ sales
-      ⋈ (
-          π relabelSales regionalSales
-        )
+      ⋈ ( π relabelSales regionalSales)
       where
         fractionalizeSales _ rec = fMarketShare =: fSales <: rec / fTotalSales <: rec
         relabelSales = const $ (fTotalSales =:) . (fSales <:)
