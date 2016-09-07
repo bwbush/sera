@@ -368,7 +368,7 @@ type Energy = Double
 
 
 -- | Field type for energy consumed.
-type FEnergy = '(" Energy [mi]", Energy)
+type FEnergy = '(" Energy [gge]", Energy)
 
 
 -- | Field label for energy consumed.
