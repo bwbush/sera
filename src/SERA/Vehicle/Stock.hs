@@ -19,7 +19,6 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeOperators             #-}
 
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 
 module SERA.Vehicle.Stock (
@@ -120,12 +119,8 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
     modelYears = ω regionalSales :: Set (FieldRec '[FModelYear])
     years = ((fYear =:) . (fModelYear <:)) `S.map` modelYears
     fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
-    pollutants = ω emissionRate :: Set (FieldRec '[FPollutant])
-    support = years × ω marketShares
-    support' = support × fuels
-    support'' = support' × pollutants
     travel =
-      ρ support -- Reifying here requires a little more memory, but saves some time.
+      ρ (years × ω marketShares) -- Reifying here requires a little more memory, but saves some time.
       $ byYear
       (
         π traveling
@@ -134,7 +129,7 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
         ⋈ survival
         ⋈ annualTravel
       )
-    energy =
+    energy = -- Reifying here would save memory, but require time.
       π consuming
         $ travel
         ⋈ fuelSplit
@@ -145,20 +140,11 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
       ⋈ emissionRate
   in
     (
-      κ support'           total  energy
-    , κ support'           total  energy
-    , κ support'  ((τ .) . total) energy
-    , κ support'' totalEmission   emission
+      κ               fuels  total           energy
+    , κ (modelYears × fuels) total           energy
+    , κ  modelYears          ((τ .) . total) energy
+    , κ  modelYears          totalEmission   emission
     )
-
-
--- | Field type for stock by year.
-type FStockList = '("Stock", [(Year, Stock)])
-
-
--- | Field label for stock by year.
-fStockList :: SField FStockList
-fStockList = SField
 
 
 -- | Field type for sales by model year.
@@ -184,19 +170,18 @@ inferSales :: Int                                  -- ^ Number of prior years to
            -> SurvivalCube                         -- ^ Vehicle survival.
            -> RegionalStockCube                    -- ^ Regional vehicle stock.
            -> (RegionalSalesCube, MarketShareCube) -- ^ Regional vehicle sales and market share.
-inferSales padding survival regionalStock = --FIXME: Implement padding.
+inferSales {- FIXME: Implement padding. -} padding survival regionalStock =
   let
+    years = ω regionalStock :: Set (FieldRec '[FYear])
     modelYears = ((fModelYear =:) . (fYear <:)) `S.map` (ω regionalStock :: Set (FieldRec '[FYear]))
-    support = ω regionalStock :: Set (FieldRec '[FYear, FRegion, FVocation, FVehicle])
-    support' = support × modelYears
-    support'' = τ `S.map` support' :: Set (FieldRec '[FRegion, FModelYear])
+    vocationsVehicles = ω regionalStock :: Set (FieldRec '[FVocation, FVehicle])
     regionalStock' =
       π prependYear regionalStock
         where
           prependYear :: FieldRec '[FYear, FRegion, FVocation, FVehicle] -> FieldRec '[FStock] -> FieldRec '[FYear, FStock]
           prependYear = (<+>) . (fYear =:) . (fYear <:)
     salesLists =
-      κ support invertSales regionalStock'
+      κ years invertSales regionalStock'
         where
           invertSales :: FieldRec '[FRegion, FVocation, FVehicle] -> [FieldRec '[FYear, FStock]] -> FieldRec '[FSalesList]
           invertSales key recs =
@@ -206,20 +191,27 @@ inferSales padding survival regionalStock = --FIXME: Implement padding.
                 (fVocation <: key)
                 (((fYear <:) &&& (fStock <:)) <$> recs)
     sales =
-      δ support' disaggregateSales salesLists
+      δ modelYears disaggregateSales salesLists
         where
           disaggregateSales :: FieldRec '[FRegion, FVocation, FVehicle, FModelYear] -> FieldRec '[FSalesList] -> FieldRec '[FSales]
           disaggregateSales = (((fSales =:) . fromMaybe 0) . ) . (. (fSalesList <:)) . lookup . (fModelYear <:)
     regionalSales =
-      κ support' sumSales sales
+      κ vocationsVehicles sumSales sales
         where
           sumSales = const $ (fSales =:) . sum . map (fSales <:)
-    fractionalizeSales _ rec = fMarketShare =: fSales <: rec / fTotalSales <: rec
-    regionalSales' = π (const ((fTotalSales =:) . (fSales <:))) regionalSales
+    marketShare =
+      π fractionalizeSales
+      $ sales
+      ⋈ (
+          π relabelSales regionalSales
+        )
+      where
+        fractionalizeSales _ rec = fMarketShare =: fSales <: rec / fTotalSales <: rec
+        relabelSales = const $ (fTotalSales =:) . (fSales <:)
   in
     (
       regionalSales
-    , π fractionalizeSales $ sales ⋈ regionalSales'
+    , marketShare
     )
 
 

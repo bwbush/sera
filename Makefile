@@ -11,8 +11,13 @@ record-versions:
 	cabal freeze
 	mv cabal.config sera.config
 
-profile-example:
+profile-examples: profile-example-1 profile-example-2
+
+profile-example-1:
 	cabal --jobs=8 run --ghc-options="-prof -auto-all -caf-all" -- +RTS -p -RTS stock examples/vehicle-stock/configuration.yaml
+
+profile-example-2:
+	cabal --jobs=8 run --ghc-options="-prof -auto-all -caf-all" -- +RTS -p -RTS invert-stock examples/invert-vehicle-stock/configuration.yaml
 
 profile-vision:
 	cabal --jobs=8 run --ghc-options="-prof -auto-all -caf-all" -- +RTS -p -RTS stock vision/configuration.yaml
