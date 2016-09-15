@@ -28,7 +28,7 @@ module SERA.Vehicle.MHD.EMFAC2010 (
 
 
 import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
-import Data.Daft.Vinyl.FieldRec (readFieldRecs)
+import Data.Daft.Vinyl.FieldRec.IO (readFieldRecs)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (rcast)
 import SERA.Vehicle.Types (FAge, FAnnualTravel, Vehicle(..), FVehicle)
