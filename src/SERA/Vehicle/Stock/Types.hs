@@ -40,7 +40,7 @@ import SERA.Types (FRegion, FYear)
 import SERA.Vehicle.Types (FAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FSales, FStock, FSurvival, FTravel, FVehicle, FVocation)
 
 
--- | Vehicle sales as a function of region, and model year,.
+-- | Vehicle sales as a function of region, and model year.
 type RegionalSalesCube  = '[       FRegion                           , FModelYear                   ] ↝ '[FSales         ]
 
 

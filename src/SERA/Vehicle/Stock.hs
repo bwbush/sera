@@ -131,9 +131,9 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
       )
     energy = -- Reifying here would save memory, but require time.
       π consuming
-        $ travel
-        ⋈ fuelSplit
-        ⋈ fuelEfficiency
+      $ travel
+      ⋈ fuelSplit
+      ⋈ fuelEfficiency
     emission =
       π emitting
       $ energy
