@@ -32,8 +32,7 @@ import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Source (DataSource(..), withSource)
-import Data.Daft.Vinyl.FieldRec.IO (readFieldRecSource, writeFieldRecSource)
-import Data.Daft.Vinyl.FieldCube (fromRecords, toKnownRecords)
+import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.Default (Default(..))
 import Data.Maybe (fromMaybe)
 import Data.String (IsString)
@@ -90,31 +89,31 @@ calculateStock :: (IsString e, MonadError e m, MonadIO m)
 calculateStock ConfigStock{..} =
   do
     inform $ "Reading regional sales from " ++ show regionalSalesSource ++ " . . ."
-    regionalSales <- fromRecords <$> readFieldRecSource regionalSalesSource
+    regionalSales <- readFieldCubeSource regionalSalesSource
     inform $ "Reading market share from " ++ show marketShareSource ++ " . . . "
-    marketShare <- fromRecords <$> readFieldRecSource marketShareSource
+    marketShare <- readFieldCubeSource marketShareSource
     inform $ "Reading annual travel from " ++ show annualTravelSource ++ " . . . "
-    annualTravel <- fromRecords <$> readFieldRecSource annualTravelSource
+    annualTravel <- readFieldCubeSource annualTravelSource
     inform $ "Reading fuel split from " ++ show fuelSplitSource ++ " . . . "
-    fuelSplit <- fromRecords <$> readFieldRecSource fuelSplitSource
+    fuelSplit <- readFieldCubeSource fuelSplitSource
     inform $ "Reading fuel efficiency from " ++ show fuelEfficiencySource ++ " . . . "
-    fuelEfficiency <- fromRecords <$> readFieldRecSource fuelEfficiencySource
+    fuelEfficiency <- readFieldCubeSource fuelEfficiencySource
     inform $ "Reading emission rate from " ++ show emissionRateSource ++ " . . . "
-    emissionRate <- fromRecords <$> readFieldRecSource emissionRateSource
+    emissionRate <- readFieldCubeSource emissionRateSource
     let
       (sales, stock, energy, emission) = computeStock regionalSales marketShare survivalMHD annualTravel fuelSplit fuelEfficiency emissionRate
     withSource salesSource $ \source -> do
       inform $ "Writing vehicle sales to " ++ show source ++ " . . ."
-      void . writeFieldRecSource source $ toKnownRecords sales
+      void $ writeFieldCubeSource source sales
     withSource stockSource $ \source -> do
       inform $ "Writing vehicle stocks to " ++ show source ++ " . . ."
-      void . writeFieldRecSource source $ toKnownRecords stock
+      void $ writeFieldCubeSource source stock
     withSource energySource $ \source -> do
       inform $ "Writing energy consumption to " ++ show source ++ " . . ."
-      void . writeFieldRecSource source $ toKnownRecords energy
+      void $ writeFieldCubeSource source energy
     withSource emissionSource $ \source -> do
       inform $ "Writing emission of pollutants to " ++ show source ++ " . . ."
-      void . writeFieldRecSource source $ toKnownRecords emission
+      void $ writeFieldCubeSource source emission
 
 
 -- | Invert a vehicle stock computation.
@@ -124,13 +123,13 @@ invertStock :: (IsString e, MonadError e m, MonadIO m)
 invertStock ConfigStock{..} =
   do
     inform $ "Reading regional stocks from " ++ show stockSource ++ " . . ."
-    stock <- fromRecords <$> readFieldRecSource stockSource
+    stock <- readFieldCubeSource stockSource
     inform "Computing vehicle sales . . ."
     let
       (regionalSales, marketShare) = inferSales (fromMaybe 0 priorYears) survivalMHD stock
     withSource regionalSalesSource $ \source -> do
       inform $ "Writing regional sales to " ++ show source ++ " . . ."
-      void . writeFieldRecSource source $ toKnownRecords regionalSales
+      void $ writeFieldCubeSource source regionalSales
     withSource marketShareSource $ \source -> do
       inform $ "Writing market shares to " ++ show source ++ " . . ."
-      void . writeFieldRecSource source $ toKnownRecords marketShare
+      void $ writeFieldCubeSource source marketShare
