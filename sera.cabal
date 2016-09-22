@@ -1,5 +1,5 @@
 name: sera
-version: 1.0.9.2
+version: 1.0.10.0
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -40,6 +40,7 @@ source-repository head
 library
   hs-source-dirs  : src
   exposed-modules : SERA
+                    SERA.Scenario.Introduction
                     SERA.Scenario.Logistic
                     SERA.Service
                     SERA.Service.Logistic

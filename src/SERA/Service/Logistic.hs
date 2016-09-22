@@ -29,8 +29,7 @@ import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Source (DataSource(..), withSource)
-import Data.Daft.Vinyl.FieldRec.IO (readFieldRecSource, writeFieldRecSource)
-import Data.Daft.Vinyl.FieldCube (fromRecords, toKnownRecords)
+import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
@@ -54,16 +53,16 @@ instance FromJSON ConfigLogistic
 instance ToJSON ConfigLogistic
 
 
--- | Compute vehicle stock.
+-- | Compute logistic market shares.
 calculateLogistic :: (IsString e, MonadError e m, MonadIO m)
-               => ConfigLogistic -- ^ Configuration data.
-               -> m ()           -- ^ Action to compute the logistic scenario.
+                  => ConfigLogistic -- ^ Configuration data.
+                  -> m ()           -- ^ Action to compute the logistic scenario.
 calculateLogistic ConfigLogistic{..} =
   do
     inform $ "Reading total vehicle sales from " ++ show totalSalesSource ++ " . . ."
-    sales <- fromRecords <$> readFieldRecSource totalSalesSource
+    sales <- readFieldCubeSource totalSalesSource
     let
       sales' = applyLogistic parameters sales
     withSource vehicleSalesSource $ \source -> do
       inform $ "Writing vehicle-specific sales to " ++ show source ++ " . . ."
-      void . writeFieldRecSource source $ toKnownRecords sales'
+      void $ writeFieldCubeSource source sales'

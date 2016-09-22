@@ -32,6 +32,7 @@ import Data.Data (Data)
 import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
 import SERA (inform, stringVersion)
+import SERA.Service.Introduction (calculateIntroductions)
 import SERA.Service.Logistic (calculateLogistic)
 import SERA.Service.VehicleStock (calculateStock, invertStock)
 import System.Console.CmdArgs (Typeable, (&=), argPos, cmdArgs, def, details, help, modes, name, program, summary, typ)
@@ -54,6 +55,10 @@ data SERA =
     {
       configuration :: FilePath
     } 
+  | Introduction
+    {
+      configuration :: FilePath
+    } 
     deriving (Data, Show, Typeable)
 
 
@@ -65,6 +70,7 @@ sera =
       vehicleStock
     , invertVehicleStock
     , logistic
+    , introduction
     ]
       &= summary ("SERA command-Line, Version " ++ stringVersion ++ ", National Renewable Energy Laboratory")
       &= program "sera"
@@ -96,7 +102,7 @@ invertVehicleStock =
     &= details []
 
 
--- | Mode for inverting a vehicle stock computation.
+-- | Mode for applying logistic curves.
 logistic :: SERA
 logistic =
   Logistic
@@ -104,6 +110,17 @@ logistic =
   }
     &= name "logistic-scenario"
     &= help "Apply a logistic curve to vehicle sales."
+    &= details []
+
+
+-- | Mode for estimating introduction years.
+introduction :: SERA
+introduction =
+  Introduction
+  {
+  }
+    &= name "introduction-year"
+    &= help "Estimate introduction years for new vehicles."
     &= details []
 
 
@@ -157,3 +174,10 @@ dispatch Logistic{..} =
     inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
     liftIO . setCurrentDirectory $ takeDirectory configuration
     calculateLogistic configuration'
+
+dispatch Introduction{..} =
+  do
+    configuration' <- decodeYaml configuration
+    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
+    liftIO . setCurrentDirectory $ takeDirectory configuration
+    calculateIntroductions configuration'
