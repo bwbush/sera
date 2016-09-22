@@ -1,5 +1,5 @@
 name: sera
-version: 1.0.9.1
+version: 1.0.9.2
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -53,6 +53,7 @@ library
                     SERA.Vehicle.Stock.Types
                     SERA.Vehicle.Types
                     VISION.Survival
+                    VISION.Travel
   build-depends   : base >= 4 && < 5
                   , aeson
                   , containers

@@ -41,13 +41,15 @@ import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
 import SERA.Vehicle.Stock (computeStock, inferSales)
-import VISION.Survival (survivalMHD)
+import SERA.Vehicle.Stock.Types (AnnualTravelCube, SurvivalCube)
+import VISION.Survival (survivalLDV, survivalHDV)
+import VISION.Travel (travelLDV)
 
 
 -- | Vehicle survival data.
 data SurvivalData =
-    VISION_LDV -- ^ LDV survival function from the VISION model.
-  | VISION_HDV -- ^ HDV survival function from the VISION model.
+    VISION_LDV_Survival -- ^ LDV survival function from the VISION model.
+  | VISION_HDV_Survival -- ^ HDV survival function from the VISION model.
   deriving (Bounded, Enum, Eq, Generic, Ord, Read, Show)
 
 instance FromJSON SurvivalData
@@ -55,7 +57,44 @@ instance FromJSON SurvivalData
 instance ToJSON SurvivalData
 
 instance Default SurvivalData where
-  def = VISION_LDV
+  def = VISION_LDV_Survival
+
+
+survivalCube :: (IsString e, MonadError e m, MonadIO m) => Maybe (DataSource SurvivalData) -> m SurvivalCube
+survivalCube  Nothing                                 = return survivalLDV
+survivalCube (Just (BuiltinData VISION_LDV_Survival)) = do
+                                                          inform "Using built-in VISION LDV survival data."
+                                                          return survivalLDV
+survivalCube (Just (BuiltinData VISION_HDV_Survival)) = do
+                                                          inform "Using built-in VISION MDV/HDV survival data."
+                                                          return survivalHDV
+survivalCube (Just source                           ) = do
+                                                          inform $ "Reading survival from " ++ show source ++ " . . . "
+                                                          readFieldCubeSource source
+
+
+-- | Vehicle travel data.
+data TravelData =
+    VISION_LDV_Travel -- ^ LDV travel function from the VISION model.
+  | VISION_HDV_Travel -- ^ HDV travel function from the VISION model.
+  deriving (Bounded, Enum, Eq, Generic, Ord, Read, Show)
+
+instance FromJSON TravelData
+
+instance ToJSON TravelData
+
+instance Default TravelData where
+  def = VISION_LDV_Travel
+
+
+travelCube :: (IsString e, MonadError e m, MonadIO m) => Maybe (DataSource TravelData) -> m AnnualTravelCube
+travelCube  Nothing                               = return travelLDV
+travelCube (Just (BuiltinData VISION_LDV_Travel)) = do
+                                                      inform "Using built-in VISION LDV annual travel data."
+                                                      return travelLDV
+travelCube (Just source                         ) = do
+                                                        inform $ "Reading annual travel from " ++ show source ++ " . . . "
+                                                        readFieldCubeSource source
 
 
 -- | Configuration for vehicle stock modeling.
@@ -65,7 +104,7 @@ data ConfigStock =
     regionalSalesSource  :: DataSource Void                  -- ^ Regional sales.
   , marketShareSource    :: DataSource Void                  -- ^ Market shares.
   , survivalSource       :: Maybe (DataSource SurvivalData)  -- ^ Vehicle survival.
-  , annualTravelSource   :: DataSource Void                  -- ^ Annual travel.
+  , annualTravelSource   :: Maybe (DataSource TravelData  )  -- ^ Annual travel.
   , fuelSplitSource      :: DataSource Void                  -- ^ Fuel splits.
   , fuelEfficiencySource :: DataSource Void                  -- ^ Fuel efficiency.
   , emissionRateSource   :: DataSource Void                  -- ^ Emission rates.
@@ -91,9 +130,9 @@ calculateStock ConfigStock{..} =
     inform $ "Reading regional sales from " ++ show regionalSalesSource ++ " . . ."
     regionalSales <- readFieldCubeSource regionalSalesSource
     inform $ "Reading market share from " ++ show marketShareSource ++ " . . . "
+    survival <- survivalCube survivalSource
     marketShare <- readFieldCubeSource marketShareSource
-    inform $ "Reading annual travel from " ++ show annualTravelSource ++ " . . . "
-    annualTravel <- readFieldCubeSource annualTravelSource
+    annualTravel <- travelCube annualTravelSource
     inform $ "Reading fuel split from " ++ show fuelSplitSource ++ " . . . "
     fuelSplit <- readFieldCubeSource fuelSplitSource
     inform $ "Reading fuel efficiency from " ++ show fuelEfficiencySource ++ " . . . "
@@ -101,7 +140,7 @@ calculateStock ConfigStock{..} =
     inform $ "Reading emission rate from " ++ show emissionRateSource ++ " . . . "
     emissionRate <- readFieldCubeSource emissionRateSource
     let
-      (sales, stock, energy, emission) = computeStock regionalSales marketShare survivalMHD annualTravel fuelSplit fuelEfficiency emissionRate
+      (sales, stock, energy, emission) = computeStock regionalSales marketShare survival annualTravel fuelSplit fuelEfficiency emissionRate
     withSource salesSource $ \source -> do
       inform $ "Writing vehicle sales to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source sales
@@ -124,9 +163,10 @@ invertStock ConfigStock{..} =
   do
     inform $ "Reading regional stocks from " ++ show stockSource ++ " . . ."
     stock <- readFieldCubeSource stockSource
+    survival <- survivalCube survivalSource
     inform "Computing vehicle sales . . ."
     let
-      (regionalSales, marketShare) = inferSales (fromMaybe 0 priorYears) survivalMHD stock
+      (regionalSales, marketShare) = inferSales (fromMaybe 0 priorYears) survival stock
     withSource regionalSalesSource $ \source -> do
       inform $ "Writing regional sales to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source regionalSales
