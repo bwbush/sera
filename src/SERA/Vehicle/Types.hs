@@ -48,6 +48,9 @@ module SERA.Vehicle.Types (
 , MarketShare
 , FMarketShare
 , fMarketShare
+, RelativeMarketShare
+, FRelativeMarketShare
+, fRelativeMarketShare
 -- * Vehicle survival
 , Survival
 , FSurvival
@@ -257,6 +260,19 @@ type FMarketShare = '("Market Share [veh/veh]", MarketShare)
 -- | Field label for market share.
 fMarketShare :: SField FMarketShare
 fMarketShare = SField
+
+
+-- | Data type for relative market share.
+type RelativeMarketShare = Double
+
+
+-- | Field type for relative market share.
+type FRelativeMarketShare = '("Relative Market Share", RelativeMarketShare)
+
+
+-- | Field label for relative market share.
+fRelativeMarketShare :: SField FRelativeMarketShare
+fRelativeMarketShare = SField
 
 
 -- | Data type for vehicle survival.
