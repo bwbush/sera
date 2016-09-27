@@ -145,7 +145,7 @@ calculateStock ConfigStock{..} =
       inform $ "Writing vehicle sales to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source sales
     withSource stockSource $ \source -> do
-      inform $ "Writing vehicle stocks to " ++ show source ++ " . . ."
+      inform $ "Writing vehicle stock to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source stock
     withSource energySource $ \source -> do
       inform $ "Writing energy consumption to " ++ show source ++ " . . ."

@@ -27,7 +27,7 @@ import Data.Daft.Vinyl.FieldCube (type (↝), (!), (⋈), κ, π, σ, ω)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
-import SERA.Scenario.Introduction (FIntroductionYear, fIntroductionYear, RegionalIntroductionsCube)
+import SERA.Scenario.Introduction (FIntroductionYear, fIntroductionYear, RegionalIntroductionsCube, FStationCount)
 import SERA.Types (FRegion)
 import SERA.Vehicle.Stock.Types (RegionalSalesCube)
 import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales)
@@ -61,7 +61,7 @@ regionalize introductions totals =
     years = ω totals :: Set (FieldRec '[FModelYear])
     firstYear = fModelYear <: S.findMin years
     lastYear = fModelYear <: S.findMax years
-    allocating :: FieldRec '[FRegion, FModelYear] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FSales] -> FieldRec '[FRelativeMarketShare]
+    allocating :: FieldRec '[FRegion, FModelYear] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FSales] -> FieldRec '[FRelativeMarketShare]
     allocating key rec =
       let
         modelYear = fModelYear <: key

@@ -1,5 +1,5 @@
 name: sera
-version: 1.0.10.3
+version: 1.0.10.4
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -40,10 +40,12 @@ source-repository head
 library
   hs-source-dirs  : src
   exposed-modules : SERA
+                    SERA.Refueling.Hydrogen.Sizing
                     SERA.Scenario.Introduction
                     SERA.Scenario.Logistic
                     SERA.Scenario.Regionalization
                     SERA.Service
+                    SERA.Service.HydrogenSizing
                     SERA.Service.Logistic
                     SERA.Service.Regionalization
                     SERA.Service.VehicleStock
@@ -64,6 +66,7 @@ library
                   , data-default
                   , mtl
                   , raft
+                  , statistics
                   , text
                   , tostring
                   , vinyl
@@ -87,6 +90,7 @@ executable sera
                   , filepath
                   , mtl
                   , raft
+                  , statistics
                   , text
                   , tostring
                   , vinyl
