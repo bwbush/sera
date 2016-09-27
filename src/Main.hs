@@ -39,6 +39,7 @@ import SERA.Service.VehicleStock (calculateStock, invertStock)
 import System.Console.CmdArgs (Typeable, (&=), argPos, cmdArgs, def, details, help, modes, name, program, summary, typ)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getArgs, withArgs)
+import System.Exit (die)
 import System.FilePath (takeDirectory)
 
 
@@ -156,7 +157,7 @@ main =
       r <- runExceptT $ dispatch command
       case r :: Either String () of
         Right () -> return ()
-        Left  e  -> putStrLn e
+        Left  e  -> die e
 
 
 -- | Decode a YAML file.
