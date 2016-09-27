@@ -1,5 +1,5 @@
 name: sera
-version: 1.0.10.1
+version: 1.0.10.2
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -42,8 +42,10 @@ library
   exposed-modules : SERA
                     SERA.Scenario.Introduction
                     SERA.Scenario.Logistic
+                    SERA.Scenario.Regionalization
                     SERA.Service
                     SERA.Service.Logistic
+                    SERA.Service.Regionalization
                     SERA.Service.VehicleStock
                     SERA.Types
                     SERA.Vehicle.MHD.Census2002

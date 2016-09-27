@@ -22,20 +22,26 @@
 module SERA.Scenario.Introduction (
 -- * Types
   IntroductionParameters(..)
+, UrbanCharacteristicsCube
+, RegionalIntroductionsCube
+, IntroductionYear
+, FIntroductionYear
+, fIntroductionYear
 -- * Functions
 , introductionYears
 ) where
 
 
 import Data.Aeson.Types (FromJSON, ToJSON)
+import Data.Daft.DataCube (Rekeyer(..), rekey)
 import Data.Daft.Vinyl.FieldCube (type (↝), π, σ)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Default.Util (nan)
 import Data.Maybe (fromMaybe)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import GHC.Generics (Generic)
-import SERA.Types (Region, FRegion, fRegion, FUrbanCode, FUrbanName)
-import SERA.Vehicle.Types (FAnnualTravel, fAnnualTravel, FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FStock, fStock)
+import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName)
+import SERA.Vehicle.Types (FAnnualTravel, fAnnualTravel, FRelativeMarketShare, fRelativeMarketShare, FStock, fStock)
 
 
 data IntroductionParameters =
@@ -70,12 +76,20 @@ fPercentileEAM :: SField FPercentileEAM
 fPercentileEAM = SField
 
 
-type IntroductionInputsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FBaseYear, FNearbyYear, FPercentileEAM, FStock, FAnnualTravel]
+type IntroductionYear = Int
 
-type IntroductionOutputsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FRelativeMarketShare, FModelYear]
+type FIntroductionYear = '("Introduction Year", IntroductionYear)
+
+fIntroductionYear :: SField FIntroductionYear
+fIntroductionYear = SField
 
 
-introducing :: IntroductionParameters -> FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FBaseYear, FNearbyYear, FPercentileEAM, FStock, FAnnualTravel] -> FieldRec '[FRelativeMarketShare, FModelYear]
+type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FBaseYear, FNearbyYear, FPercentileEAM, FStock, FAnnualTravel]
+
+type RegionalIntroductionsCube = '[FRegion] ↝ '[FRelativeMarketShare, FIntroductionYear]
+
+
+introducing :: IntroductionParameters -> FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FBaseYear, FNearbyYear, FPercentileEAM, FStock, FAnnualTravel] -> FieldRec '[FRelativeMarketShare, FIntroductionYear]
 introducing IntroductionParameters{..} key rec =
   let
     base = fBaseYear <: rec
@@ -87,11 +101,24 @@ introducing IntroductionParameters{..} key rec =
     shareIntensification = fromMaybe nan $ region `lookup` shareIntensifications
   in
         fRelativeMarketShare =: shareIntensification * stock
-    <+> fModelYear           =: round (base * (1 - clustering) + nearby * clustering + delay * eam)
+    <+> fIntroductionYear    =: round (base * (1 - clustering) + nearby * clustering + delay * eam)
 
 
 hasAnnualTravel :: FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FBaseYear, FNearbyYear, FPercentileEAM, FStock, FAnnualTravel] -> Bool
 hasAnnualTravel = const $ not . isNaN . (fAnnualTravel <:)
 
-introductionYears :: IntroductionParameters -> IntroductionInputsCube -> IntroductionOutputsCube
-introductionYears = (. σ hasAnnualTravel) . π . introducing
+
+urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName] ↝ v -> '[FRegion] ↝ v
+urbanToRegion =
+  rekey
+    $ Rekeyer
+        (\key -> fRegion =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key)))
+        undefined
+
+
+introductionYears :: IntroductionParameters -> UrbanCharacteristicsCube -> RegionalIntroductionsCube
+introductionYears =
+  (. σ hasAnnualTravel)
+    . (urbanToRegion .)
+    . π
+    . introducing

@@ -34,6 +34,7 @@ import Data.Yaml (decodeFileEither)
 import SERA (inform, stringVersion)
 import SERA.Service.Introduction (calculateIntroductions)
 import SERA.Service.Logistic (calculateLogistic)
+import SERA.Service.Regionalization (calculateRegionalization)
 import SERA.Service.VehicleStock (calculateStock, invertStock)
 import System.Console.CmdArgs (Typeable, (&=), argPos, cmdArgs, def, details, help, modes, name, program, summary, typ)
 import System.Directory (setCurrentDirectory)
@@ -59,6 +60,10 @@ data SERA =
     {
       configuration :: FilePath
     } 
+  | Regionalization
+    {
+      configuration :: FilePath
+    } 
     deriving (Data, Show, Typeable)
 
 
@@ -71,6 +76,7 @@ sera =
     , invertVehicleStock
     , logistic
     , introduction
+    , regionalization
     ]
       &= summary ("SERA command-Line, Version " ++ stringVersion ++ ", National Renewable Energy Laboratory")
       &= program "sera"
@@ -121,6 +127,17 @@ introduction =
   }
     &= name "introduction-year"
     &= help "Estimate introduction years for new vehicles."
+    &= details []
+
+
+-- | Mode for regionalizing demand.
+regionalization :: SERA
+regionalization =
+  Regionalization
+  {
+  }
+    &= name "regionalization"
+    &= help "Regionalize demand for new vehicles."
     &= details []
 
 
@@ -181,3 +198,10 @@ dispatch Introduction{..} =
     inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
     liftIO . setCurrentDirectory $ takeDirectory configuration
     calculateIntroductions configuration'
+
+dispatch Regionalization{..} =
+  do
+    configuration' <- decodeYaml configuration
+    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
+    liftIO . setCurrentDirectory $ takeDirectory configuration
+    calculateRegionalization configuration'

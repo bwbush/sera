@@ -42,8 +42,8 @@ import SERA.Scenario.Introduction (IntroductionParameters, introductionYears)
 data ConfigIntroduction =
   ConfigIntroduction
   {
-    inputSource  :: DataSource Void        -- ^ Inputs.
-  , outputSource :: DataSource Void        -- ^ Outputs.
+    urbanCharacteristicsSource  :: DataSource Void        -- ^ Inputs.
+  , regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
   , parameters   :: IntroductionParameters -- ^ Logit parameters.
   }
     deriving (Eq, Generic, Ord, Read, Show)
@@ -59,10 +59,10 @@ calculateIntroductions :: (IsString e, MonadError e m, MonadIO m)
                        -> m ()               -- ^ Action to compute the introduction years.
 calculateIntroductions ConfigIntroduction{..} =
   do
-    inform $ "Reading inputs from " ++ show inputSource ++ " . . ."
-    inputs <- readFieldCubeSource inputSource
+    inform $ "Reading urban characteristics from " ++ show urbanCharacteristicsSource ++ " . . ."
+    urbanCharacteristics <- readFieldCubeSource urbanCharacteristicsSource
     let
-      outputs = introductionYears parameters inputs
-    withSource outputSource $ \source -> do
-      inform $ "Writing outputs to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source outputs
+      regionalIntroductions = introductionYears parameters urbanCharacteristics
+    withSource regionalIntroductionsSource $ \source -> do
+      inform $ "Writing regional introduction years to " ++ show source ++ " . . ."
+      void $ writeFieldCubeSource source regionalIntroductions
