@@ -39,6 +39,7 @@ import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Default (Default(..))
 import Data.List (inits)
+import Data.Monoid ((<>))
 import Data.Set (Set)
 import Data.String (IsString)
 import Data.String.ToString (toString)
@@ -204,7 +205,15 @@ totalStock _ rec =
     <+> fEnergy =: energy
     <+> fDemand =: demand
 
-  
+
+extendedStock :: FieldRec '[FRegion] -> [FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]] -> FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
+extendedStock _ recs =
+      fNewStations =: 0
+  <+> fTotalStations =: maximum (map (fTotalStations <:) recs)
+  <+> fNewCapacity =: 0
+  <+> fTotalCapacity =: maximum (map (fTotalCapacity <:) recs)
+
+
 sizeStations :: StationCapacityParameters -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
 sizeStations parameters characteristics stock =
   let
@@ -236,8 +245,9 @@ sizeStations parameters characteristics stock =
         , ((y, s, c), n, t) <- zip3 ysc runningCounts runningCapacities
         ]
     universe = ω details :: Set (FieldRec '[FStationID])
+    summary = stock' ⋈ (κ universe sumCapacities details)
   in
     (
       π (const τ) details
-    , stock' ⋈ (κ universe sumCapacities details)
+    , summary <> (stock' ⋈ (κ years extendedStock summary))
     )

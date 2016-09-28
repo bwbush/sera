@@ -371,7 +371,7 @@ type Travel = Double
 
 
 -- | Field type for distance traveled.
-type FTravel = '(" Travel [mi]", Travel)
+type FTravel = '("Travel [mi]", Travel)
 
 
 -- | Field label for distance traveled.
@@ -384,7 +384,7 @@ type Energy = Double
 
 
 -- | Field type for energy consumed.
-type FEnergy = '(" Energy [gge]", Energy)
+type FEnergy = '("Energy [gge]", Energy)
 
 
 -- | Field label for energy consumed.
@@ -397,7 +397,7 @@ type Emission = Double
 
 
 -- | Field type for pollutants emitted.
-type FEmission = '(" Emission [g]", Emission)
+type FEmission = '("Emission [g]", Emission)
 
 
 -- | Field label for pollutants emitted.
