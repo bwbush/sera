@@ -13,11 +13,12 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE DeriveGeneric   #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections   #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Service.HydrogenSizing (
@@ -28,16 +29,19 @@ module SERA.Service.HydrogenSizing (
 ) where
 
 
+import Control.Arrow (first)
 import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
-import Data.Aeson.Types (FromJSON, ToJSON)
+import Data.Aeson.Types (FromJSON(..), ToJSON(..), withText)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
+import Data.Default (Default(..))
 import Data.List (inits)
 import Data.Set (Set)
 import Data.String (IsString)
+import Data.String.ToString (toString)
 import Data.Tuple.Util (trd3)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Void (Void)
@@ -49,6 +53,33 @@ import SERA.Service ()
 import SERA.Types -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
 import SERA.Vehicle.Stock.Types (StockCube)
 import SERA.Vehicle.Types
+
+
+newtype StationID = StationID {stationID :: String}
+  deriving (Default, Eq, Generic, Ord)
+
+instance Read StationID where
+  readsPrec
+    | quotedStringTypes = (fmap (first StationID) .) . readsPrec
+    | otherwise         = const $ return . (, []) . StationID
+
+instance Show StationID where
+  show
+    | quotedStringTypes = show . stationID
+    | otherwise         = stationID
+
+instance FromJSON StationID where
+  parseJSON = withText "SERA.Types.StationID" $ return . StationID . toString
+
+instance ToJSON StationID where
+  toJSON = toJSON . stationID
+
+
+type FStationID = '("Station ID", StationID)
+
+
+fStationID :: SField FStationID
+fStationID = SField
 
 
 -- | Configuration for vehicle stock modeling.
@@ -87,13 +118,6 @@ calculateHydrogenSizing ConfigHydrogenSizing{..} =
       inform $ "Writing station details to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source details
 
-
-type StationID = Int
-
-type FStationID = '("Station ID", StationID)
-
-fStationID :: SField FStationID
-fStationID = SField
 
 
 type Capacity = Double
@@ -146,14 +170,15 @@ dailyDemands key rec = τ $ key <+> rec
 
 
 sizing :: StationCapacityParameters -> FieldRec '[FRegion] -> [FieldRec '[FStationCount, FYear, FDemand]] ->  FieldRec '[FStationList]
-sizing parameters _ recs =
+sizing parameters key recs =
   let
+    region = fRegion <: key
     initialStations = fromIntegral $ fStationCount <: head recs
     years = reverse $ map (fYear <:) recs
     demands = reverse $ map (fDemand <:) recs
     capacities = stationCapacitiesByQuantile parameters initialStations demands
   in
-    fStationList =: concat (zipWith (\y cs -> zipWith (y, , ) [1..] cs) years capacities)
+    fStationList =: concat (zipWith (\y cs -> zipWith (y, , ) (map (\s -> StationID $ "Generic Station " ++ show region ++ ":" ++ show y ++ ":" ++ show s) [(1::Int)..]) cs) years capacities)
 
 
 sumCapacities :: FieldRec '[FRegion, FYear] -> [FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]] -> FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
@@ -205,7 +230,7 @@ sizeStations parameters characteristics stock =
           :: FieldRec '[FRegion, FYear, FStationID, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
         |
           rec <- capacities
-        , let ysc = fStationList <: rec :: [(Int, Int, Double)]
+        , let ysc = fStationList <: rec
         , let runningCounts = map sum . tail . inits . map (const 1) $ ysc
         , let runningCapacities = map sum . tail . inits . map trd3 $ ysc
         , ((y, s, c), n, t) <- zip3 ysc runningCounts runningCapacities
