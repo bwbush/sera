@@ -60,13 +60,12 @@ regionalize introductions totals =
     totals' = κ universe totalSales totals :: '[FModelYear] ↝ '[FSales]
     years = ω totals :: Set (FieldRec '[FModelYear])
     firstYear = fModelYear <: S.findMin years
-    lastYear = fModelYear <: S.findMax years
     allocating :: FieldRec '[FRegion, FModelYear] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FSales] -> FieldRec '[FRelativeMarketShare]
     allocating key rec =
       let
         modelYear = fModelYear <: key
         introductionYear = fIntroductionYear <: rec
-        year' = minimum [firstYear + modelYear - introductionYear, lastYear]
+        year' = firstYear + modelYear - maximum [introductionYear, firstYear]
         share = fRelativeMarketShare <: rec
       in
         fRelativeMarketShare =:
