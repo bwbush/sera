@@ -30,21 +30,25 @@ import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
+import Data.Monoid ((<>))
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
-import SERA.Scenario.Logistic (LogisticParameters, applyLogistic)
+import SERA.Scenario.Logistic (applyLogistic)
+import SERA.Vehicle.Types (ModelYear)
 
 
 -- | Configuration for vehicle stock modeling.
 data ConfigLogistic =
   ConfigLogistic
   {
-    totalSalesSource   :: DataSource Void    -- ^ Total vehicle sales.
-  , vehicleSalesSource :: DataSource Void    -- ^ Vehicle-specific sales.
-  , parameters         :: LogisticParameters -- ^ Logit parameters.
+    logisticSource    :: DataSource Void
+  , firstModelYear    :: ModelYear
+  , lastModelYear     :: ModelYear
+  , overrideShareSource :: DataSource Void
+  , marketShareSource :: DataSource Void
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -59,10 +63,12 @@ calculateLogistic :: (IsString e, MonadError e m, MonadIO m)
                   -> m ()           -- ^ Action to compute the logistic scenario.
 calculateLogistic ConfigLogistic{..} =
   do
-    inform $ "Reading total vehicle sales from " ++ show totalSalesSource ++ " . . ."
-    sales <- readFieldCubeSource totalSalesSource
+    inform $ "Reading logistic parameters from " ++ show logisticSource ++ " . . ."
+    logistics <- readFieldCubeSource logisticSource
+    inform $ "Reading market share overrides from " ++ show overrideShareSource ++ " . . ."
+    overrides <- readFieldCubeSource overrideShareSource
     let
-      sales' = applyLogistic parameters sales
-    withSource vehicleSalesSource $ \source -> do
+      marketShares = overrides <> applyLogistic (firstModelYear, lastModelYear) logistics
+    withSource marketShareSource $ \source -> do
       inform $ "Writing vehicle-specific sales to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source sales'
+      void $ writeFieldCubeSource source marketShares

@@ -20,7 +20,8 @@
 
 module SERA.Vehicle.Stock.Types (
 -- * Inputs
-  RegionalSalesCube
+  ModelYearCube
+, RegionalSalesCube
 , MarketShareCube
 , SurvivalCube
 , AnnualTravelCube
@@ -38,6 +39,9 @@ module SERA.Vehicle.Stock.Types (
 import Data.Daft.Vinyl.FieldCube (type (↝))
 import SERA.Types (FRegion, FYear)
 import SERA.Vehicle.Types (FAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FSales, FStock, FSurvival, FTravel, FVehicle, FVocation)
+
+
+type ModelYearCube = '[FModelYear] ↝ '[]
 
 
 -- | Vehicle sales as a function of region, and model year.

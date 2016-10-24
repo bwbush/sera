@@ -21,23 +21,22 @@
 
 module SERA.Scenario.Logistic (
 -- * Types
-  SalesCube
-, ShareCube
+  LogisticCube
 , LogisticParameters(..)
 -- * Functions
 , applyLogistic
-, marketShare
 , share
 ) where
 
 
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
-import Data.Daft.DataCube (fromFunction)
-import Data.Daft.Vinyl.FieldCube (type (↝), (⋈), π, ρ, ω)
+import Data.Daft.Vinyl.FieldCube (type (↝), (⋈), π, fromRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
-import Data.Vinyl.Derived (FieldRec)
-import SERA.Vehicle.Types (FMarketShare, fMarketShare, FModelYear, fModelYear, FSales, fSales)
+import Data.Vinyl.Derived (FieldRec, SField(..))
+import SERA.Types (FRegion)
+import SERA.Vehicle.Types (MarketShare, FMarketShare, fMarketShare, ModelYear, FModelYear, fModelYear, FVehicle, FVocation)
+import SERA.Vehicle.Stock.Types (MarketShareCube, ModelYearCube)
 
 
 data LogisticParameters =
@@ -56,32 +55,66 @@ instance FromJSON LogisticParameters
 instance ToJSON LogisticParameters where
 
 
+type FReferenceYear = '("Reference Year", ModelYear)
+
+
+fReferenceYear :: SField FReferenceYear
+fReferenceYear = SField
+
+
+type FReferenceShare = '("Reference Share [veh/veh]", MarketShare)
+
+
+fReferenceShare :: SField FReferenceShare
+fReferenceShare = SField
+
+
+type FMaximumShare = '("Maximum Share [veh/veh]", MarketShare)
+
+
+fMaximumShare :: SField FMaximumShare
+fMaximumShare = SField
+
+
+type FGrowthRate = '("Growth Rate [/yr]", Double)
+
+
+fGrowthRate :: SField FGrowthRate
+fGrowthRate = SField
+
+
+type FTimeScaling = '("Time Scaling [yr/yr]", Double)
+
+
+fTimeScaling :: SField FTimeScaling
+fTimeScaling = SField
+
+
+type LogisticCube = '[FRegion, FVocation, FVehicle] ↝ '[FReferenceYear, FReferenceShare, FMaximumShare, FGrowthRate, FTimeScaling]
+
+
 share :: LogisticParameters -> Int -> Double
 share LogisticParameters{..} year = m / (1 + (m / s0 - 1) * exp (- r * m * (beta * fromIntegral year - t0)))
 
 
--- | Market share as a function of model year.
-type ShareCube = '[FModelYear] ↝ '[FMarketShare]
+sharing :: FieldRec '[FRegion, FVocation, FVehicle, FModelYear] -> FieldRec '[FReferenceYear, FReferenceShare, FMaximumShare, FGrowthRate, FTimeScaling] -> FieldRec '[FMarketShare]
+sharing key rec =
+  let
+    t    =                fModelYear      <: key
+    t0   = fromIntegral $ fReferenceYear  <: rec
+    s0   =                fReferenceShare <: rec
+    m    =                fMaximumShare   <: rec
+    r    = (/ m)        $ fGrowthRate     <: rec
+    beta =                fTimeScaling    <: rec
+  in
+    fMarketShare =: share LogisticParameters{..} t
 
 
--- | Logistic function for market shares.
-marketShare :: LogisticParameters -> ShareCube
-marketShare parameters =
-  fromFunction $ \rec ->
-    return
-      $ fMarketShare =: share parameters (fModelYear <: rec)
-
-
--- | Vehicle sales as a function of model year.
-type SalesCube  = '[FModelYear] ↝ '[FSales]
-
-
-sharing :: FieldRec '[FModelYear] -> FieldRec '[FMarketShare, FSales] -> FieldRec '[FSales]
-sharing _ rec = fSales =: fMarketShare <: rec * fSales <: rec
-
-
-applyLogistic :: LogisticParameters -> SalesCube -> SalesCube
-applyLogistic parameters sales =
-  ρ (ω sales)
-    $ π sharing
-    (marketShare parameters ⋈ sales)
+applyLogistic :: (ModelYear, ModelYear) -> LogisticCube -> MarketShareCube
+applyLogistic (firstYear, lastYear) logistics =
+  let
+    modelYears :: ModelYearCube
+    modelYears = fromRecords [fModelYear =: y | y <- [firstYear..lastYear]]
+  in
+    π sharing
+      $ logistics ⋈ modelYears
