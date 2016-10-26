@@ -224,7 +224,7 @@ sizeStations parameters characteristics stock =
       toKnownRecords
         $ κ years (sizing parameters)
         $ π dailyDemands
-        $ stock' ⋈ characteristics
+        $ undefined -- stock' ⋈ characteristics
       :: [FieldRec '[FRegion, FStationList]]
     details =
       fromRecords

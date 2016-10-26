@@ -73,7 +73,7 @@ regionalize introductions totals =
             * if modelYear >= introductionYear
                 then (fSales <:) $ totals' ! (fModelYear =: year')
                 else 0
-    allocations = π allocating $ introductions ⋈ totals'
+    allocations = π allocating $ undefined -- introductions ⋈ totals'
     universe' = ω allocations :: Set (FieldRec '[FRegion])
     totals'' = κ universe' totalRelativeMarketShare allocations :: '[FModelYear] ↝ '[FTotalRelativeMarketShare]
     scaling :: FieldRec '[FRegion, FModelYear] -> FieldRec '[FRelativeMarketShare, FTotalRelativeMarketShare, FSales] -> FieldRec '[FSales]

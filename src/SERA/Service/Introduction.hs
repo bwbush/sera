@@ -35,16 +35,17 @@ import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
-import SERA.Scenario.Introduction (IntroductionParameters, introductionYears)
+import SERA.Scenario.Introduction (StationParameters, introductionYears)
 
 
 -- | Configuration for vehicle stock modeling.
 data ConfigIntroduction =
   ConfigIntroduction
   {
-    urbanCharacteristicsSource  :: DataSource Void        -- ^ Inputs.
+    regionalIntroductionParametersSource :: DataSource Void
+  , urbanCharacteristicsSource  :: DataSource Void        -- ^ Inputs.
   , regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
-  , parameters   :: IntroductionParameters -- ^ Logit parameters.
+  , stationParameters   :: StationParameters -- ^ Logit parameters.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -59,10 +60,12 @@ calculateIntroductions :: (IsString e, MonadError e m, MonadIO m)
                        -> m ()               -- ^ Action to compute the introduction years.
 calculateIntroductions ConfigIntroduction{..} =
   do
+    inform $ "Reading regional introduction parameters from " ++ show regionalIntroductionParametersSource ++ " . . ."
+    regionalParameters <- readFieldCubeSource regionalIntroductionParametersSource
     inform $ "Reading urban characteristics from " ++ show urbanCharacteristicsSource ++ " . . ."
     urbanCharacteristics <- readFieldCubeSource urbanCharacteristicsSource
     let
-      regionalIntroductions = introductionYears parameters urbanCharacteristics
+      regionalIntroductions = introductionYears stationParameters regionalParameters urbanCharacteristics
     withSource regionalIntroductionsSource $ \source -> do
       inform $ "Writing regional introduction years to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source regionalIntroductions

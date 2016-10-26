@@ -21,7 +21,7 @@
 
 module SERA.Scenario.Introduction (
 -- * Types
-  IntroductionParameters(..)
+  StationParameters(..)
 , UrbanCharacteristicsCube
 , RegionalIntroductionsCube
 , IntroductionYear
@@ -36,41 +36,85 @@ module SERA.Scenario.Introduction (
 
 
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.DataCube (Rekeyer(..), rekey)
-import Data.Daft.Vinyl.FieldCube (type (↝), π, σ)
+import Data.Daft.Vinyl.FieldCube (type (↝), (⋈), π)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
-import Data.Default.Util (nan)
-import Data.Maybe (fromMaybe)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import GHC.Generics (Generic)
-import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName)
-import SERA.Vehicle.Types (FAnnualTravel, fAnnualTravel, FRelativeMarketShare, fRelativeMarketShare, FStock, fStock)
+import SERA.Types (FRegion, FUrbanCode, FUrbanName)
+import SERA.Vehicle.Types (FRelativeMarketShare, fRelativeMarketShare)
 
 
-data IntroductionParameters =
-  IntroductionParameters
+data StationParameters =
+  StationParameters
   {
-    clustering            :: Double
-  , delays                :: [(Region, Double)]
-  , shareIntensifications :: [(Region, Double)]
+    coverageParameters           :: CoverageParameters
+  , threshholdStationsParameters :: StationCountParameters
+  , maximumStationsParameters    :: StationCountParameters
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
-instance FromJSON IntroductionParameters
+instance FromJSON StationParameters
 
-instance ToJSON IntroductionParameters
-
-
-type FNearbyYear = '("Nearby Introduction Year", Double)
-
-fNearbyYear :: SField FNearbyYear
-fNearbyYear = SField
+instance ToJSON StationParameters
 
 
-type FPercentileEAM = '("EAM Percentile", Double)
+data CoverageParameters =
+  CoverageParameters
+  {
+    scaleFactor   :: Double
+  , densityFactor :: Double
+  }
+    deriving (Eq, Generic, Ord, Read, Show)
 
-fPercentileEAM :: SField FPercentileEAM
-fPercentileEAM = SField
+instance FromJSON CoverageParameters
+
+instance ToJSON CoverageParameters
+
+
+data StationCountParameters =
+  StationCountParameters
+  {
+    intercept :: Double
+  , slope     :: Double
+  }
+    deriving (Eq, Generic, Ord, Read, Show)
+
+instance FromJSON StationCountParameters
+
+instance ToJSON StationCountParameters
+
+
+type FFirstYear = '("First Year", Double)
+
+fFirstYear :: SField FFirstYear
+fFirstYear = SField
+
+
+type FLastYear = '("Last Year", Double)
+
+fLastYear :: SField FLastYear
+fLastYear = SField
+
+
+type FClustering = '("Clustering", Double)
+
+fClustering :: SField FClustering
+fClustering = SField
+
+
+type FDelay = '("Delay", Double)
+
+fDelay :: SField FDelay
+fDelay = SField
+
+
+type FIntensification = '("Intensification", Double)
+
+fIntensification :: SField FIntensification
+fIntensification = SField
+
+
+type RegionalIntroductionParametersCube = '[FRegion] ↝ '[FFirstYear, FLastYear, FClustering, FDelay, FIntensification]
 
 
 type IntroductionYear = Int
@@ -89,14 +133,6 @@ fStationCount :: SField FStationCount
 fStationCount = SField
 
 
-type Population = Double
-
-type FPopulation = '("Population", Population)
-
-fPopulation :: SField FPopulation
-fPopulation = SField
-
-
 type Area = Double
 
 type FArea = '("Area [km^2]", Area)
@@ -105,45 +141,98 @@ fArea :: SField FArea
 fArea = SField
 
 
-type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FStock, FAnnualTravel, FIntroductionYear, FNearbyYear]
+type Population = Double
 
-type RegionalIntroductionsCube = '[FRegion] ↝ '[FRelativeMarketShare, FIntroductionYear, FStationCount]
+type FPopulation = '("Population", Population)
+
+fPopulation :: SField FPopulation
+fPopulation = SField
 
 
-introducing :: IntroductionParameters -> FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FArea, FPopulation, FPercentileEAM, FStock, FAnnualTravel, FIntroductionYear, FNearbyYear] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount]
-introducing IntroductionParameters{..} key rec =
+type FPercentileEAM = '("EAM Percentile", Double)
+
+fPercentileEAM :: SField FPercentileEAM
+fPercentileEAM = SField
+
+
+type FNearbyPercentileEAM = '("Nearby EAM Percentile", Double)
+
+fNearbyPercentileEAM :: SField FNearbyPercentileEAM
+fNearbyPercentileEAM = SField
+
+
+type FStock = '("Vehicles", Double)
+
+fStock :: SField FStock
+fStock = SField
+
+
+type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock]
+
+
+type FCoverageStations = '("Coverage Stations", Int)
+
+fCoverageStations :: SField FCoverageStations
+fCoverageStations = SField
+
+
+type FThreshholdStations = '("Threshhold Stations", Int)
+
+fThreshholdStations :: SField FThreshholdStations
+fThreshholdStations = SField
+
+
+type FMaximumStations = '("Maximum Stations", Int)
+
+fMaximumStations :: SField FMaximumStations
+fMaximumStations = SField
+
+
+type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
+
+
+introducing :: StationParameters -> FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FFirstYear, FLastYear, FClustering, FDelay, FIntensification, FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
+introducing StationParameters{..} _ rec =
   let
-    base = fromIntegral $ fIntroductionYear <: rec
-    nearby = fNearbyYear <: rec
+    firstYear = fFirstYear <: rec
+    lastYear = fLastYear <: rec
+    introduce percentile = firstYear + (lastYear - firstYear) * percentile / 100
     eam = fPercentileEAM <: rec / 100
-    region = fRegion <: key
-    delay = fromMaybe nan $ region `lookup` delays
+    base = introduce $ fPercentileEAM <: rec
+    nearby = introduce $ fNearbyPercentileEAM <: rec
     stock = fStock <: rec
-    shareIntensification = fromMaybe nan $ region `lookup` shareIntensifications
     area = fArea <: rec / 1.60934^(2 :: Int)
-    popDens = fPopulation <: rec / area
-    coverageStations = 1 +  8.1503640 * exp(-0.0003241 * popDens) * (area / 100)
+    population = fPopulation <: rec
+    density = population / area
+    CoverageParameters{..} = coverageParameters
+    coverageStations = 1 +  scaleFactor * exp(- densityFactor * density) * (area / 100)
+    maximumStations = slope maximumStationsParameters * population / 1000000 + intercept maximumStationsParameters
+    threshholdStations = slope threshholdStationsParameters * population / 1000000 + intercept threshholdStationsParameters
+    intensification = fIntensification <: rec
+    clustering = fClustering <: rec
+    delay = fDelay <: rec
+    floor' x = if isNaN population then 0 else floor x
+    ceiling' x = if isNaN population then 0 else ceiling x
   in
-        fRelativeMarketShare =: shareIntensification * stock
+        fRelativeMarketShare =: intensification * stock
     <+> fIntroductionYear    =: round (base * (1 - clustering) + nearby * clustering + delay * eam)
-    <+> fStationCount        =: floor (coverageStations / 3 + 1)
+    <+> fStationCount        =: floor' (coverageStations / 3 + 1)
+    <+> fCoverageStations    =: ceiling' coverageStations
+    <+> fThreshholdStations  =: ceiling' threshholdStations
+    <+> fMaximumStations     =: ceiling' maximumStations
 
 
-hasAnnualTravel :: FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FArea, FPopulation, FPercentileEAM, FStock, FAnnualTravel, FIntroductionYear, FNearbyYear] -> Bool
-hasAnnualTravel = const $ not . isNaN . (fAnnualTravel <:)
-
-
+{-
 urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName] ↝ v -> '[FRegion] ↝ v
 urbanToRegion =
   rekey
     $ Rekeyer
         (\key -> fRegion =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key)))
         undefined
+-}
 
 
-introductionYears :: IntroductionParameters -> UrbanCharacteristicsCube -> RegionalIntroductionsCube
-introductionYears =
-  (. σ hasAnnualTravel)
-    . (urbanToRegion .)
-    . π
-    . introducing
+introductionYears :: StationParameters -> RegionalIntroductionParametersCube -> UrbanCharacteristicsCube -> RegionalIntroductionsCube
+introductionYears global regional urban =
+  π (introducing global)
+    $ regional ⋈ urban
