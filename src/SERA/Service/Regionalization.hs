@@ -43,8 +43,8 @@ data ConfigRegionalization =
   ConfigRegionalization
   {
     regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
-  , totalSalesSource            :: DataSource Void
-  , regionalSalesSource         :: DataSource Void
+  , totalStockSource            :: DataSource Void
+  , regionalStockSource         :: DataSource Void
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -61,10 +61,10 @@ calculateRegionalization ConfigRegionalization{..} =
   do
     inform $ "Reading regional introduction years from " ++ show regionalIntroductionsSource ++ " . . ."
     regionalIntroductions <- readFieldCubeSource regionalIntroductionsSource
-    inform $ "Reading total sales from " ++ show totalSalesSource ++ " . . ."
-    totalSales <- readFieldCubeSource totalSalesSource
+    inform $ "Reading total stock from " ++ show totalStockSource ++ " . . ."
+    totalStock <- readFieldCubeSource totalStockSource
     let
-      regionalSales = regionalize regionalIntroductions totalSales
-    withSource regionalSalesSource $ \source -> do
-      inform $ "Writing regional sales to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source regionalSales
+      regionalStock = regionalize regionalIntroductions totalStock
+    withSource regionalStockSource $ \source -> do
+      inform $ "Writing regional stock to " ++ show source ++ " . . ."
+      void $ writeFieldCubeSource source regionalStock
