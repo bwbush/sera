@@ -33,6 +33,7 @@ import Control.Arrow (first)
 import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..), withText)
+import Data.Daft.DataCube (Rekeyer(..), rekey)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
@@ -49,7 +50,7 @@ import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters, stationCapacitiesByQuantile)
-import SERA.Scenario.Introduction (FIntroductionYear, RegionalIntroductionsCube, FStationCount, fStationCount)
+import SERA.Scenario.Introduction (FCoverageStations, FIntroductionYear, RegionalIntroductionsCube, FMaximumStations, fMaximumStations, FStationCount, fStationCount, FThreshholdStations)
 import SERA.Service ()
 import SERA.Types -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
 import SERA.Vehicle.Stock.Types (StockCube)
@@ -88,10 +89,10 @@ data ConfigHydrogenSizing =
   ConfigHydrogenSizing
   {
     regionalIntroductionsSource  :: DataSource Void
-  , stockSource          :: DataSource Void
+  , regionalStockSource          :: DataSource Void
   , stationsSummarySource :: DataSource Void
   , stationsDetailsSource :: DataSource Void
-  , parameters   :: StationCapacityParameters 
+  , sizingParameters   :: StationCapacityParameters 
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -106,12 +107,12 @@ calculateHydrogenSizing :: (IsString e, MonadError e m, MonadIO m)
                        -> m ()               -- ^ Action to compute the introduction years.
 calculateHydrogenSizing ConfigHydrogenSizing{..} =
   do
-    inform $ "Reading urban characteristics from " ++ show regionalIntroductionsSource ++ " . . ."
+    inform $ "Reading regional introductions from " ++ show regionalIntroductionsSource ++ " . . ."
     regionalIntroductions <- readFieldCubeSource regionalIntroductionsSource
-    inform $ "Reading vehicle stock from " ++ show stockSource ++ " . . ."
-    stock <- readFieldCubeSource stockSource
+    inform $ "Reading vehicle stock from " ++ show regionalStockSource ++ " . . ."
+    stock <- readFieldCubeSource regionalStockSource
     let
-      (details, summary) = sizeStations parameters regionalIntroductions stock
+      (details, summary) = sizeStations sizingParameters regionalIntroductions stock
     withSource stationsSummarySource $ \source -> do
       inform $ "Writing station summary to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source summary
@@ -166,8 +167,16 @@ fStationList :: SField FStationList
 fStationList = SField
 
 
-dailyDemands :: FieldRec '[FYear, FRegion] -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FRelativeMarketShare, FIntroductionYear, FStationCount] ->  FieldRec '[FStationCount, FYear, FDemand]
-dailyDemands key rec = τ $ key <+> rec
+dailyDemands :: FieldRec '[FYear, FRegion] -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations] ->  FieldRec '[FStationCount, FYear, FDemand]
+dailyDemands key rec =
+  let
+    stationCount = fStationCount        <: rec
+    year         = fYear                <: key
+    totalDemand  = fDemand              <: rec
+  in
+        fStationCount =: stationCount
+    <+> fYear         =: year
+    <+> fDemand       =: totalDemand
 
 
 sizing :: StationCapacityParameters -> FieldRec '[FRegion] -> [FieldRec '[FStationCount, FYear, FDemand]] ->  FieldRec '[FStationList]
@@ -178,8 +187,14 @@ sizing parameters key recs =
     years = reverse $ map (fYear <:) recs
     demands = reverse $ map (fDemand <:) recs
     capacities = stationCapacitiesByQuantile parameters initialStations demands
+    label =
+      init
+      . takeWhile (/= '|')
+      . drop 2
+      . dropWhile (/= '|')
+      . show
   in
-    fStationList =: concat (zipWith (\y cs -> zipWith (y, , ) (map (\s -> StationID $ "Generic Station " ++ show region ++ ":" ++ show y ++ ":" ++ show s) [(1::Int)..]) cs) years capacities)
+    fStationList =: concat (zipWith (\y cs -> zipWith (y, , ) (map (\s -> StationID $ "Generic Station " ++ label region ++ ":" ++ show y ++ ":" ++ show s) [(1::Int)..]) cs) years capacities)
 
 
 sumCapacities :: FieldRec '[FRegion, FYear] -> [FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]] -> FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
@@ -214,9 +229,22 @@ extendedStock _ recs =
   <+> fTotalCapacity =: maximum (map (fTotalCapacity <:) recs)
 
 
+urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName] ↝ v -> '[FRegion] ↝ v
+urbanToRegion =
+  rekey
+    $ Rekeyer
+        (\key -> fRegion =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key)))
+        undefined
+
+
+hasStations :: k -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations] -> Bool
+hasStations = const $ (/= 0) . (fMaximumStations <:)
+
+
 sizeStations :: StationCapacityParameters -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
-sizeStations parameters characteristics stock =
+sizeStations parameters introductions stock =
   let
+    introductions' = urbanToRegion $ σ hasStations introductions
     vocationsVehicles = ω stock :: Set (FieldRec '[FVocation, FVehicle])
     stock' = κ vocationsVehicles totalStock stock
     years = ω stock :: Set (FieldRec '[FYear])
@@ -224,17 +252,17 @@ sizeStations parameters characteristics stock =
       toKnownRecords
         $ κ years (sizing parameters)
         $ π dailyDemands
-        $ undefined -- stock' ⋈ characteristics
+        $ stock' ⋈ introductions'
       :: [FieldRec '[FRegion, FStationList]]
     details =
       fromRecords
         [
-              fRegion    =: fRegion <: rec
-          <+> fYear      =: y
-          <+> fStationID =: s
-          <+> fNewStations =: 1
+              fRegion        =: fRegion <: rec
+          <+> fYear          =: y
+          <+> fStationID     =: s
+          <+> fNewStations   =: 1
           <+> fTotalStations =: n
-          <+> fNewCapacity  =: c
+          <+> fNewCapacity   =: c
           <+> fTotalCapacity =: t
           :: FieldRec '[FRegion, FYear, FStationID, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
         |
