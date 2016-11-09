@@ -30,13 +30,20 @@ module SERA.Scenario.Introduction (
 , StationCount
 , FStationCount
 , fStationCount
+, FCoverageStations
+, fCoverageStations
+, FThreshholdStations
+, fThreshholdStations
+, FMaximumStations
+, fMaximumStations
 -- * Functions
 , introductionYears
 ) where
 
 
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Vinyl.FieldCube (type (↝), (⋈), π)
+import Data.Daft.DataCube (evaluate)
+import Data.Daft.Vinyl.FieldCube (type (↝), (⋈), π, τ)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import GHC.Generics (Generic)
@@ -170,19 +177,19 @@ fStock = SField
 type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock]
 
 
-type FCoverageStations = '("Coverage Stations", Int)
+type FCoverageStations = '("Coverage Stations", StationCount)
 
 fCoverageStations :: SField FCoverageStations
 fCoverageStations = SField
 
 
-type FThreshholdStations = '("Threshhold Stations", Int)
+type FThreshholdStations = '("Threshhold Stations", StationCount)
 
 fThreshholdStations :: SField FThreshholdStations
 fThreshholdStations = SField
 
 
-type FMaximumStations = '("Maximum Stations", Int)
+type FMaximumStations = '("Maximum Stations", StationCount)
 
 fMaximumStations :: SField FMaximumStations
 fMaximumStations = SField
@@ -191,8 +198,11 @@ fMaximumStations = SField
 type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
 
 
-introducing :: StationParameters -> FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FFirstYear, FLastYear, FClustering, FDelay, FIntensification, FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
-introducing StationParameters{..} _ rec =
+type OverrideIntroductionYearsCube = '[FUrbanCode, FUrbanName] ↝ '[FIntroductionYear]
+
+
+introducing :: StationParameters -> OverrideIntroductionYearsCube -> FieldRec '[FRegion, FUrbanCode, FUrbanName] -> FieldRec '[FFirstYear, FLastYear, FClustering, FDelay, FIntensification, FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
+introducing StationParameters{..} overrides key rec =
   let
     firstYear = fFirstYear <: rec
     lastYear = fLastYear <: rec
@@ -215,24 +225,17 @@ introducing StationParameters{..} _ rec =
     ceiling' x = if isNaN population then 0 else ceiling x
   in
         fRelativeMarketShare =: intensification * stock
-    <+> fIntroductionYear    =: round (base * (1 - clustering) + nearby * clustering + delay * eam)
+    <+> fIntroductionYear    =: maybe
+                                   (round (base * (1 - clustering) + nearby * clustering + delay * eam))
+                                   (fIntroductionYear <:)
+                                   (overrides `evaluate` τ key)
     <+> fStationCount        =: floor' (coverageStations / 3 + 1)
     <+> fCoverageStations    =: ceiling' coverageStations
     <+> fThreshholdStations  =: ceiling' threshholdStations
     <+> fMaximumStations     =: ceiling' maximumStations
 
 
-{-
-urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName] ↝ v -> '[FRegion] ↝ v
-urbanToRegion =
-  rekey
-    $ Rekeyer
-        (\key -> fRegion =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key)))
-        undefined
--}
-
-
-introductionYears :: StationParameters -> RegionalIntroductionParametersCube -> UrbanCharacteristicsCube -> RegionalIntroductionsCube
-introductionYears global regional urban =
-  π (introducing global)
+introductionYears :: StationParameters -> OverrideIntroductionYearsCube -> RegionalIntroductionParametersCube -> UrbanCharacteristicsCube -> RegionalIntroductionsCube
+introductionYears global overrides regional urban =
+  π (introducing global overrides)
     $ regional ⋈ urban

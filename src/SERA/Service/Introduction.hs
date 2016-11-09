@@ -42,8 +42,9 @@ import SERA.Scenario.Introduction (StationParameters, introductionYears)
 data ConfigIntroduction =
   ConfigIntroduction
   {
-    regionalIntroductionParametersSource :: DataSource Void
-  , urbanCharacteristicsSource  :: DataSource Void        -- ^ Inputs.
+    urbanCharacteristicsSource  :: DataSource Void        -- ^ Inputs.
+  , regionalIntroductionParametersSource :: DataSource Void
+  , overrideIntroductionYearsSource   :: DataSource Void
   , regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
   , stationParameters   :: StationParameters -- ^ Logit parameters.
   }
@@ -60,12 +61,14 @@ calculateIntroductions :: (IsString e, MonadError e m, MonadIO m)
                        -> m ()               -- ^ Action to compute the introduction years.
 calculateIntroductions ConfigIntroduction{..} =
   do
-    inform $ "Reading regional introduction parameters from " ++ show regionalIntroductionParametersSource ++ " . . ."
-    regionalParameters <- readFieldCubeSource regionalIntroductionParametersSource
     inform $ "Reading urban characteristics from " ++ show urbanCharacteristicsSource ++ " . . ."
     urbanCharacteristics <- readFieldCubeSource urbanCharacteristicsSource
+    inform $ "Reading regional introduction parameters from " ++ show regionalIntroductionParametersSource ++ " . . ."
+    regionalParameters <- readFieldCubeSource regionalIntroductionParametersSource
+    inform $ "Reading overrides for introduction years from " ++ show overrideIntroductionYearsSource ++ " . . ."
+    overrides <- readFieldCubeSource overrideIntroductionYearsSource
     let
-      regionalIntroductions = introductionYears stationParameters regionalParameters urbanCharacteristics
+      regionalIntroductions = introductionYears stationParameters overrides regionalParameters urbanCharacteristics
     withSource regionalIntroductionsSource $ \source -> do
       inform $ "Writing regional introduction years to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source regionalIntroductions
