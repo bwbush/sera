@@ -33,7 +33,7 @@ import Control.Arrow (first)
 import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..), withText)
-import Data.Daft.DataCube (Rekeyer(..), rekey)
+import Data.Daft.DataCube (Rekeyer(..), evaluate, rekey)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
@@ -90,6 +90,7 @@ data ConfigHydrogenSizing =
   {
     regionalIntroductionsSource  :: DataSource Void
   , regionalStockSource          :: DataSource Void
+  , overrideStationsSource       :: DataSource Void
   , stationsSummarySource :: DataSource Void
   , stationsDetailsSource :: DataSource Void
   , sizingParameters   :: StationCapacityParameters 
@@ -111,8 +112,10 @@ calculateHydrogenSizing ConfigHydrogenSizing{..} =
     regionalIntroductions <- readFieldCubeSource regionalIntroductionsSource
     inform $ "Reading vehicle stock from " ++ show regionalStockSource ++ " . . ."
     stock <- readFieldCubeSource regionalStockSource
+    inform $ "Reading overridden stations from " ++ show overrideStationsSource ++ " . . ."
+    overrides <- readFieldCubeSource overrideStationsSource
     let
-      (details, summary) = sizeStations sizingParameters regionalIntroductions stock
+      (details, summary) = sizeStations sizingParameters overrides regionalIntroductions stock
     withSource stationsSummarySource $ \source -> do
       inform $ "Writing station summary to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source summary
@@ -307,8 +310,8 @@ prepare key rec =
   let
     california = take 2 (show $ fRegion <: key) == "CA"
     capacity = fNewCapacity <: rec
-  in -- FIXME
-        fNewCapitalCost          =: 0
+  in
+        fNewCapitalCost          =: read "NaN" -- FIXME
     <+> fNewInstallationCost     =: 0
     <+> fNewCapitalIncentives    =: 0
     <+> fNewProductionIncentives =: 0
@@ -320,9 +323,32 @@ prepare key rec =
     <+> fRenewableFraction       =: (if california                        then 0.33     else 0)
 
 
-sizeStations :: StationCapacityParameters -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
-sizeStations parameters introductions stock =
+hasNewStation :: k -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction] -> Bool
+hasNewStation _ rec =
+     0 < fNewElectrolysisCapacity <: rec
+  || 0 < fNewPipelineCapacity <: rec
+  || 0 < fNewOnSiteSMRCapacity <: rec
+  || 0 < fNewGH2TruckCapacity <: rec
+  || 0 < fNewLH2TruckCapacity <: rec
+
+
+pullYear :: FieldRec '[FRegion, FYear, FStationID] -> v -> FieldRec '[FYear]
+pullYear key _ = τ key
+
+
+lastOverride :: FieldRec '[FRegion] -> [FieldRec '[FYear]] -> FieldRec '[FYear]
+lastOverride _ rec = fYear =: maximum ((fYear <:) <$> rec)
+
+
+sizeStations :: StationCapacityParameters -> StationDetailCube -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
+sizeStations parameters overrides introductions stock =
   let
+    regionStations = ω overrides :: Set (FieldRec '[FYear, FStationID])
+    overrides' :: '[FRegion] ↝ '[FYear]
+    overrides' =
+      κ regionStations lastOverride
+      $ π pullYear
+      $ σ hasNewStation overrides
     introductions' = urbanToRegion $ σ hasStations introductions
     vocationsVehicles = ω stock :: Set (FieldRec '[FVocation, FVehicle])
     stock' = κ vocationsVehicles totalStock stock
@@ -350,12 +376,13 @@ sizeStations parameters introductions stock =
         , let runningCounts = map sum . tail . inits . map (const 1) $ ysc
         , let runningCapacities = map sum . tail . inits . map trd3 $ ysc
         , ((y, s, c), n, t) <- zip3 ysc runningCounts runningCapacities
+        , maybe True ((y >=) . (fYear <:)) $ overrides' `evaluate` τ rec
         ]
         :: '[FRegion, FYear, FStationID] ↝ '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
     universe = ω details :: Set (FieldRec '[FStationID])
     summary = stock' ⋈ (κ universe sumCapacities details)
   in
     (
-      π prepare details
+      overrides <> π prepare details
     , summary <> (stock' ⋈ (κ years extendedStock summary))
     )
