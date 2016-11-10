@@ -148,7 +148,68 @@ fTotalStations :: SField FTotalStations
 fTotalStations = SField
 
 
-type StationDetailCube = '[FRegion, FYear, FStationID] ↝ '[FNewCapacity]
+type FNewCapitalCost = '("New Capital Cost [$]", Double)
+
+fNewCapitalCost :: SField FNewCapitalCost
+fNewCapitalCost = SField
+
+
+type FNewInstallationCost = '("New Installation Cost [$]", Double)
+
+fNewInstallationCost :: SField FNewInstallationCost
+fNewInstallationCost = SField
+
+
+type FNewCapitalIncentives = '("New Capital Incentives [$]", Double)
+
+fNewCapitalIncentives :: SField FNewCapitalIncentives
+fNewCapitalIncentives = SField
+
+
+type FNewProductionIncentives = '("New Production Incentives [$]", Double)
+
+fNewProductionIncentives :: SField FNewProductionIncentives
+fNewProductionIncentives = SField
+
+
+type FNewElectrolysisCapacity = '("New Electrolysis [kg/day]", Capacity)
+
+fNewElectrolysisCapacity :: SField FNewElectrolysisCapacity
+fNewElectrolysisCapacity = SField
+
+
+type FNewPipelineCapacity = '("New Pipeline [kg/day]", Capacity)
+
+fNewPipelineCapacity :: SField FNewPipelineCapacity
+fNewPipelineCapacity = SField
+
+
+type FNewOnSiteSMRCapacity = '("New On-Site SMR [kg/day]", Capacity)
+
+fNewOnSiteSMRCapacity :: SField FNewOnSiteSMRCapacity
+fNewOnSiteSMRCapacity = SField
+
+
+type FNewGH2TruckCapacity = '("New GH2 [kg/day]", Capacity)
+
+fNewGH2TruckCapacity :: SField FNewGH2TruckCapacity
+fNewGH2TruckCapacity = SField
+
+
+type FNewLH2TruckCapacity = '("New LH2 [kg/day]", Capacity)
+
+fNewLH2TruckCapacity :: SField FNewLH2TruckCapacity
+fNewLH2TruckCapacity = SField
+
+
+type FRenewableFraction = '("Renewable Fraction [kg/kg]", Double)
+
+fRenewableFraction :: SField FRenewableFraction
+fRenewableFraction = SField
+
+
+type StationDetailCube = '[FRegion, FYear, FStationID] ↝ '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
+
 
 type StationSummaryCube = '[FYear, FRegion] ↝ '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
 
@@ -241,6 +302,24 @@ hasStations :: k -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStation
 hasStations = const $ (/= 0) . (fMaximumStations <:)
 
 
+prepare :: FieldRec '[FRegion, FYear, FStationID] -> FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity] -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
+prepare key rec =
+  let
+    california = take 2 (show $ fRegion <: key) == "CA"
+    capacity = fNewCapacity <: rec
+  in -- FIXME
+        fNewCapitalCost          =: 0
+    <+> fNewInstallationCost     =: 0
+    <+> fNewCapitalIncentives    =: 0
+    <+> fNewProductionIncentives =: 0
+    <+> fNewElectrolysisCapacity =: (if capacity <= 100                   then capacity else 0)
+    <+> fNewPipelineCapacity     =: 0
+    <+> fNewOnSiteSMRCapacity    =: 0
+    <+> fNewGH2TruckCapacity     =: (if capacity > 100 && capacity <= 200 then capacity else 0)
+    <+> fNewLH2TruckCapacity     =: (if                   capacity >  200 then capacity else 0)
+    <+> fRenewableFraction       =: (if california                        then 0.33     else 0)
+
+
 sizeStations :: StationCapacityParameters -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
 sizeStations parameters introductions stock =
   let
@@ -272,10 +351,11 @@ sizeStations parameters introductions stock =
         , let runningCapacities = map sum . tail . inits . map trd3 $ ysc
         , ((y, s, c), n, t) <- zip3 ysc runningCounts runningCapacities
         ]
+        :: '[FRegion, FYear, FStationID] ↝ '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
     universe = ω details :: Set (FieldRec '[FStationID])
     summary = stock' ⋈ (κ universe sumCapacities details)
   in
     (
-      π (const τ) details
+      π prepare details
     , summary <> (stock' ⋈ (κ years extendedStock summary))
     )
