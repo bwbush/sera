@@ -88,12 +88,14 @@ fStationID = SField
 data ConfigHydrogenSizing =
   ConfigHydrogenSizing
   {
-    regionalIntroductionsSource  :: DataSource Void
+    externalCapacitySource        :: DataSource Void
+  , regionalIntroductionsSource  :: DataSource Void
   , regionalStockSource          :: DataSource Void
   , overrideStationsSource       :: DataSource Void
   , stationsSummarySource :: DataSource Void
   , stationsDetailsSource :: DataSource Void
   , sizingParameters   :: StationCapacityParameters 
+  , capitalCostParameters :: CapitalCostParameters
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -102,12 +104,35 @@ instance FromJSON ConfigHydrogenSizing
 instance ToJSON ConfigHydrogenSizing
 
 
+data CapitalCostParameters =
+  CapitalCostParameters
+  {
+    costReference    :: Double
+  , capacityReference :: Double
+  , capacityExponent :: Double
+  , quantityReference    :: Double
+  , quantityExponent :: Double
+  }
+    deriving (Eq, Generic, Ord, Read, Show)
+
+instance FromJSON CapitalCostParameters
+
+instance ToJSON CapitalCostParameters
+
+
+capitalCost :: CapitalCostParameters -> Double -> Double -> Double
+capitalCost CapitalCostParameters{..} quantity capacity =
+  costReference * (capacity / capacityReference)**capacityExponent * (quantity / quantityReference)**quantityExponent
+
+
 -- | Compute introduction years.
 calculateHydrogenSizing :: (IsString e, MonadError e m, MonadIO m)
                        => ConfigHydrogenSizing -- ^ Configuration data.
                        -> m ()               -- ^ Action to compute the introduction years.
 calculateHydrogenSizing ConfigHydrogenSizing{..} =
   do
+    inform $ "Reading external capacity from " ++ show externalCapacitySource ++ " . . ."
+    externalCapacity <- readFieldCubeSource externalCapacitySource
     inform $ "Reading regional introductions from " ++ show regionalIntroductionsSource ++ " . . ."
     regionalIntroductions <- readFieldCubeSource regionalIntroductionsSource
     inform $ "Reading vehicle stock from " ++ show regionalStockSource ++ " . . ."
@@ -115,7 +140,7 @@ calculateHydrogenSizing ConfigHydrogenSizing{..} =
     inform $ "Reading overridden stations from " ++ show overrideStationsSource ++ " . . ."
     overrides <- readFieldCubeSource overrideStationsSource
     let
-      (details, summary) = sizeStations sizingParameters overrides regionalIntroductions stock
+      (details, summary) = sizeStations sizingParameters capitalCostParameters externalCapacity overrides regionalIntroductions stock
     withSource stationsSummarySource $ \source -> do
       inform $ "Writing station summary to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source summary
@@ -215,6 +240,14 @@ type StationDetailCube = '[FRegion, FYear, FStationID] ↝ '[FNewCapitalCost, FN
 
 
 type StationSummaryCube = '[FYear, FRegion] ↝ '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
+
+
+totalGlobalCapacity :: GlobalCapacityCube -> FieldRec '[FYear] -> [FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]] -> FieldRec '[FTotalCapacity]
+totalGlobalCapacity global key recs =
+  fTotalCapacity =: maybe 0 (fTotalCapacity <:) (global `evaluate` τ key) + sum ((fTotalCapacity <:) <$> recs)
+
+
+type GlobalCapacityCube = '[FYear] ↝ '[FTotalCapacity]
 
 
 type Demand = Double
@@ -340,8 +373,8 @@ lastOverride :: FieldRec '[FRegion] -> [FieldRec '[FYear]] -> FieldRec '[FYear]
 lastOverride _ rec = fYear =: maximum ((fYear <:) <$> rec)
 
 
-sizeStations :: StationCapacityParameters -> StationDetailCube -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
-sizeStations parameters overrides introductions stock =
+sizeStations :: StationCapacityParameters -> CapitalCostParameters -> GlobalCapacityCube -> StationDetailCube -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
+sizeStations parameters parameters' externals overrides introductions stock =
   let
     regionStations = ω overrides :: Set (FieldRec '[FYear, FStationID])
     overrides' :: '[FRegion] ↝ '[FYear]
@@ -381,8 +414,24 @@ sizeStations parameters overrides introductions stock =
         :: '[FRegion, FYear, FStationID] ↝ '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
     universe = ω details :: Set (FieldRec '[FStationID])
     summary = stock' ⋈ (κ universe sumCapacities details)
+    regions = ω summary :: Set (FieldRec '[FRegion])
+    global = κ regions (totalGlobalCapacity externals) summary <> externals
+    price :: FieldRec '[FRegion, FYear, FStationID] -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction] -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
+    price key rec =
+      let
+        quantity = maybe 0 (fTotalCapacity <:) $ global `evaluate` τ key
+        capacity = fNewElectrolysisCapacity <: rec
+                   + fNewPipelineCapacity <: rec
+                   + fNewOnSiteSMRCapacity <: rec
+                   + fNewGH2TruckCapacity <: rec
+                   + fNewLH2TruckCapacity <: rec
+        cost = capitalCost parameters' quantity capacity
+      in
+        if isNaN (fNewCapitalCost <: rec)
+          then fNewCapitalCost =: cost <+> τ rec
+          else rec
   in
     (
-      overrides <> π prepare details
+      π price $ overrides <> π prepare details
     , summary <> (stock' ⋈ (κ years extendedStock summary))
     )
