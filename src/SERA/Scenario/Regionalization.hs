@@ -49,7 +49,7 @@ hasStations = const $ (/= 0) . (fMaximumStations <:)
 
 
 hasSales :: k -> FieldRec '[FSales, FStock, FTravel, FEnergy] -> Bool
-hasSales = const $ (/= 0) . (fStock <:)
+hasSales = const $ (\x -> x /= 0 && not (isNaN x)) . (fStock <:)
 
 
 urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] ↝ v -> '[FYear, FRegion, FVocation, FVehicle] ↝ v
