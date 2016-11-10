@@ -35,14 +35,15 @@ import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform)
 import SERA.Service ()
-import SERA.Scenario.Regionalization (regionalize)
+import SERA.Scenario.Regionalization (RegionalizationParameters, regionalize)
 
 
 -- | Configuration for vehicle stock modeling.
 data ConfigRegionalization =
   ConfigRegionalization
   {
-    regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
+    regionalizationParameters   :: RegionalizationParameters
+  , regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
   , totalStockSource            :: DataSource Void
   , regionalStockSource         :: DataSource Void
   }
@@ -64,7 +65,7 @@ calculateRegionalization ConfigRegionalization{..} =
     inform $ "Reading total stock from " ++ show totalStockSource ++ " . . ."
     totalStock <- readFieldCubeSource totalStockSource
     let
-      regionalStock = regionalize regionalIntroductions totalStock
+      regionalStock = regionalize regionalizationParameters regionalIntroductions totalStock
     withSource regionalStockSource $ \source -> do
       inform $ "Writing regional stock to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source regionalStock
