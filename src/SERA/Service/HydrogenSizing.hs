@@ -39,12 +39,12 @@ import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Default (Default(..))
-import Data.List (inits)
+import Data.Function (on)
+import Data.List (groupBy)
 import Data.Monoid ((<>))
 import Data.Set (Set)
 import Data.String (IsString)
 import Data.String.ToString (toString)
-import Data.Tuple.Util (trd3)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Void (Void)
 import GHC.Generics (Generic)
@@ -294,12 +294,59 @@ sizing parameters key recs =
     fStationList =: concat (zipWith (\y cs -> zipWith (y, , ) (map (\s -> StationID $ "Generic Station " ++ label region ++ ":" ++ show y ++ ":" ++ show s) [(1::Int)..]) cs) years capacities)
 
 
-sumCapacities :: FieldRec '[FRegion, FYear] -> [FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]] -> FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
-sumCapacities _ recs = 
-      fNewStations =: sum (map (fNewStations <:) recs)
-  <+> fTotalStations =: maximum (map (fTotalStations <:) recs)
-  <+> fNewCapacity =: sum (map (fNewCapacity <:) recs)
-  <+> fTotalCapacity =: maximum (map (fTotalCapacity <:) recs)
+sumCapacities :: FieldRec '[FRegion, FYear] -> [FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]] -> FieldRec '[FYear, FNewStations, FNewCapacity]
+sumCapacities key recs =
+  let
+    newCapacity :: FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction] -> Double
+    newCapacity rec =
+        fNewElectrolysisCapacity <: rec
+      + fNewPipelineCapacity <: rec
+      + fNewOnSiteSMRCapacity <: rec
+      + fNewGH2TruckCapacity <: rec
+      + fNewLH2TruckCapacity <: rec
+    newCapacities = filter (> 0) $ map newCapacity recs
+  in
+        fYear        =: fYear <: key
+    <+> fNewStations =: length newCapacities
+    <+> fNewCapacity =: sum    newCapacities
+
+
+runningTotals :: '[FRegion, FYear, FStationID] ↝ '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction] -> '[FRegion, FYear] ↝ '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
+runningTotals cube =
+  let
+    stations = ω cube :: Set (FieldRec '[FStationID])
+    runningTotal :: [(Int, (Int, Double))] -> [(Int, ((Int, Int), (Double, Double)))]
+    runningTotal [] = []
+    runningTotal ((y, (s, t)) : z) = runningTotal' (y, ((s, s), (t, t))) z
+    runningTotal' :: (Int, ((Int, Int), (Double, Double))) -> [(Int, (Int, Double))] -> [(Int, ((Int, Int), (Double, Double)))]
+    runningTotal' (y, ((s, st), (c, ct))) []                   =
+      (y, ((s, st), (c, ct))) : if y >= 2050 -- FIXME
+                                  then []
+                                  else runningTotal' (y + 1, ((0,       st), (0,       ct))) []
+    runningTotal' (y, ((s, st), (c, ct))) (z@(y', (s', c')) : zs) =
+      (y, ((s, st), (c, ct))) : if y + 1 == y'
+                                  then runningTotal' (y + 1, ((s', s' + st), (c', c' + ct))) zs
+                                  else runningTotal' (y + 1, ((0 ,      st), (0 ,      ct))) (z : zs)
+  in
+    fromRecords
+      [
+            fRegion =: region
+        <+> fYear   =: year
+        <+> fNewStations =: newStations
+        <+> fTotalStations =: totalStations
+        <+> fNewCapacity =: newCapacity
+        <+> fTotalCapacity =: totalCapacity
+      |
+        recs <- groupBy ((==) `on` (fRegion <:)) $ toKnownRecords $ κ stations sumCapacities cube
+      , let region = fRegion <: head recs
+      , (year, ((newStations, totalStations), (newCapacity, totalCapacity)))
+          <- runningTotal
+               [
+                 (fYear <: rec, (fNewStations <: rec, fNewCapacity <: rec))
+               |
+                 rec <- recs
+               ]
+      ]
 
 
 totalStock :: FieldRec '[FYear, FRegion] -> [FieldRec '[FSales, FStock, FTravel, FEnergy]] -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand]
@@ -336,24 +383,6 @@ urbanToRegion =
 
 hasStations :: k -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations] -> Bool
 hasStations = const $ (/= 0) . (fMaximumStations <:)
-
-
-prepare :: FieldRec '[FRegion, FYear, FStationID] -> FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity] -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
-prepare key rec =
-  let
-    california = take 2 (show $ fRegion <: key) == "CA"
-    capacity = fNewCapacity <: rec
-  in
-        fNewCapitalCost          =: read "NaN" -- FIXME
-    <+> fNewInstallationCost     =: 0
-    <+> fNewCapitalIncentives    =: 0
-    <+> fNewProductionIncentives =: 0
-    <+> fNewElectrolysisCapacity =: (if capacity <= 100                   then capacity else 0)
-    <+> fNewPipelineCapacity     =: 0
-    <+> fNewOnSiteSMRCapacity    =: 0
-    <+> fNewGH2TruckCapacity     =: (if capacity > 100 && capacity <= 200 then capacity else 0)
-    <+> fNewLH2TruckCapacity     =: (if                   capacity >  200 then capacity else 0)
-    <+> fRenewableFraction       =: (if california                        then 0.33     else 0)
 
 
 hasNewStation :: k -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction] -> Bool
@@ -398,22 +427,27 @@ sizeStations parameters parameters' externals overrides introductions stock =
               fRegion        =: fRegion <: rec
           <+> fYear          =: y
           <+> fStationID     =: s
-          <+> fNewStations   =: 1
-          <+> fTotalStations =: n
-          <+> fNewCapacity   =: c
-          <+> fTotalCapacity =: t
-          :: FieldRec '[FRegion, FYear, FStationID, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
+          <+> fNewCapitalCost          =: read "NaN" -- FIXME
+          <+> fNewInstallationCost     =: 0
+          <+> fNewCapitalIncentives    =: 0
+          <+> fNewProductionIncentives =: 0
+          <+> fNewElectrolysisCapacity =: (if c        <= 100                   then c        else 0)
+          <+> fNewPipelineCapacity     =: 0
+          <+> fNewOnSiteSMRCapacity    =: 0
+          <+> fNewGH2TruckCapacity     =: (if c        > 100 && c        <= 200 then c        else 0)
+          <+> fNewLH2TruckCapacity     =: (if                   c        >  200 then c        else 0)
+          <+> fRenewableFraction       =: (if california                        then 0.33     else 0)
+          :: FieldRec '[FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
         |
           rec <- capacities
         , let ysc = fStationList <: rec
-        , let runningCounts = map sum . tail . inits . map (const 1) $ ysc
-        , let runningCapacities = map sum . tail . inits . map trd3 $ ysc
-        , ((y, s, c), n, t) <- zip3 ysc runningCounts runningCapacities
+        , (y, s, c) <- ysc
         , maybe True ((y >=) . (fYear <:)) $ overrides' `evaluate` τ rec
+        , let california = take 2 (show $ fRegion <: rec) == "CA"
         ]
-        :: '[FRegion, FYear, FStationID] ↝ '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
-    universe = ω details :: Set (FieldRec '[FStationID])
-    summary = stock' ⋈ (κ universe sumCapacities details)
+        :: '[FRegion, FYear, FStationID] ↝ '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
+    details' = overrides <> details
+    summary = stock' ⋈ runningTotals details'
     regions = ω summary :: Set (FieldRec '[FRegion])
     global = κ regions (totalGlobalCapacity externals) summary <> externals
     price :: FieldRec '[FRegion, FYear, FStationID] -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction] -> FieldRec '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
@@ -432,6 +466,6 @@ sizeStations parameters parameters' externals overrides introductions stock =
           else rec
   in
     (
-      π price $ overrides <> π prepare details
+      π price details'
     , summary <> (stock' ⋈ (κ years extendedStock summary))
     )

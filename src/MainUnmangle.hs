@@ -22,7 +22,6 @@ unmangle :: FilePath -> IO ()
 unmangle path =
   do
     (modified, xs) <- unmangle' <$> BS.readFile path
-    print $ BS.length xs
     when modified
       $ BS.writeFile path xs
 
