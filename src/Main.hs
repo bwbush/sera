@@ -33,6 +33,7 @@ import Data.List (nub)
 import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
 import SERA (inform, stringVersion)
+import SERA.Service.Finance (financeMain)
 import SERA.Service.Introduction (calculateIntroductions)
 import SERA.Service.HydrogenSizing (calculateHydrogenSizing)
 import SERA.Service.Logistic (calculateLogistic)
@@ -75,6 +76,10 @@ data SERA =
     {
       configuration :: FilePath
     } 
+  | HydrogenFinance
+    {
+      configuration :: FilePath
+    }
     deriving (Data, Show, Typeable)
 
 
@@ -90,6 +95,7 @@ sera =
     , introduction
     , regionalization
     , hydrogenSizing
+    , hydrogenFinance
     ]
       &= summary ("SERA command-Line, Version " ++ stringVersion ++ ", National Renewable Energy Laboratory")
       &= program "sera"
@@ -176,6 +182,16 @@ hydrogenSizing =
   }
     &= name "hydrogen-station-sizing"
     &= help "Estimate capacity of hydrogen stations."
+    &= details []
+
+
+hydrogenFinance :: SERA
+hydrogenFinance =
+  HydrogenFinance
+  {
+  }
+    &= name "hydrogen-station-finance"
+    &= help "Compute finances for hydrogen stations."
     &= details []
 
 
@@ -269,3 +285,10 @@ dispatch HydrogenSizing{..} =
     inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
     liftIO . setCurrentDirectory $ takeDirectory configuration
     calculateHydrogenSizing configuration'
+
+dispatch HydrogenFinance{..} =
+  do
+--  configuration' <- decodeYaml configuration
+--  inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
+--  liftIO . setCurrentDirectory $ takeDirectory configuration
+    liftIO $ financeMain -- configuration'
