@@ -56,6 +56,7 @@ data Inputs =
     , operations     :: Operations
     , feedstockUsageSource :: DataSource Void
     , energyPricesSource  :: DataSource Void
+    , carbonCreditSource :: DataSource Void
     , stationsSummarySource :: DataSource Void
     , stationsDetailsSource :: DataSource Void
     , financesDirectory :: FilePath
@@ -150,6 +151,20 @@ type EnergyPriceCube = '[FYear, FFeedstockType] ↝ '[FNonRenewablePrice, FRenew
 type StationUtilizationCube = '[FYear, FRegion] ↝ '[FStationUtilization]
 
 
+type FNonRenewableCredit = '("Carbon Credit (Non-Renewable) [$/kg]", Double)
+
+fNonRenewableCredit :: SField FNonRenewableCredit
+fNonRenewableCredit = SField
+
+
+type FRenewableCredit = '("Carbon Credit (Renewable) [$/kg]", Double)
+
+fRenewableCredit :: SField FRenewableCredit
+fRenewableCredit = SField
+
+type CarbonCreditCube = '[FHydrogenSource] ↝ '[FNonRenewableCredit, FRenewableCredit]
+
+
 computeRegionalUtilization :: StationSummaryCube -> StationUtilizationCube
 computeRegionalUtilization =
   let
@@ -167,12 +182,13 @@ financeMain parameters@Inputs{..}=
   do
     feedstockUsage <- readFieldCubeSource feedstockUsageSource
     energyPrices <- readFieldCubeSource energyPricesSource
+    carbonCredits <- readFieldCubeSource carbonCreditSource
     stationsSummary <- readFieldCubeSource stationsSummarySource
     stationsDetail <- readFieldCubeSource stationsDetailsSource
     let
       regionalUtilization = computeRegionalUtilization stationsSummary
-      inputs' = makeInputs parameters feedstockUsage energyPrices regionalUtilization stationsDetail
-      ids = map ((\(reg, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> reg) . head) inputs'
+      inputs' = makeInputs parameters feedstockUsage energyPrices carbonCredits regionalUtilization stationsDetail
+      ids = map ((\(reg, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> reg) . head) inputs'
       prepared = map (prepareInputs parameters) inputs'
       prepared' = case targetMargin of
         Nothing     -> prepared
@@ -279,10 +295,10 @@ single parameters capitalScenarios =
     }
 
 
-makeInputs :: Inputs -> FeedstockUsageCube -> EnergyPriceCube -> StationUtilizationCube -> StationDetailCube -> [[(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]]
-makeInputs parameters feedstockUsage energyPrices stationUtilization stationsDetail =
+makeInputs :: Inputs -> FeedstockUsageCube -> EnergyPriceCube -> CarbonCreditCube -> StationUtilizationCube -> StationDetailCube -> [[(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]]
+makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilization stationsDetail =
   let
-    makeInputs' :: (Region, StationID, Maybe Int, Int, Double, Double, Double, Double, Double, Double) -> [FieldRec '[FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]] -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]
+    makeInputs' :: (Region, StationID, Maybe Int, Int, Double, Double, Double, Double, Double, Double) -> [FieldRec '[FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]] -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]
     makeInputs' (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity') []           =
       let
         Just nextYear = (+1) <$> previousYear
@@ -369,6 +385,21 @@ makeInputs parameters feedstockUsage energyPrices stationUtilization stationsDet
         retailH2    = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Retail Hydrogen [/kg]")) * (1 - renewableFraction)
                     + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Retail Hydrogen [/kg]")) *      renewableFraction
         demand = (totalCapacity *) . maybe 0 (fStationUtilization <:) $ stationUtilization `evaluate` τ rec
+        carbonCreditPerKg = (
+                              ((fNonRenewableCredit <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Electrolysis")) * electrolysisCapacity
+                            + ((fNonRenewableCredit <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Pipeline"    )) * pipelineCapacity
+                            + ((fNonRenewableCredit <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "On-Site SMR" )) * onSiteSMRCapacity
+                            + ((fNonRenewableCredit <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Trucked GH2" )) * gh2TruckCapacity
+                            + ((fNonRenewableCredit <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Trucked LH2" )) * lh2TruckCapacity
+                            ) / totalCapacity * (1 - renewableFraction)
+                            +
+                            (
+                              ((fRenewableCredit    <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Electrolysis")) * electrolysisCapacity
+                            + ((fRenewableCredit    <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Pipeline"    )) * pipelineCapacity
+                            + ((fRenewableCredit    <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "On-Site SMR" )) * onSiteSMRCapacity
+                            + ((fRenewableCredit    <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Trucked GH2" )) * gh2TruckCapacity
+                            + ((fRenewableCredit    <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Trucked LH2" )) * lh2TruckCapacity
+                            ) / totalCapacity *      renewableFraction
       in
         if previousYear == Nothing || nextYear == year
           then
@@ -392,6 +423,7 @@ makeInputs parameters feedstockUsage energyPrices stationUtilization stationsDet
             , deliveredH2
             , retailH2
             , demand
+            , carbonCreditPerKg
             )
             : makeInputs' (region', station', Just year, totalStations, electrolysisCapacity, pipelineCapacity, onSiteSMRCapacity, gh2TruckCapacity, lh2TruckCapacity, renewableCapacity) recs
           else
@@ -422,11 +454,11 @@ makeInputs parameters feedstockUsage energyPrices stationUtilization stationsDet
       $ toKnownRecords stationsDetail
 
 
-prepareInputs :: Inputs -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)] -> [(Capital, Scenario)]
+prepareInputs :: Inputs -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)] -> [(Capital, Scenario)]
 prepareInputs parameters inputs =
   let
     firstYear :: Int
-    (_, _, firstYear, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = head inputs
+    (_, _, firstYear, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = head inputs
     capitalScenarios :: [(Capital, Scenario)]
     capitalScenarios =
       [
@@ -435,12 +467,13 @@ prepareInputs parameters inputs =
             let
               totalStations' = fromIntegral totalStations 
               averageCapacity = totalCapacity / totalStations'
-              escalation = 1.019**(fromIntegral stationYear - 2013)
+              escalation = 1.019**(fromIntegral stationYear - 2016)
             in
               c {
                   stationLicensingAndPermitting = totalStations' * stationLicensingAndPermitting
                 , stationMaintenanceCost        = escalation * totalStations' * (totalFixedOperatingCost averageCapacity - rentCost averageCapacity)
                 , stationRentOfLand             = escalation * totalStations' * rentCost averageCapacity
+                , stationIncidentalRevenue      = stationIncidentalRevenue + carbonCredits * 365.24 * demand * escalation
                 }
           ) $ costStation 0 (operations parameters) (year) $ (station parameters)
           {
@@ -491,7 +524,7 @@ prepareInputs parameters inputs =
           }
         )
       |
-        (_regionId, _regionName, year, totalStations, newStations, electricityUse, naturalGasUse, hydrogenUse, totalCapacity, capitalCost, installationCost, incidentalRevenue, capitalGrant, operatingGrant, electricity, naturalGas, deliveredH2, retailH2, demand) <- inputs
+        (_regionId, _regionName, year, totalStations, newStations, electricityUse, naturalGasUse, hydrogenUse, totalCapacity, capitalCost, installationCost, incidentalRevenue, capitalGrant, operatingGrant, electricity, naturalGas, deliveredH2, retailH2, demand, carbonCredits) <- inputs
       , (totalStations :: Int) > 0
       ]
   in
