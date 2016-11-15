@@ -288,7 +288,7 @@ dispatch HydrogenSizing{..} =
 
 dispatch HydrogenFinance{..} =
   do
---  configuration' <- decodeYaml configuration
---  inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
---  liftIO . setCurrentDirectory $ takeDirectory configuration
-    liftIO $ financeMain -- configuration'
+    configuration' <- decodeYaml configuration
+    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
+    liftIO . setCurrentDirectory $ takeDirectory configuration
+    financeMain configuration'

@@ -26,6 +26,16 @@ module SERA.Service.HydrogenSizing (
   ConfigHydrogenSizing(..)
 -- * Computation
 , calculateHydrogenSizing
+, StationSummaryCube
+, FDemand
+, fDemand
+, FTotalCapacity
+, fTotalCapacity
+, fStationID
+, StationID
+, FNewStations, FTotalStations, FNewCapacity
+, StationDetailCube, FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction
+, fRegion, fYear, fStationID, fNewCapitalCost, fNewInstallationCost, fNewCapitalIncentives, fNewProductionIncentives, fNewElectrolysisCapacity, fNewPipelineCapacity, fNewOnSiteSMRCapacity, fNewGH2TruckCapacity, fNewLH2TruckCapacity, fRenewableFraction
 ) where
 
 

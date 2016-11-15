@@ -1,5 +1,8 @@
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Service.Finance (
@@ -7,18 +10,29 @@ module SERA.Service.Finance (
 ) where
 
 
-import Control.Arrow (second)
-import Data.Aeson (FromJSON, ToJSON(toJSON), defaultOptions, genericToJSON)
-import Data.Default.Util (zero)
+import Control.Arrow (first, second)
+import Control.Monad.Except (MonadError, MonadIO, liftIO)
+import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
+import Data.Aeson (FromJSON(parseJSON), ToJSON(toJSON), withText, defaultOptions, genericToJSON)
+import Data.Daft.Source (DataSource(..), withSource)
+import Data.Default.Util (zero, nan)
+import Data.Daft.DataCube (evaluate)
+import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
+import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import Data.Function (on)
-import Data.List (groupBy, transpose, zipWith4)
+import Data.List (groupBy, intercalate, sortBy, transpose, zipWith4)
 import Data.List.Split (splitOn)
 import Data.Table (Tabulatable(..))
 import Data.Maybe (fromMaybe)
-import Data.Yaml (decodeFile)
+import Data.String (IsString)
+import Data.String.ToString (toString)
+import Data.Vinyl.Derived (FieldRec, SField(..))
+import Data.Void (Void)
+import Debug.Trace (trace)
 import GHC.Generics (Generic)
 import SERA.Configuration.ScenarioInputs (ScenarioInputs(..))
 import SERA.Energy (EnergyCosts(..))
+import SERA.Service.HydrogenSizing -- (StationSummaryCube)
 import SERA.Finance.Analysis (computePerformanceAnalyses)
 import SERA.Finance.Analysis.CashFlowStatement (CashFlowStatement(..))
 import SERA.Finance.Analysis.Finances (Finances(..))
@@ -28,8 +42,10 @@ import SERA.Refueling.FCVSE.Cost.NREL56412 (rentCost, totalFixedOperatingCost)
 import SERA.Finance.IO.Xlsx (formatResultsAsFile)
 import SERA.Finance.Scenario (Scenario(..))
 import SERA.Finance.Solution (solveConstrained')
+import SERA.Service ()
+import SERA.Vehicle.Types
+import SERA.Types
 import SERA.Util.Summarization (summation)
-import System.Environment (getArgs)
 
 
 data Inputs =
@@ -38,7 +54,14 @@ data Inputs =
       scenario       :: ScenarioInputs
     , station        :: Capital
     , operations     :: Operations
-    , energyCosts    :: EnergyCosts
+    , feedstockUsageSource :: DataSource Void
+    , energyPricesSource  :: DataSource Void
+    , stationsSummarySource :: DataSource Void
+    , stationsDetailsSource :: DataSource Void
+    , financesDirectory :: FilePath
+    , financesSpreadsheet     :: FilePath
+    , financesFile    :: FilePath
+    , targetMargin   :: Maybe Double
     }
     deriving (Generic, Read, Show)
 
@@ -48,19 +71,110 @@ instance ToJSON Inputs where
   toJSON = genericToJSON defaultOptions
 
 
-financeMain :: IO ()
-financeMain =
+newtype HydrogenSource = HydrogenSource {hydrogenSource :: String}
+  deriving (Eq, Ord)
+
+instance Read HydrogenSource where
+  readsPrec
+    | quotedStringTypes = (fmap (first HydrogenSource) .) . readsPrec
+    | otherwise         = const $ return . (, []) . HydrogenSource
+
+instance Show HydrogenSource where
+  show
+    | quotedStringTypes = show . hydrogenSource
+    | otherwise         = hydrogenSource
+
+instance FromJSON HydrogenSource where
+  parseJSON = withText "HydrogenSource" $ return . HydrogenSource . toString
+
+instance ToJSON HydrogenSource where
+  toJSON = toJSON . hydrogenSource
+
+type FHydrogenSource = '("Hydrogen Source", HydrogenSource)
+
+fHydrogenSource :: SField FHydrogenSource
+fHydrogenSource = SField
+
+newtype FeedstockType = FeedstockType {feedstockType :: String}
+  deriving (Eq, Ord)
+
+instance Read FeedstockType where
+  readsPrec
+    | quotedStringTypes = (fmap (first FeedstockType) .) . readsPrec
+    | otherwise         = const $ return . (, []) . FeedstockType
+
+instance Show FeedstockType where
+  show
+    | quotedStringTypes = show . feedstockType
+    | otherwise         = feedstockType
+
+instance FromJSON FeedstockType where
+  parseJSON = withText "FeedstockType" $ return . FeedstockType . toString
+
+instance ToJSON FeedstockType where
+  toJSON = toJSON . feedstockType
+
+type FFeedstockType = '("Feedstock", FeedstockType)
+
+fFeedstockType :: SField FFeedstockType
+fFeedstockType = SField
+
+type FFeedstockUsage = '("Feedstock Usage [/kg]", Double)
+
+fFeedstockUsage :: SField FFeedstockUsage
+fFeedstockUsage = SField
+
+type FeedstockUsageCube = '[FHydrogenSource, FFeedstockType] ↝ '[FFeedstockUsage]
+
+
+type FStationUtilization = '("Utilization [kg/kg]", Double)
+
+fStationUtilization :: SField FStationUtilization
+fStationUtilization = SField
+
+
+type FNonRenewablePrice = '("Non-Renewable Price [$]", Double)
+
+fNonRenewablePrice :: SField FNonRenewablePrice
+fNonRenewablePrice = SField
+
+type FRenewablePrice = '("Renewable Price [$]", Double)
+
+fRenewablePrice :: SField FRenewablePrice
+fRenewablePrice = SField
+
+
+type EnergyPriceCube = '[FYear, FFeedstockType] ↝ '[FNonRenewablePrice, FRenewablePrice]
+
+
+type StationUtilizationCube = '[FYear, FRegion] ↝ '[FStationUtilization]
+
+
+computeRegionalUtilization :: StationSummaryCube -> StationUtilizationCube
+computeRegionalUtilization =
+  let
+    utilization :: k -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity] -> FieldRec '[FStationUtilization]
+    utilization _ rec =
+      fStationUtilization =: fDemand <: rec / fTotalCapacity <: rec
+  in
+    π utilization
+
+
+financeMain :: (IsString e, MonadError e m, MonadIO m)
+                       => Inputs -- ^ Configuration data.
+                       -> m ()               -- ^ Action to compute the introduction years.
+financeMain parameters@Inputs{..}=
   do
-    [defaultFile, inputFile, outputFile, summaryFile, targetMargin] <- getArgs
-    Just parameters <- decodeFile defaultFile
-    inputs <- map (splitOn "\t") . tail . lines <$> readFile inputFile
+    feedstockUsage <- readFieldCubeSource feedstockUsageSource
+    energyPrices <- readFieldCubeSource energyPricesSource
+    stationsSummary <- readFieldCubeSource stationsSummarySource
+    stationsDetail <- readFieldCubeSource stationsDetailsSource
     let
-      inputs' =
-        groupBy ((==) `on` head)
-          $ filter ((/= 0) . (read :: String -> Int) . (!! 3)) inputs
-      ids = map (head . head) inputs'
+      regionalUtilization = computeRegionalUtilization stationsSummary
+      inputs' = makeInputs parameters feedstockUsage energyPrices regionalUtilization stationsDetail
+      ids = map ((\(reg, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> reg) . head) inputs'
       prepared = map (prepareInputs parameters) inputs'
-      prepared' = case read targetMargin of
+      prepared' = case targetMargin of
         Nothing     -> prepared
         Just margin -> let
                          refresh prepared'' =
@@ -72,15 +186,15 @@ financeMain =
                        in
                          (refresh . refresh . refresh . refresh . refresh . refresh . refresh . refresh . refresh . refresh) prepared
       (outputs, allOutputs) = multiple parameters prepared'
-    sequence_
+    liftIO $ sequence_
       [
         formatResultsAsFile outputFile' $ dumpOutputs' output
       |
         (idx, output) <- zip ids outputs
-      , let outputFile' = "stations/finances-" ++ idx ++ ".xlsx"
+      , let outputFile' = financesDirectory ++ "/finances-" ++ idx ++ ".xlsx"
       ]
-    formatResultsAsFile outputFile $ dumpOutputs' allOutputs
-    writeFile summaryFile $ dumpOutputs9 allOutputs
+    liftIO $ formatResultsAsFile financesSpreadsheet $ dumpOutputs' allOutputs
+    liftIO $ writeFile financesFile $ dumpOutputs9 allOutputs
 
 
 multiple :: Inputs -> [[(Capital, Scenario)]] -> ([Outputs], Outputs)
@@ -165,39 +279,182 @@ single parameters capitalScenarios =
     }
 
 
-prepareInputs :: Inputs -> [[String]] -> [(Capital, Scenario)]
+makeInputs :: Inputs -> FeedstockUsageCube -> EnergyPriceCube -> StationUtilizationCube -> StationDetailCube -> [[(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]]
+makeInputs parameters feedstockUsage energyPrices stationUtilization stationsDetail =
+  let
+    makeInputs' :: (Region, StationID, Maybe Int, Int, Double, Double, Double, Double, Double, Double) -> [FieldRec '[FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]] -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]
+    makeInputs' (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity') []           =
+      let
+        Just nextYear = (+1) <$> previousYear
+        year = 2051
+      in
+        if nextYear >= year
+          then
+            []
+          else
+            makeInputs'
+              (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity')
+              (
+                (
+                    fRegion =: region'
+                <+> fYear   =: nextYear
+                <+> fStationID =: station'
+                <+> fNewCapitalCost =: 0
+                <+> fNewInstallationCost =: 0
+                <+> fNewCapitalIncentives =: 0
+                <+> fNewProductionIncentives =: 0
+                <+> fNewElectrolysisCapacity =: 0
+                <+> fNewPipelineCapacity =: 0
+                <+> fNewOnSiteSMRCapacity =: 0
+                <+> fNewGH2TruckCapacity =: 0
+                <+> fNewLH2TruckCapacity =: 0
+                <+> fRenewableFraction =: 0
+                )
+                : []
+              )
+    makeInputs' (_, _, previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity') (rec : recs) =
+      let
+        region' = fRegion <: rec
+        station' = fStationID <: rec 
+        Just nextYear = (+1) <$> previousYear
+        newElectrolysis = fNewElectrolysisCapacity <: rec
+        newPipeline = fNewPipelineCapacity <: rec
+        newOnSiteSMR = fNewOnSiteSMRCapacity <: rec
+        newGH2Truck = fNewGH2TruckCapacity <: rec
+        newLH2Truck = fNewLH2TruckCapacity <: rec
+        newCapacity = newElectrolysis + newPipeline + newOnSiteSMR + newGH2Truck + newLH2Truck
+        renewableCapacity = renewableCapacity' + newCapacity * (fRenewableFraction <: rec)
+        renewableFraction = renewableCapacity / totalCapacity
+        year = fYear <: rec
+        totalStations = totalStations' + newStations
+        newStations = if newCapacity > 0 then 1 else 0
+        electrolysisCapacity = electrolysisCapacity' + newElectrolysis
+        pipelineCapacity = pipelineCapacity' + newPipeline
+        onSiteSMRCapacity = onSiteSMRCapacity' + newOnSiteSMR
+        gh2TruckCapacity = gh2TruckCapacity' + newGH2Truck
+        lh2TruckCapacity = lh2TruckCapacity' + newLH2Truck
+        electricityUse = (
+                           ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Electrolysis" <+> fFeedstockType =: FeedstockType "Electricity [kWh]"  )) * electrolysisCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Pipeline"     <+> fFeedstockType =: FeedstockType "Electricity [kWh]"  )) * pipelineCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "On-Site SMR"  <+> fFeedstockType =: FeedstockType "Electricity [kWh]"  )) * onSiteSMRCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Trucked GH2"  <+> fFeedstockType =: FeedstockType "Electricity [kWh]"  )) * gh2TruckCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Trucked LH2"  <+> fFeedstockType =: FeedstockType "Electricity [kWh]"  )) * lh2TruckCapacity
+                         ) / totalCapacity
+        naturalGasUse  = (
+                           ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Electrolysis" <+> fFeedstockType =: FeedstockType "Natural Gas [mmBTU]")) * electrolysisCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Pipeline"     <+> fFeedstockType =: FeedstockType "Natural Gas [mmBTU]")) * pipelineCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "On-Site SMR"  <+> fFeedstockType =: FeedstockType "Natural Gas [mmBTU]")) * onSiteSMRCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Trucked GH2"  <+> fFeedstockType =: FeedstockType "Natural Gas [mmBTU]")) * gh2TruckCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Trucked LH2"  <+> fFeedstockType =: FeedstockType "Natural Gas [mmBTU]")) * lh2TruckCapacity
+                         ) / totalCapacity
+        hydrogenUse    = (
+                           ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Electrolysis" <+> fFeedstockType =: FeedstockType "Hydrogen [kg]"      )) * electrolysisCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Pipeline"     <+> fFeedstockType =: FeedstockType "Hydrogen [kg]"      )) * pipelineCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "On-Site SMR"  <+> fFeedstockType =: FeedstockType "Hydrogen [kg]"      )) * onSiteSMRCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Trucked GH2"  <+> fFeedstockType =: FeedstockType "Hydrogen [kg]"      )) * gh2TruckCapacity
+                         + ((fFeedstockUsage <:) $ feedstockUsage ! (fHydrogenSource =: HydrogenSource "Trucked LH2"  <+> fFeedstockType =: FeedstockType "Hydrogen [kg]"      )) * lh2TruckCapacity
+                         ) / totalCapacity
+        totalCapacity = electrolysisCapacity + pipelineCapacity + onSiteSMRCapacity + gh2TruckCapacity + lh2TruckCapacity
+        capitalCost = fNewCapitalCost <: rec
+        installationCost = fNewInstallationCost <: rec
+        capitalGrant = fNewCapitalIncentives <: rec
+        operatingGrant = fNewProductionIncentives <: rec
+        incidentalRevenue = nan -- FIXME
+        electricity = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Electricity [/kWh]"   )) * (1 - renewableFraction)
+                    + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Electricity [/kWh]"   )) *      renewableFraction
+        naturalGas  = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Natural Gas [/mmBTU]" )) * (1 - renewableFraction)
+                    + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Natural Gas [/mmBTU]" )) *      renewableFraction
+        deliveredH2 = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Hydrogen [/kg]"       )) * (1 - renewableFraction)
+                    + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Hydrogen [/kg]"       )) *      renewableFraction
+        retailH2    = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Retail Hydrogen [/kg]")) * (1 - renewableFraction)
+                    + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Retail Hydrogen [/kg]")) *      renewableFraction
+        demand = (totalCapacity *) . maybe 0 (fStationUtilization <:) $ stationUtilization `evaluate` τ rec
+      in
+        if previousYear == Nothing || nextYear == year
+          then
+            (
+              show $ fStationID <: rec
+            , undefined
+            , year
+            , totalStations
+            , newStations
+            , electricityUse
+            , naturalGasUse
+            , hydrogenUse
+            , totalCapacity
+            , capitalCost
+            , installationCost
+            , incidentalRevenue
+            , capitalGrant
+            , operatingGrant
+            , electricity
+            , naturalGas
+            , deliveredH2
+            , retailH2
+            , demand
+            )
+            : makeInputs' (region', station', Just year, totalStations, electrolysisCapacity, pipelineCapacity, onSiteSMRCapacity, gh2TruckCapacity, lh2TruckCapacity, renewableCapacity) recs
+          else
+            makeInputs'
+              (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity')
+              (
+                (
+                    fRegion =: fRegion <: rec
+                <+> fYear   =: nextYear
+                <+> fStationID =: fStationID <: rec
+                <+> fNewCapitalCost =: 0
+                <+> fNewInstallationCost =: 0
+                <+> fNewCapitalIncentives =: 0
+                <+> fNewProductionIncentives =: 0
+                <+> fNewElectrolysisCapacity =: 0
+                <+> fNewPipelineCapacity =: 0
+                <+> fNewOnSiteSMRCapacity =: 0
+                <+> fNewGH2TruckCapacity =: 0
+                <+> fNewLH2TruckCapacity =: 0
+                <+> fRenewableFraction =: 0
+                )
+                : rec : recs
+              )
+  in
+    map (makeInputs' (undefined, undefined, Nothing, 0, 0, 0, 0, 0, 0, 0))
+      $ groupBy ((==) `on` (\rec -> (fRegion <: rec, fStationID <: rec)))
+      $ sortBy (compare `on` (\rec -> (fRegion <: rec, fStationID <: rec, fYear <: rec)))
+      $ toKnownRecords stationsDetail
+
+
+prepareInputs :: Inputs -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)] -> [(Capital, Scenario)]
 prepareInputs parameters inputs =
   let
     firstYear :: Int
-    firstYear = read $ head inputs !! 2
+    (_, _, firstYear, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = head inputs
     capitalScenarios :: [(Capital, Scenario)]
     capitalScenarios =
       [
         (
           (\c@Station{..} ->
             let
-              totalStations' = read totalStations 
-              averageCapacity = read totalCapacity / totalStations'
+              totalStations' = fromIntegral totalStations 
+              averageCapacity = totalCapacity / totalStations'
               escalation = 1.019**(fromIntegral stationYear - 2013)
             in
               c {
-                  stationLicensingAndPermitting = read totalStations * stationLicensingAndPermitting
+                  stationLicensingAndPermitting = totalStations' * stationLicensingAndPermitting
                 , stationMaintenanceCost        = escalation * totalStations' * (totalFixedOperatingCost averageCapacity - rentCost averageCapacity)
                 , stationRentOfLand             = escalation * totalStations' * rentCost averageCapacity
                 }
-          ) $ costStation 0 (operations parameters) (read year) $ (station parameters)
+          ) $ costStation 0 (operations parameters) (year) $ (station parameters)
           {
-            stationYear                            = read year
-          , stationTotal                           = read totalStations
-          , stationOperating                       = read totalStations - read newStations / 2
-          , stationNew                             = read newStations
-          , stationElectricityUse                  = read electricityUse
-          , stationNaturalGasUse                   = read naturalGasUse
-          , stationDeliveredHydrogenUse            = read hydrogenUse
-          , stationCapacity                        = read totalCapacity
-          , stationCapitalCost                     = read capitalCost
-          , stationInstallationCost                = read installationCost
-          , stationIncidentalRevenue               = read incidentalRevenue
+            stationYear                            = year
+          , stationTotal                           = totalStations
+          , stationOperating                       = fromIntegral totalStations - fromIntegral newStations / 2
+          , stationNew                             = newStations
+          , stationElectricityUse                  = electricityUse
+          , stationNaturalGasUse                   = naturalGasUse
+          , stationDeliveredHydrogenUse            = hydrogenUse
+          , stationCapacity                        = totalCapacity
+          , stationCapitalCost                     = capitalCost
+          , stationInstallationCost                = installationCost
+          , stationIncidentalRevenue               = incidentalRevenue
 --        , stationMaintenanceCost                 = read "NaN"
 --        , stationLicensingAndPermitting          = read "NaN"
 --        , stationRentOfLand                      = read "NaN"
@@ -212,20 +469,20 @@ prepareInputs parameters inputs =
           }
         , Scenario
           {
-            scenarioYear               = read year
-          , durationOfDebt             = read year - firstYear + 1
-          , newCapitalIncentives       = read capitalGrant
-          , newProductionIncentives    = read operatingGrant
+            scenarioYear               = year
+          , durationOfDebt             = year - firstYear + 1
+          , newCapitalIncentives       = capitalGrant
+          , newProductionIncentives    = operatingGrant
           , newFuelPrepayments         = 0
           , newCrowdFunding            = 0
           , newConsumerDiscounts       = 0
-          , newCapitalExpenditures     = read capitalCost
-          , electricityCost            = read electricity
-          , naturalGasCost             = read naturalGas
-          , hydrogenCost               = read deliveredH2
-          , hydrogenPrice              = read retailH2
-          , stationUtilization         = read demand / read totalCapacity
-          , hydrogenSales              = read demand
+          , newCapitalExpenditures     = capitalCost
+          , electricityCost            = electricity
+          , naturalGasCost             = naturalGas
+          , hydrogenCost               = deliveredH2
+          , hydrogenPrice              = retailH2
+          , stationUtilization         = demand / totalCapacity
+          , hydrogenSales              = demand
           , fcevTotal                  = 0
           , fcevNew                    = 0
           , economyNet                 = read "NaN"
@@ -234,8 +491,8 @@ prepareInputs parameters inputs =
           }
         )
       |
-        [_regionId, _regionName, year, totalStations, newStations, electricityUse, naturalGasUse, hydrogenUse, totalCapacity, capitalCost, installationCost, incidentalRevenue, capitalGrant, operatingGrant, electricity, naturalGas, deliveredH2, retailH2, demand] <- inputs
-      , (read totalStations :: Int) > 0
+        (_regionId, _regionName, year, totalStations, newStations, electricityUse, naturalGasUse, hydrogenUse, totalCapacity, capitalCost, installationCost, incidentalRevenue, capitalGrant, operatingGrant, electricity, naturalGas, deliveredH2, retailH2, demand) <- inputs
+      , (totalStations :: Int) > 0
       ]
   in
     accumulateMaintenanceCosts 0
@@ -374,8 +631,10 @@ dumpOutputs9 :: Outputs -> String
 dumpOutputs9 outputs =
   let
     TSVOutputs{..} = makeTSVOutputs outputs
-  in
-    unlines
+    basic =
+      map (splitOn "\t")
+      $ lines
+      $ unlines
       [
         scenarioDefinitionTSV
       , ""
@@ -387,6 +646,14 @@ dumpOutputs9 outputs =
       , ""
       , analysesTSV
       ]
+    n = maximum $ map length basic
+    pad x = take n $ x ++ repeat (if null x then [] else last x)
+  in
+    unlines
+      $ map (intercalate "\t")
+      $ transpose
+      $ map pad
+      basic
 
 
 dumpOutputs' :: Outputs -> [[String]]
