@@ -448,7 +448,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
               , stationCapitalCost                     = capitalCost
               , stationInstallationCost                = installationCost
               , stationIncidentalRevenue               = asFunction incidentalRevenueFunction year' + carbonCreditPerKg * 365.24 * demand * escalation
-              , stationMaintenanceCost                 = totalCapital * maintenanceCostFraction
+              , stationMaintenanceCost                 = totalCapital * maintenanceCostFraction * escalation
               , stationLicensingAndPermitting          = asFunction licensingAndPermittingFunction year'
               , stationRentOfLand                      = asFunction rentOfLandFunction year'
               , stationStaffing                        = staffing
