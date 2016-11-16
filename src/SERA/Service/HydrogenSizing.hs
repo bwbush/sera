@@ -404,19 +404,27 @@ hasNewStation _ rec =
   || 0 < fNewLH2TruckCapacity <: rec
 
 
-pullYear :: FieldRec '[FRegion, FYear, FStationID] -> v -> FieldRec '[FYear]
-pullYear key _ = τ key
+pullYear :: FieldRec '[FRegion, FYear, FStationID] -> v -> FieldRec '[FYear, FStationCount]
+pullYear key _ = fYear =: fYear <: key <+> fStationCount =: 1
 
 
-lastOverride :: FieldRec '[FRegion] -> [FieldRec '[FYear]] -> FieldRec '[FYear]
-lastOverride _ rec = fYear =: maximum ((fYear <:) <$> rec)
+lastOverride :: FieldRec '[FRegion] -> [FieldRec '[FYear, FStationCount]] -> FieldRec '[FYear, FStationCount]
+lastOverride _ rec = fYear =: maximum ((fYear <:) <$> rec) <+> fStationCount =: sum ((fStationCount <:) <$> rec)
+
+
+pushYear :: FieldRec '[FYear, FRegion] -> FieldRec '[FYear, FStationCount] -> FieldRec '[FStationCount]
+pushYear _ rec = τ rec
+
+
+dropStationCount :: k -> FieldRec '[FStationCount, FYear, FDemand] -> FieldRec '[FYear, FDemand]
+dropStationCount _ rec = τ rec
 
 
 sizeStations :: StationCapacityParameters -> CapitalCostParameters -> GlobalCapacityCube -> StationDetailCube -> RegionalIntroductionsCube -> StockCube -> (StationDetailCube, StationSummaryCube)
 sizeStations parameters parameters' externals overrides introductions stock =
   let
     regionStations = ω overrides :: Set (FieldRec '[FYear, FStationID])
-    overrides' :: '[FRegion] ↝ '[FYear]
+    overrides' :: '[FRegion] ↝ '[FYear, FStationCount]
     overrides' =
       κ regionStations lastOverride
       $ π pullYear
@@ -425,11 +433,13 @@ sizeStations parameters parameters' externals overrides introductions stock =
     vocationsVehicles = ω stock :: Set (FieldRec '[FVocation, FVehicle])
     stock' = κ vocationsVehicles totalStock stock
     years = ω stock :: Set (FieldRec '[FYear])
+    z :: '[FYear, FRegion] ↝  '[FStationCount, FYear, FDemand]
+    z =   π dailyDemands
+        $ stock' ⋈ introductions'
     capacities =
       toKnownRecords
         $ κ years (sizing parameters)
-        $ π dailyDemands
-        $ stock' ⋈ introductions'
+        $ (((δ years pushYear overrides' :: '[FYear, FRegion] ↝  '[FStationCount])) ⋈ π dropStationCount z :: '[FYear, FRegion] ↝  '[FStationCount, FYear, FDemand]) <> z
       :: [FieldRec '[FRegion, FStationList]]
     details =
       fromRecords
@@ -452,7 +462,7 @@ sizeStations parameters parameters' externals overrides introductions stock =
           rec <- capacities
         , let ysc = fStationList <: rec
         , (y, s, c) <- ysc
-        , maybe True ((y >=) . (fYear <:)) $ overrides' `evaluate` τ rec
+        , maybe True ((y >) . (fYear <:)) $ overrides' `evaluate` τ rec
         , let california = take 2 (show $ fRegion <: rec) == "CA"
         ]
         :: '[FRegion, FYear, FStationID] ↝ '[FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]
