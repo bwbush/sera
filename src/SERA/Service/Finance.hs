@@ -34,6 +34,7 @@ import SERA.Configuration.ScenarioInputs (ScenarioInputs(..))
 import SERA.Energy (EnergyCosts(..))
 import SERA.Service.HydrogenSizing -- (StationSummaryCube)
 import SERA.Finance.Analysis (computePerformanceAnalyses)
+import SERA (unsafeInform)
 import SERA.Finance.Analysis.CashFlowStatement (CashFlowStatement(..))
 import SERA.Finance.Analysis.Finances (Finances(..))
 import SERA.Finance.Analysis.PerformanceAnalysis (PerformanceAnalysis)
@@ -52,7 +53,10 @@ import SERA.Util.Summarization (summation)
 data Inputs =
   Inputs
     {
-      scenario       :: ScenarioInputs
+      referenceYear  :: Int
+    , cohortStart    :: Int
+    , cohortFinish   :: Int
+    , scenario       :: ScenarioInputs
     , station        :: StationParameters
     , feedstockUsageSource :: DataSource Void
     , energyPricesSource  :: DataSource Void
@@ -229,7 +233,7 @@ financeMain parameters@Inputs{..}=
         formatResultsAsFile outputFile' $ dumpOutputs' output
       |
         (idx, output) <- zip ids outputs
-      , let outputFile' = financesDirectory ++ "/finances-" ++ idx ++ ".xlsx"
+      , let outputFile' = financesDirectory ++ "/finances-" ++ map (\x -> case x of ':' -> '_' ; '/' -> '_'; '\\' -> '_' ; y -> y) idx ++ ".xlsx"
       ]
     liftIO $ formatResultsAsFile financesSpreadsheet $ dumpOutputs' allOutputs
     liftIO $ writeFile financesFile $ dumpOutputs9 allOutputs
@@ -369,9 +373,9 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
         year' = fromIntegral year
         firstYear = maybe year id firstYear'
         totalCapital = totalCapital' + capitalCost
-        escalation = (1 + generalInflationRate (scenario parameters))**(fromIntegral year - 2016)
+        escalation = (1 + generalInflationRate (scenario parameters))**(fromIntegral $ year - referenceYear parameters)
         totalStations = totalStations' + newStations
-        newStations = if newCapacity > 0 then 1 else 0
+        newStations = maybe 1 (const 0) firstYear'
         electrolysisCapacity = electrolysisCapacity' + newElectrolysis
         pipelineCapacity = pipelineCapacity' + newPipeline
         onSiteSMRCapacity = onSiteSMRCapacity' + newOnSiteSMR
@@ -501,8 +505,14 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
                 )
                 : rec : recs
               )
+    isGeneric x
+      | length x < 7 = False
+      | otherwise    = take 7 x == "Generic"
   in
-    map (replicateFirstYear . makeInputs' (undefined, undefined, Nothing, 0, 0, 0, 0, 0, 0, 0, 0, Nothing))
+    map (replicateFirstYear . makeInputs' (undefined, undefined, Nothing, 0, 0, 0, 0, 0, 0, 0, 0, Nothing) . (\x -> unsafeInform ("Computing finances for \"" ++ show (fStationID <: head x) ++ "\" . . .") x))
+      $ take (cohortFinish parameters - cohortStart parameters + 1)
+      $ drop (cohortStart parameters - 1)
+      $ sortBy (compare `on` (\recs -> (fYear <: head recs, isGeneric (show $ fStationID <: head recs), fStationID <: head recs)))
       $ groupBy ((==) `on` (\rec -> (fRegion <: rec, fStationID <: rec)))
       $ sortBy (compare `on` (\rec -> (fRegion <: rec, fStationID <: rec, fYear <: rec)))
       $ toKnownRecords stationsDetail

@@ -21,6 +21,7 @@ module SERA (
 , debug
 , trace'
 , inform
+, unsafeInform
 ) where
 
 
@@ -29,6 +30,7 @@ import Data.Version (Version(..), showVersion)
 import Debug.Trace (trace)
 import Paths_sera (version)
 import System.IO (hPutStrLn, stderr)
+import System.IO.Unsafe (unsafePerformIO)
 
 
 -- | Report the numeric version.
@@ -57,3 +59,11 @@ trace' =
 -- | Write to standard error.
 inform :: MonadIO m => String -> m ()
 inform = liftIO . hPutStrLn stderr
+
+
+unsafeInform :: String -> a -> a
+unsafeInform s x =
+  unsafePerformIO
+    $ do
+      hPutStrLn stderr s
+      return x
