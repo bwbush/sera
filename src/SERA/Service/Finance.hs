@@ -37,7 +37,8 @@ import SERA.Finance.Analysis (computePerformanceAnalyses)
 import SERA.Finance.Analysis.CashFlowStatement (CashFlowStatement(..))
 import SERA.Finance.Analysis.Finances (Finances(..))
 import SERA.Finance.Analysis.PerformanceAnalysis (PerformanceAnalysis)
-import SERA.Finance.Capital (Capital(..), Operations(..), costStation)
+import Math.GeometricSeries (GeometricSeries(..), asFunction)
+import SERA.Finance.Capital (Capital(..), {- Operations(..), -} costStation)
 import SERA.Refueling.FCVSE.Cost.NREL56412 (rentCost, totalFixedOperatingCost)
 import SERA.Finance.IO.Xlsx (formatResultsAsFile)
 import SERA.Finance.Scenario (Scenario(..))
@@ -52,8 +53,7 @@ data Inputs =
   Inputs
     {
       scenario       :: ScenarioInputs
-    , station        :: Capital
-    , operations     :: Operations
+    , station        :: StationParameters
     , feedstockUsageSource :: DataSource Void
     , energyPricesSource  :: DataSource Void
     , carbonCreditSource :: DataSource Void
@@ -70,6 +70,29 @@ instance FromJSON Inputs
 
 instance ToJSON Inputs where
   toJSON = genericToJSON defaultOptions
+
+type DoubleSeries = GeometricSeries Double
+
+data StationParameters =
+  StationParameters
+  {
+    maintenanceCostFraction                :: Double
+  , staffing                        :: Double
+  , sellingAndAdministrativeExpense :: Double
+  , creditCardFeesRate              :: Double
+  , salesTaxRate                    :: Double
+  , propertyTaxRate                 :: Double
+  , propertyInsuranceRate           :: Double
+  , incidentalRevenueFunction              :: DoubleSeries
+  , licensingAndPermittingFunction  :: DoubleSeries
+  , rentOfLandFunction                     :: DoubleSeries
+  , laborRateFunction               :: DoubleSeries
+  , roadTaxFunction                        :: DoubleSeries
+  } deriving (Generic, Read, Show)
+
+instance FromJSON StationParameters
+
+instance ToJSON StationParameters
 
 
 newtype HydrogenSource = HydrogenSource {hydrogenSource :: String}
@@ -187,9 +210,8 @@ financeMain parameters@Inputs{..}=
     stationsDetail <- readFieldCubeSource stationsDetailsSource
     let
       regionalUtilization = computeRegionalUtilization stationsSummary
-      inputs' = makeInputs parameters feedstockUsage energyPrices carbonCredits regionalUtilization stationsDetail
-      ids = map ((\(reg, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> reg) . head) inputs'
-      prepared = map (prepareInputs parameters) inputs'
+      prepared = makeInputs parameters feedstockUsage energyPrices carbonCredits regionalUtilization stationsDetail
+      ids = map ((\(reg, _, _) -> reg) . head) prepared
       prepared' = case targetMargin of
         Nothing     -> prepared
         Just margin -> let
@@ -213,9 +235,10 @@ financeMain parameters@Inputs{..}=
     liftIO $ writeFile financesFile $ dumpOutputs9 allOutputs
 
 
-multiple :: Inputs -> [[(Capital, Scenario)]] -> ([Outputs], Outputs)
-multiple parameters capitalScenarios =
+multiple :: Inputs -> [[(String, Capital, Scenario)]] -> ([Outputs], Outputs)
+multiple parameters capitalScenarios' =
   let
+    capitalScenarios = map (map (\(f, s, t) -> (s, t))) capitalScenarios'
     firstYear = minimum $ map (stationYear . fst . head) capitalScenarios
     outputs = map (single parameters) capitalScenarios
     outputs' = outputs
@@ -238,9 +261,9 @@ multiple parameters capitalScenarios =
     )
 
 
-setHydrogenPrice :: [(Int, Double)] -> [(Capital, Scenario)] -> [(Capital, Scenario)]
+setHydrogenPrice :: [(Int, Double)] -> [(String, Capital, Scenario)] -> [(String, Capital, Scenario)]
 setHydrogenPrice prices =
-  map (second $ setHydrogenPrice' prices)
+  map (\(f, s, t) -> (f, s, setHydrogenPrice' prices t))
 
 
 setHydrogenPrice' :: [(Int, Double)] -> Scenario -> Scenario
@@ -295,11 +318,11 @@ single parameters capitalScenarios =
     }
 
 
-makeInputs :: Inputs -> FeedstockUsageCube -> EnergyPriceCube -> CarbonCreditCube -> StationUtilizationCube -> StationDetailCube -> [[(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]]
+makeInputs :: Inputs -> FeedstockUsageCube -> EnergyPriceCube -> CarbonCreditCube -> StationUtilizationCube -> StationDetailCube -> [[(String, Capital, Scenario)]]
 makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilization stationsDetail =
   let
-    makeInputs' :: (Region, StationID, Maybe Int, Int, Double, Double, Double, Double, Double, Double) -> [FieldRec '[FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]] -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)]
-    makeInputs' (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity') []           =
+    makeInputs' :: (Region, StationID, Maybe Int, Int, Double, Double, Double, Double, Double, Double, Double, Maybe Int) -> [FieldRec '[FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]] -> [(String, Capital, Scenario)]
+    makeInputs' (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity', totalCapital', firstYear') []           =
       let
         Just nextYear = (+1) <$> previousYear
         year = 2051
@@ -309,7 +332,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
             []
           else
             makeInputs'
-              (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity')
+              (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity', totalCapital', firstYear')
               (
                 (
                     fRegion =: region'
@@ -328,8 +351,9 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
                 )
                 : []
               )
-    makeInputs' (_, _, previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity') (rec : recs) =
+    makeInputs' (_, _, previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity', totalCapital', firstYear') (rec : recs) =
       let
+        StationParameters{..} = station parameters
         region' = fRegion <: rec
         station' = fStationID <: rec 
         Just nextYear = (+1) <$> previousYear
@@ -342,6 +366,10 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
         renewableCapacity = renewableCapacity' + newCapacity * (fRenewableFraction <: rec)
         renewableFraction = renewableCapacity / totalCapacity
         year = fYear <: rec
+        year' = fromIntegral year
+        firstYear = maybe year id firstYear'
+        totalCapital = totalCapital' + capitalCost
+        escalation = (1 + generalInflationRate (scenario parameters))**(fromIntegral year - 2016)
         totalStations = totalStations' + newStations
         newStations = if newCapacity > 0 then 1 else 0
         electrolysisCapacity = electrolysisCapacity' + newElectrolysis
@@ -375,7 +403,6 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
         installationCost = fNewInstallationCost <: rec
         capitalGrant = fNewCapitalIncentives <: rec
         operatingGrant = fNewProductionIncentives <: rec
-        incidentalRevenue = nan -- FIXME
         electricity = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Electricity [/kWh]"   )) * (1 - renewableFraction)
                     + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Electricity [/kWh]"   )) *      renewableFraction
         naturalGas  = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Natural Gas [/mmBTU]" )) * (1 - renewableFraction)
@@ -405,30 +432,57 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
           then
             (
               show $ fStationID <: rec
-            , undefined
-            , year
-            , totalStations
-            , newStations
-            , electricityUse
-            , naturalGasUse
-            , hydrogenUse
-            , totalCapacity
-            , capitalCost
-            , installationCost
-            , incidentalRevenue
-            , capitalGrant
-            , operatingGrant
-            , electricity
-            , naturalGas
-            , deliveredH2
-            , retailH2
-            , demand
-            , carbonCreditPerKg
+            , Station {
+                stationYear                            = year
+              , stationTotal                           = totalStations
+              , stationOperating                       = fromIntegral totalStations - fromIntegral newStations / 2
+              , stationNew                             = newStations
+              , stationElectricityUse                  = electricityUse
+              , stationNaturalGasUse                   = naturalGasUse
+              , stationDeliveredHydrogenUse            = hydrogenUse
+              , stationCapacity                        = totalCapacity
+              , stationCapitalCost                     = capitalCost
+              , stationInstallationCost                = installationCost
+              , stationIncidentalRevenue               = asFunction incidentalRevenueFunction year' + carbonCreditPerKg * 365.24 * demand * escalation
+              , stationMaintenanceCost                 = totalCapital * maintenanceCostFraction
+              , stationLicensingAndPermitting          = asFunction licensingAndPermittingFunction year'
+              , stationRentOfLand                      = asFunction rentOfLandFunction year'
+              , stationStaffing                        = staffing
+              , stationLaborRate                       = asFunction laborRateFunction year'
+              , stationSellingAndAdministrativeExpense = sellingAndAdministrativeExpense
+              , stationCreditCardFeesRate              = creditCardFeesRate
+              , stationSalesTaxRate                    = salesTaxRate
+              , stationRoadTax                         = asFunction roadTaxFunction year'
+              , stationPropertyTaxRate                 = propertyTaxRate
+              , stationPropertyInsuranceRate           = propertyInsuranceRate
+              }
+            , Scenario
+              {
+                scenarioYear               = year
+              , durationOfDebt             = year - firstYear + 1
+              , newCapitalIncentives       = capitalGrant
+              , newProductionIncentives    = operatingGrant
+              , newFuelPrepayments         = 0
+              , newCrowdFunding            = 0
+              , newConsumerDiscounts       = 0
+              , newCapitalExpenditures     = capitalCost
+              , electricityCost            = electricity
+              , naturalGasCost             = naturalGas
+              , hydrogenCost               = deliveredH2
+              , hydrogenPrice              = retailH2
+              , stationUtilization         = demand / totalCapacity
+              , hydrogenSales              = demand
+              , fcevTotal                  = 0
+              , fcevNew                    = 0
+              , economyNet                 = nan
+              , economyNew                 = nan
+              , vmtTotal                   = nan
+              }
             )
-            : makeInputs' (region', station', Just year, totalStations, electrolysisCapacity, pipelineCapacity, onSiteSMRCapacity, gh2TruckCapacity, lh2TruckCapacity, renewableCapacity) recs
+            : makeInputs' (region', station', Just year, totalStations, electrolysisCapacity, pipelineCapacity, onSiteSMRCapacity, gh2TruckCapacity, lh2TruckCapacity, renewableCapacity, totalCapital, Just firstYear) recs
           else
             makeInputs'
-              (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity')
+              (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity', totalCapital', Just firstYear)
               (
                 (
                     fRegion =: fRegion <: rec
@@ -448,12 +502,17 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
                 : rec : recs
               )
   in
-    map (makeInputs' (undefined, undefined, Nothing, 0, 0, 0, 0, 0, 0, 0))
+    map (replicateFirstYear . makeInputs' (undefined, undefined, Nothing, 0, 0, 0, 0, 0, 0, 0, 0, Nothing))
       $ groupBy ((==) `on` (\rec -> (fRegion <: rec, fStationID <: rec)))
       $ sortBy (compare `on` (\rec -> (fRegion <: rec, fStationID <: rec, fYear <: rec)))
       $ toKnownRecords stationsDetail
 
 
+-- FIXME: check station cost override ZERO needs to be computed if there is a new station.
+-- FIXME: veto introduction until a specific year
+-- FIXME: control stations, year of demand, year of first station automatically built
+
+{-
 prepareInputs :: Inputs -> [(String, String, Int, Int, Int, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double, Double)] -> [(Capital, Scenario)]
 prepareInputs parameters inputs =
   let
@@ -470,12 +529,13 @@ prepareInputs parameters inputs =
               escalation = 1.019**(fromIntegral stationYear - 2016)
             in
               c {
-                  stationLicensingAndPermitting = totalStations' * stationLicensingAndPermitting
-                , stationMaintenanceCost        = escalation * totalStations' * (totalFixedOperatingCost averageCapacity - rentCost averageCapacity)
-                , stationRentOfLand             = escalation * totalStations' * rentCost averageCapacity
-                , stationIncidentalRevenue      = stationIncidentalRevenue + carbonCredits * 365.24 * demand * escalation
+                  stationLicensingAndPermitting = 1350 * escalation -- totalStations' * stationLicensingAndPermitting
+                , stationMaintenanceCost        = 0.0234 * capitalCost -- escalation * totalStations' * (totalFixedOperatingCost averageCapacity - rentCost averageCapacity)
+                , stationRentOfLand             = 49500 * escalation -- escalation * totalStations' * rentCost averageCapacity
+                , stationIncidentalRevenue      = stationIncidentalRevenue + carbonCredits * 365.24 * demand * escalation -- FIXME:
                 }
-          ) $ costStation 0 (operations parameters) (year) $ (station parameters)
+          )
+          $ costStation 0 (operations parameters) (year) $ (station parameters)
           {
             stationYear                            = year
           , stationTotal                           = totalStations
@@ -531,23 +591,30 @@ prepareInputs parameters inputs =
     accumulateMaintenanceCosts 0
       $ extendTo2050
       $ replicateFirstYear capitalScenarios
-
+-}
 
 accumulateMaintenanceCosts :: Double -> [(Capital, Scenario)] -> [(Capital, Scenario)]
 accumulateMaintenanceCosts _        [] = []
 accumulateMaintenanceCosts previous ((c, s) : css) =
+  (c {stationMaintenanceCost = 0.0234 * cumulativeCapitalCost, stationLicensingAndPermitting = 1.019 * stationLicensingAndPermitting c, stationRentOfLand = 1.019 * stationRentOfLand c}, s)
+    : accumulateMaintenanceCosts cumulativeCapitalCost css
+    where
+      cumulativeCapitalCost = 1.019 * previous + stationCapitalCost c
+{-
   (c {stationMaintenanceCost = alpha * stationMaintenanceCost c + beta * 0.05 * cumulativeCapitalCost}, s)
     : accumulateMaintenanceCosts cumulativeCapitalCost css
     where
       alpha = maximum [0, minimum [1, (2025 - fromIntegral (stationYear c)) / (2025 - 2015)]]
       beta = 1 - alpha
       cumulativeCapitalCost = 1.019 * previous + stationCapitalCost c
+-}
 
 
-replicateFirstYear :: [(Capital, Scenario)] -> [(Capital, Scenario)]
-replicateFirstYear ((c, s) : css) =
+replicateFirstYear :: [(String, Capital, Scenario)] -> [(String, Capital, Scenario)]
+replicateFirstYear ((r, c, s) : css) =
   (
-    c
+    r
+  , c
     {
       stationYear              = stationYear c - 1
     , stationOperating         = 0
@@ -564,7 +631,8 @@ replicateFirstYear ((c, s) : css) =
   )
   :
   (
-    c
+    r
+  , c
     {
       stationNew              = 0
     , stationCapitalCost      = 0
