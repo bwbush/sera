@@ -233,7 +233,7 @@ financeMain parameters@Inputs{..}=
         formatResultsAsFile outputFile' $ dumpOutputs' output
       |
         (idx, output) <- zip ids outputs
-      , let outputFile' = financesDirectory ++ "/finances-" ++ map (\x -> case x of ':' -> '_' ; '/' -> '_'; '\\' -> '_' ; y -> y) idx ++ ".xlsx"
+      , let outputFile' = financesDirectory ++ "/" ++ map (\x -> case x of ':' -> '_' ; '/' -> '_'; '\\' -> '_' ; y -> y) idx ++ ".xlsx"
       ]
     liftIO $ formatResultsAsFile financesSpreadsheet $ dumpOutputs' allOutputs
     liftIO $ writeFile financesFile $ dumpOutputs9 allOutputs
