@@ -15,9 +15,11 @@
 
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE Trustworthy                #-}
 {-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Types (
@@ -29,6 +31,8 @@ module SERA.Types (
 , Year
 , FYear
 , fYear
+, pushYear
+, minimumYear
 -- * Urban area
 , UrbanCode(..)
 , FUrbanCode
@@ -43,9 +47,12 @@ module SERA.Types (
 
 import Control.Arrow (first)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..), withText)
+import Data.Daft.Vinyl.FieldCube (τ)
+import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Default (Default)
 import Data.String.ToString (toString)
-import Data.Vinyl.Derived (SField(..))
+import Data.Vinyl.Derived (FieldRec, SField(..))
+import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
 
 
@@ -95,6 +102,22 @@ type FYear = '("Year", Year)
 -- | Field label for calendar years.
 fYear :: SField FYear
 fYear = SField
+
+
+-- | Transfer a year from the key to the value.
+pushYear :: (FYear ∈ ks)
+         => FieldRec ks       -- ^ The key.
+         -> v                 -- ^ The value.
+         -> FieldRec '[FYear] -- ^ The years.
+pushYear key _ = τ key
+
+
+-- | Find the minimum year.
+minimumYear :: (FYear ∈ vs)
+            => k                 -- ^ The key.
+            -> [FieldRec vs]     -- ^ The values.
+            -> FieldRec '[FYear] -- ^ The minimum year.
+minimumYear _ recs = fYear =: minimum ((fYear <:) <$> recs)
 
 
 -- | Data type for urban areas codes.

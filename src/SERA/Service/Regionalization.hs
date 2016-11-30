@@ -8,7 +8,7 @@
 -- Stability   :  Stable
 -- Portability :  Portable
 --
--- | Services for estimating introduction years.
+-- | Services for regionalizing demand.
 --
 -----------------------------------------------------------------------------
 
@@ -21,31 +21,29 @@ module SERA.Service.Regionalization (
 -- * Configuration
   ConfigRegionalization(..)
 -- * Computation
-, calculateRegionalization
+, regionalizationMain
 ) where
 
 
-import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Source (DataSource(..), withSource)
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
+import Data.Daft.Source (DataSource(..))
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
-import SERA (inform)
+import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Service ()
 import SERA.Scenario.Regionalization (RegionalizationParameters, regionalize)
 
 
--- | Configuration for vehicle stock modeling.
+-- | Configuration for regionalizing demand.
 data ConfigRegionalization =
   ConfigRegionalization
   {
-    regionalizationParameters   :: RegionalizationParameters
-  , regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
-  , totalStockSource            :: DataSource Void
-  , regionalStockSource         :: DataSource Void
+    regionalizationParameters   :: RegionalizationParameters -- ^ Parameters for regionalizing demand.
+  , regionalIntroductionsSource :: DataSource Void           -- ^ Source of regional introductions.
+  , totalStockSource            :: DataSource Void           -- ^ Source of total stock.
+  , regionalStockSource         :: DataSource Void           -- ^ Source for regionalized stock.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -55,17 +53,13 @@ instance ToJSON ConfigRegionalization
 
 
 -- | Compute introduction years.
-calculateRegionalization :: (IsString e, MonadError e m, MonadIO m)
+regionalizationMain :: (IsString e, MonadError e m, MonadIO m)
                          => ConfigRegionalization -- ^ Configuration data.
                          -> m ()                  -- ^ Action to compute the introduction years.
-calculateRegionalization ConfigRegionalization{..} =
+regionalizationMain ConfigRegionalization{..} =
   do
-    inform $ "Reading regional introduction years from " ++ show regionalIntroductionsSource ++ " . . ."
-    regionalIntroductions <- readFieldCubeSource regionalIntroductionsSource
-    inform $ "Reading total stock from " ++ show totalStockSource ++ " . . ."
-    totalStock <- readFieldCubeSource totalStockSource
+    regionalIntroductions <- verboseReadFieldCubeSource "regional introduction years" regionalIntroductionsSource
+    totalStock            <- verboseReadFieldCubeSource "total stock"                 totalStockSource
     let
       regionalStock = regionalize regionalizationParameters regionalIntroductions totalStock
-    withSource regionalStockSource $ \source -> do
-      inform $ "Writing regional stock to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source regionalStock
+    verboseWriteFieldCubeSource "regionalStock" regionalStockSource regionalStock

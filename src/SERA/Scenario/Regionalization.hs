@@ -13,16 +13,19 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE DeriveGeneric   #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE DeriveGeneric    #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE TypeOperators    #-}
 
 
 module SERA.Scenario.Regionalization (
+-- * Types
+  RegionalizationParameters(..)
 -- * Functions
-  regionalize
-, RegionalizationParameters(..)
+, travelReduction
+, regionalize
 ) where
 
 
@@ -32,18 +35,46 @@ import Data.Daft.Vinyl.FieldCube (type (↝), (!), (⋈), κ, π, σ, τ, ω)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
+import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
-import SERA.Scenario.Introduction (FCoverageStations, FIntroductionYear, fIntroductionYear, FMaximumStations, fMaximumStations, RegionalIntroductionsCube, FStationCount, FThreshholdStations)
-import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
+import SERA.Scenario.Introduction (FIntroductionYear, fIntroductionYear, hasStations, RegionalIntroductionsCube)
+import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear, pushYear, minimumYear)
 import SERA.Vehicle.Stock.Types (StockCube)
-import SERA.Vehicle.Types (FEnergy, fEnergy, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, FStock, fStock, FTravel, fTravel, FVehicle, FVocation)
+import SERA.Vehicle.Types (fEnergy, FRelativeMarketShare, fRelativeMarketShare, fSales, fStock, hasStock, fTravel, FVehicle, FVocation)
 
 
+-- | Field type for total relative market share.
+type FTotalRelativeMarketShare = '("Total Relative Market Share", Double)
+
+
+-- | Field label for total relative market share.
+fTotalRelativeMarketShare :: SField FTotalRelativeMarketShare
+fTotalRelativeMarketShare = SField
+
+
+-- | Total the relative market share.
+totalRelativeMarketShare :: (FRelativeMarketShare ∈ vs)
+                         => k                                     -- ^ The key for the data cube.
+                         -> [FieldRec vs]                         -- ^ The values to be summarized.
+                         -> FieldRec '[FTotalRelativeMarketShare] -- ^ The total of the relative market share.
+totalRelativeMarketShare _ = (fTotalRelativeMarketShare =:) . sum . map (fRelativeMarketShare <:)
+
+
+-- | Field type for travel reduction.
+type FTravelReduction = '("Travel Reduction", Double)
+
+
+-- | Field label for travel reduction.
+fTravelReduction :: SField FTravelReduction
+fTravelReduction = SField
+
+
+-- | Parameters for regionalizing demand.
 data RegionalizationParameters =
   RegionalizationParameters
   {
-    initialTravelReduction :: Double
-  , travelReductionDuration :: Double
+    initialTravelReduction  :: Double -- ^ Initial travel reduction.
+  , travelReductionDuration :: Double -- ^ Number of years of travel reduction.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -52,67 +83,27 @@ instance FromJSON RegionalizationParameters
 instance ToJSON RegionalizationParameters
 
 
-travelReduction :: RegionalizationParameters -> Double -> Double
+-- | Compute VMT reduction.
+travelReduction :: RegionalizationParameters -- ^ Parameters for regionalizing demand.
+                -> Double                    -- ^ The number of years since vehicles were introduced.
+                -> Double                    -- ^ Multiplier for VMT.
 travelReduction RegionalizationParameters{..} time
   | time < 0                       = initialTravelReduction
   | time > travelReductionDuration = 1
   | otherwise                      = initialTravelReduction + (1 - initialTravelReduction) * time / travelReductionDuration
-
-
-type FTravelReduction = '("Travel Reduction", Double)
-
-fTravelReduction :: SField FTravelReduction
-fTravelReduction = SField
-
-
-type FTotalRelativeMarketShare = '("Total Relative Market Share", Double)
-
-fTotalRelativeMarketShare :: SField FTotalRelativeMarketShare
-fTotalRelativeMarketShare = SField
-
-
-totalRelativeMarketShare :: k -> [FieldRec '[FRelativeMarketShare, FTravelReduction]] -> FieldRec '[FTotalRelativeMarketShare]
-totalRelativeMarketShare _ = (fTotalRelativeMarketShare =:) . sum . map (fRelativeMarketShare <:)
-
-
-hasStations :: k -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations] -> Bool
-hasStations = const $ (/= 0) . (fMaximumStations <:)
-
-
-hasSales :: k -> FieldRec '[FSales, FStock, FTravel, FEnergy] -> Bool
-hasSales = const $ (\x -> x /= 0 && not (isNaN x)) . (fStock <:)
-
-
-urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] ↝ v -> '[FYear, FRegion, FVocation, FVehicle] ↝ v
-urbanToRegion =
-  rekey
-    $ Rekeyer
-        (\key -> τ $ fRegion =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key)) <+> key)
-        undefined
-
-
-pushYear :: FieldRec '[FYear, FRegion, FVocation, FVehicle] -> v -> FieldRec '[FYear]
-pushYear key _ = τ key
-
-
-minimumYear  :: k -> [FieldRec '[FYear]] -> FieldRec '[FYear]
-minimumYear _ recs = fYear =: minimum ((fYear <:) <$> recs)
-
-
-pruneTooEarly :: FieldRec '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations, FSales, FStock, FTravel, FEnergy] -> Bool
-pruneTooEarly key rec = fYear <: key >= fIntroductionYear <: rec
-
-
-regionalize :: RegionalizationParameters -> RegionalIntroductionsCube -> StockCube -> StockCube
-regionalize parameters introductions totals =
+-- | Regionalize demand.
+regionalize :: RegionalizationParameters -- ^ Regionalization parameters.
+            -> RegionalIntroductionsCube -- ^ Regional introduction years.
+            -> StockCube                 -- ^ Total stock.
+            -> StockCube                 -- ^ Regionalized stock.
+regionalize parameters introductions totals = -- FIXME: Review for opportunities to simplify and clarify.
   let
     universe = ω totals :: Set (FieldRec '[FYear])
     firstYears :: '[FRegion, FVocation, FVehicle] ↝ '[FYear]
     firstYears =
         κ universe minimumYear
       $ π pushYear
-      $ σ hasSales totals
-    allocating :: FieldRec '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] -> FieldRec '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations, FSales, FStock, FTravel, FEnergy] -> FieldRec '[FRelativeMarketShare, FTravelReduction]
+      $ σ hasStock totals
     allocating key rec =
       let
         year = fYear <: key
@@ -126,15 +117,15 @@ regionalize parameters introductions totals =
           (share
             * if year >= introductionYear
                 then (fStock <:) $ totals ! (fYear =: year' <+> τ key)
-                else 0)
+                else 0
+          )
             <+> fTravelReduction =: reduction
     allocations =
       π allocating
         $ σ pruneTooEarly
-        $ (σ hasStations introductions) ⋈ totals
+        $ σ hasStations introductions ⋈ totals
     universe' = ω allocations :: Set (FieldRec '[FUrbanCode, FUrbanName, FVocation, FVehicle])
     totals'' = κ universe' totalRelativeMarketShare allocations :: '[FRegion, FVocation, FVehicle, FYear] ↝ '[FTotalRelativeMarketShare]
-    scaling :: FieldRec '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] -> FieldRec '[FRelativeMarketShare, FTravelReduction, FTotalRelativeMarketShare, FSales, FStock, FTravel, FEnergy] -> FieldRec '[FSales, FStock, FTravel, FEnergy]
     scaling _ rec =
       let
         share = fRelativeMarketShare <: rec / fTotalRelativeMarketShare <: rec
@@ -146,6 +137,24 @@ regionalize parameters introductions totals =
         <+> fEnergy =: reduction * share * fEnergy  <: rec
   in
     urbanToRegion
-      $ σ hasSales
+      $ σ hasStock
       $ π scaling
       $ allocations ⋈ totals'' ⋈ totals
+
+
+-- | Rekey with urban areas as the main key.
+urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] ↝ v -- ^ Data cube with both region and urban areas.
+              -> '[FYear, FRegion, FVocation, FVehicle] ↝ v                         -- ^ Data cube with urban area as region.
+urbanToRegion = -- Review for opportunities to simplify and clarify.
+  rekey
+    $ Rekeyer
+        (\key -> τ $ fRegion =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key)) <+> key)
+        undefined
+
+
+-- | Check whether the year is not earlier than the introduction year.
+pruneTooEarly :: (FYear ∈ ks, FIntroductionYear ∈ vs)
+              => FieldRec ks -- ^ The key.
+              -> FieldRec vs -- ^ The value.
+              -> Bool        -- ^ Whether the year is not earlier than the introduction year.
+pruneTooEarly key rec = fYear <: key >= fIntroductionYear <: rec

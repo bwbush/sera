@@ -37,7 +37,7 @@ import SERA.Service.Finance (financeMain)
 import SERA.Service.HydrogenSizing (calculateHydrogenSizing)
 import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
-import SERA.Service.Regionalization (calculateRegionalization)
+import SERA.Service.Regionalization (regionalizationMain)
 import SERA.Service.VehicleStock (calculateStock, invertStock)
 import System.Console.CmdArgs (Typeable, (&=), argPos, args, cmdArgs, def, details, help, modes, name, program, summary, typ, typFile)
 import System.Directory (setCurrentDirectory)
@@ -250,7 +250,7 @@ dispatch s@VehicleStock{}       = dispatch' s calculateStock
 dispatch s@InvertVehicleStock{} = dispatch' s invertStock
 dispatch s@Logistic{}           = dispatch' s logisticMain
 dispatch s@Introduction{}       = dispatch' s introductionsMain
-dispatch s@Regionalization{}    = dispatch' s calculateRegionalization
+dispatch s@Regionalization{}    = dispatch' s regionalizationMain
 dispatch s@HydrogenSizing{}     = dispatch' s calculateHydrogenSizing
 dispatch s@HydrogenFinance{}    = dispatch' s financeMain
 

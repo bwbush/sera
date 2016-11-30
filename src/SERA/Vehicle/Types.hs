@@ -15,8 +15,10 @@
 
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Vehicle.Types (
@@ -79,6 +81,7 @@ module SERA.Vehicle.Types (
 , Stock
 , FStock
 , fStock
+, hasStock
 -- * Distance traveled
 , Travel
 , FTravel
@@ -96,9 +99,11 @@ module SERA.Vehicle.Types (
 
 import Control.Arrow (first)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..), withText)
+import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Default (Default)
 import Data.String.ToString (toString)
-import Data.Vinyl.Derived (SField(..))
+import Data.Vinyl.Derived (FieldRec, SField(..))
+import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
 import SERA.Types (quotedStringTypes)
 
@@ -364,6 +369,14 @@ type FStock = '("Stock [veh]", Stock)
 -- | Field label for vehicle stock.
 fStock :: SField FStock
 fStock = SField
+
+
+-- | Determine whether a record has stock.
+hasStock :: (FStock ∈ vs)
+         => k           -- ^ The key.
+         -> FieldRec vs -- ^ The value.
+         -> Bool        -- ^ Whether the value has vehicle stock.
+hasStock = const $ (\x -> x /= 0 && not (isNaN x)) . (fStock <:)
 
 
 -- | Data type for distance traveled.

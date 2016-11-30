@@ -60,6 +60,7 @@ module SERA.Scenario.Introduction (
 , fThreshholdStations
 , FMaximumStations
 , fMaximumStations
+, hasStations
 -- * Functions
 , computeIntroductionYears
 ) where
@@ -69,7 +70,8 @@ import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldCube (type (↝), (⋈), π, τ)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
-import Data.Vinyl.Derived (SField(..))
+import Data.Vinyl.Derived (FieldRec, SField(..))
+import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
 import SERA.Types (FRegion, FUrbanCode, FUrbanName)
 import SERA.Vehicle.Types (FRelativeMarketShare, fRelativeMarketShare, FStock, fStock)
@@ -223,6 +225,14 @@ type FMaximumStations = '("Maximum Stations", StationCount)
 -- | Field label for maximum stations.
 fMaximumStations :: SField FMaximumStations
 fMaximumStations = SField
+
+
+-- | Determine whether a record has stations.
+hasStations :: (FMaximumStations ∈ vs)
+            => k           -- ^ The key.
+            -> FieldRec vs -- ^ The value.
+            -> Bool        -- ^ Whether the value has stations.
+hasStations = const $ (/= 0) . (fMaximumStations <:)
 
 
 -- | Parameters for computing number of stations for an urban area.
