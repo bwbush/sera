@@ -412,8 +412,8 @@ lastOverride :: FieldRec '[FRegion] -> [FieldRec '[FYear, FStationCount]] -> Fie
 lastOverride _ rec = fYear =: maximum ((fYear <:) <$> rec) <+> fStationCount =: sum ((fStationCount <:) <$> rec)
 
 
-pushYear :: FieldRec '[FYear, FRegion] -> FieldRec '[FYear, FStationCount] -> FieldRec '[FStationCount]
-pushYear _ rec = τ rec
+pushYear' :: FieldRec '[FYear, FRegion] -> FieldRec '[FYear, FStationCount] -> FieldRec '[FStationCount]
+pushYear' _ rec = τ rec
 
 
 dropStationCount :: k -> FieldRec '[FStationCount, FYear, FDemand] -> FieldRec '[FYear, FDemand]
@@ -439,7 +439,7 @@ sizeStations parameters parameters' externals overrides introductions stock =
     capacities =
       toKnownRecords
         $ κ years (sizing parameters)
-        $ (((δ years pushYear overrides' :: '[FYear, FRegion] ↝  '[FStationCount])) ⋈ π dropStationCount z :: '[FYear, FRegion] ↝  '[FStationCount, FYear, FDemand]) <> z
+        $ (((δ years pushYear' overrides' :: '[FYear, FRegion] ↝  '[FStationCount])) ⋈ π dropStationCount z :: '[FYear, FRegion] ↝  '[FStationCount, FYear, FDemand]) <> z
       :: [FieldRec '[FRegion, FStationList]]
     details =
       fromRecords

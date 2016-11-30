@@ -34,11 +34,18 @@ module SERA.Vehicle.Stock.Types (
 , StockCube
 , EnergyCube
 , EmissionCube
+-- * Functions
+, SurvivalFunction
+, asSurvivalFunction
 ) where
 
+
+import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldCube (type (↝))
+import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Maybe (fromMaybe)
 import SERA.Types (FRegion, FYear)
-import SERA.Vehicle.Types (FAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FSales, FStock, FSurvival, FTravel, FVehicle, FVocation)
+import SERA.Vehicle.Types (Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FSales, FStock, Survival, FSurvival, fSurvival, FTravel, FVehicle, Vocation, FVocation, fVocation)
 
 
 type ModelYearCube = '[FModelYear] ↝ '[]
@@ -90,3 +97,15 @@ type EmissionCube       = '[FYear, FRegion, FVocation, FVehicle                 
 
 -- | Stock as a function of year, region, vocation, and vehicle type.
 type RegionalStockCube  = '[FYear, FRegion, FVocation, FVehicle                                     ] ↝ '[FStock                                    ]
+
+
+-- | Survival function.
+type SurvivalFunction = Vocation -> Age -> Survival
+
+
+-- | Convert a survival cube to a survival function.
+asSurvivalFunction :: SurvivalCube -> SurvivalFunction
+asSurvivalFunction cube vocation age =
+  fromMaybe 0
+    $   (fSurvival <:)
+    <$> evaluate cube (fVocation =: vocation <+> fAge =: age)

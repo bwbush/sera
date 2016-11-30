@@ -23,22 +23,20 @@ module SERA.Service.VehicleStock (
   ConfigStock(..)
 , SurvivalData(..)
 -- * Computation
-, calculateStock
-, invertStock
+, stockMain
+, stockInvertMain
 ) where
 
 
-import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Source (DataSource(..), withSource)
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
+import Data.Daft.Source (DataSource(..))
 import Data.Default (Default(..))
 import Data.Maybe (fromMaybe)
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
-import SERA (inform)
+import SERA (inform, verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Service ()
 import SERA.Vehicle.Stock (computeStock, inferSales)
 import SERA.Vehicle.Stock.Types (AnnualTravelCube, SurvivalCube)
@@ -60,7 +58,10 @@ instance Default SurvivalData where
   def = VISION_LDV_Survival
 
 
-survivalCube :: (IsString e, MonadError e m, MonadIO m) => Maybe (DataSource SurvivalData) -> m SurvivalCube
+-- | Read survival data.
+survivalCube :: (IsString e, MonadError e m, MonadIO m)
+             => Maybe (DataSource SurvivalData) -- ^ Source of survival data.
+             -> m SurvivalCube                  -- ^ Data cube for survival data.
 survivalCube  Nothing                                 = return survivalLDV
 survivalCube (Just (BuiltinData VISION_LDV_Survival)) = do
                                                           inform "Using built-in VISION LDV survival data."
@@ -68,9 +69,7 @@ survivalCube (Just (BuiltinData VISION_LDV_Survival)) = do
 survivalCube (Just (BuiltinData VISION_HDV_Survival)) = do
                                                           inform "Using built-in VISION MDV/HDV survival data."
                                                           return survivalHDV
-survivalCube (Just source                           ) = do
-                                                          inform $ "Reading survival from " ++ show source ++ " . . . "
-                                                          readFieldCubeSource source
+survivalCube (Just source                           ) = verboseReadFieldCubeSource "survival" source
 
 
 -- | Vehicle travel data.
@@ -87,31 +86,32 @@ instance Default TravelData where
   def = VISION_LDV_Travel
 
 
-travelCube :: (IsString e, MonadError e m, MonadIO m) => Maybe (DataSource TravelData) -> m AnnualTravelCube
+-- | Read travel data.
+travelCube :: (IsString e, MonadError e m, MonadIO m)
+           => Maybe (DataSource TravelData) -- ^ Source of travel data.
+           -> m AnnualTravelCube            -- ^ Data cube for travel data.
 travelCube  Nothing                               = return travelLDV
 travelCube (Just (BuiltinData VISION_LDV_Travel)) = do
                                                       inform "Using built-in VISION LDV annual travel data."
                                                       return travelLDV
-travelCube (Just source                         ) = do
-                                                        inform $ "Reading annual travel from " ++ show source ++ " . . . "
-                                                        readFieldCubeSource source
+travelCube (Just source                         ) = verboseReadFieldCubeSource "annual travel" source
 
 
 -- | Configuration for vehicle stock modeling.
 data ConfigStock =
   ConfigStock
   {
-    regionalSalesSource  :: DataSource Void                  -- ^ Regional sales.
-  , marketShareSource    :: DataSource Void                  -- ^ Market shares.
-  , survivalSource       :: Maybe (DataSource SurvivalData)  -- ^ Vehicle survival.
-  , annualTravelSource   :: Maybe (DataSource TravelData  )  -- ^ Annual travel.
-  , fuelSplitSource      :: DataSource Void                  -- ^ Fuel splits.
-  , fuelEfficiencySource :: DataSource Void                  -- ^ Fuel efficiency.
-  , emissionRateSource   :: DataSource Void                  -- ^ Emission rates.
-  , salesSource          :: DataSource Void                  -- ^ Vehicle sales.
-  , stockSource          :: DataSource Void                  -- ^ Vehicle stock.
-  , energySource         :: DataSource Void                  -- ^ Energy consumed.
-  , emissionSource       :: DataSource Void                  -- ^ Pollutants emitted.
+    regionalSalesSource  :: DataSource Void                  -- ^ Source for egional sales.
+  , marketShareSource    :: DataSource Void                  -- ^ Source for arket shares.
+  , survivalSource       :: Maybe (DataSource SurvivalData)  -- ^ Source for ehicle survival.
+  , annualTravelSource   :: Maybe (DataSource TravelData  )  -- ^ Source for annual travel.
+  , fuelSplitSource      :: DataSource Void                  -- ^ Source for fuel splits.
+  , fuelEfficiencySource :: DataSource Void                  -- ^ Source for fuel efficiency.
+  , emissionRateSource   :: DataSource Void                  -- ^ Source for emission rates.
+  , salesSource          :: DataSource Void                  -- ^ Source for vehicle sales.
+  , stockSource          :: DataSource Void                  -- ^ Source for vehicle stock.
+  , energySource         :: DataSource Void                  -- ^ Source for energy consumed.
+  , emissionSource       :: DataSource Void                  -- ^ Source for pollutants emitted.
   , priorYears           :: Maybe Int                        -- ^ Number of prior years to consider when inverting vehicle stock.
   }
     deriving (Eq, Generic, Ord, Read, Show)
@@ -122,54 +122,37 @@ instance ToJSON ConfigStock
 
 
 -- | Compute vehicle stock.
-calculateStock :: (IsString e, MonadError e m, MonadIO m)
+stockMain :: (IsString e, MonadError e m, MonadIO m)
                => ConfigStock -- ^ Configuration data.
                -> m ()        -- ^ Action to compute vehicle stock.
-calculateStock ConfigStock{..} =
+stockMain ConfigStock{..} =
   do
-    inform $ "Reading regional sales from " ++ show regionalSalesSource ++ " . . ."
-    regionalSales <- readFieldCubeSource regionalSalesSource
-    inform $ "Reading market share from " ++ show marketShareSource ++ " . . . "
+    regionalSales <- verboseReadFieldCubeSource "regional sales" regionalSalesSource
     survival <- survivalCube survivalSource
-    marketShare <- readFieldCubeSource marketShareSource
+    marketShare <- verboseReadFieldCubeSource "market share" marketShareSource
     annualTravel <- travelCube annualTravelSource
-    inform $ "Reading fuel split from " ++ show fuelSplitSource ++ " . . . "
-    fuelSplit <- readFieldCubeSource fuelSplitSource
-    inform $ "Reading fuel efficiency from " ++ show fuelEfficiencySource ++ " . . . "
-    fuelEfficiency <- readFieldCubeSource fuelEfficiencySource
-    inform $ "Reading emission rate from " ++ show emissionRateSource ++ " . . . "
-    emissionRate <- readFieldCubeSource emissionRateSource
+    fuelSplit <- verboseReadFieldCubeSource "fuel split" fuelSplitSource
+    fuelEfficiency <- verboseReadFieldCubeSource "fuel efficiency" fuelEfficiencySource
+    emissionRate <- verboseReadFieldCubeSource "emission rate" emissionRateSource
+    inform "Computing vehicle stock . . ."
     let
       (sales, stock, energy, emission) = computeStock regionalSales marketShare survival annualTravel fuelSplit fuelEfficiency emissionRate
-    withSource salesSource $ \source -> do
-      inform $ "Writing vehicle sales to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source sales
-    withSource stockSource $ \source -> do
-      inform $ "Writing vehicle stock to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source stock
-    withSource energySource $ \source -> do
-      inform $ "Writing energy consumption to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source energy
-    withSource emissionSource $ \source -> do
-      inform $ "Writing emission of pollutants to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source emission
+    verboseWriteFieldCubeSource "vehicle sales" salesSource sales
+    verboseWriteFieldCubeSource "vehicle Stock" stockSource stock
+    verboseWriteFieldCubeSource "energy consumption" energySource energy
+    verboseWriteFieldCubeSource "emssion of pollutants" emissionSource emission
 
 
 -- | Invert a vehicle stock computation.
-invertStock :: (IsString e, MonadError e m, MonadIO m)
+stockInvertMain :: (IsString e, MonadError e m, MonadIO m)
             => ConfigStock -- ^ Configuration data.
             -> m ()        -- ^ Action to invert a vehicle stock computation.
-invertStock ConfigStock{..} =
+stockInvertMain ConfigStock{..} =
   do
-    inform $ "Reading regional stocks from " ++ show stockSource ++ " . . ."
-    stock <- readFieldCubeSource stockSource
+    stock <- verboseReadFieldCubeSource "regional stocks" stockSource
     survival <- survivalCube survivalSource
     inform "Computing vehicle sales . . ."
     let
       (regionalSales, marketShare) = inferSales (fromMaybe 0 priorYears) survival stock
-    withSource regionalSalesSource $ \source -> do
-      inform $ "Writing regional sales to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source regionalSales
-    withSource marketShareSource $ \source -> do
-      inform $ "Writing market shares to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source marketShare
+    verboseWriteFieldCubeSource "regional sales" regionalSalesSource regionalSales
+    verboseWriteFieldCubeSource "market shares" marketShareSource marketShare

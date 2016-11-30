@@ -38,7 +38,7 @@ import SERA.Service.HydrogenSizing (calculateHydrogenSizing)
 import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
 import SERA.Service.Regionalization (regionalizationMain)
-import SERA.Service.VehicleStock (calculateStock, invertStock)
+import SERA.Service.VehicleStock (stockMain, stockInvertMain)
 import System.Console.CmdArgs (Typeable, (&=), argPos, args, cmdArgs, def, details, help, modes, name, program, summary, typ, typFile)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getArgs, withArgs)
@@ -246,8 +246,8 @@ dispatch CombineScenarios{..} =
       |
         (scenario, file) <- zip scenarios files
       ]
-dispatch s@VehicleStock{}       = dispatch' s calculateStock
-dispatch s@InvertVehicleStock{} = dispatch' s invertStock
+dispatch s@VehicleStock{}       = dispatch' s stockMain
+dispatch s@InvertVehicleStock{} = dispatch' s stockInvertMain
 dispatch s@Logistic{}           = dispatch' s logisticMain
 dispatch s@Introduction{}       = dispatch' s introductionsMain
 dispatch s@Regionalization{}    = dispatch' s regionalizationMain
