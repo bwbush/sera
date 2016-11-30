@@ -24,7 +24,7 @@ module SERA.Scenario.Logistic (
 -- * Types
   LogisticParameters(..)
 , LogisticCube
--- * Fields and accessors
+-- * Fields and labels
 , FReferenceYear
 , fReferenceYear
 , FReferenceShare
@@ -49,23 +49,6 @@ import Data.Vinyl.Derived (SField(..))
 import SERA.Types (FRegion)
 import SERA.Vehicle.Types (MarketShare, fMarketShare, ModelYear, fModelYear, FVehicle, FVocation)
 import SERA.Vehicle.Stock.Types (MarketShareCube, ModelYearCube)
-
-
--- | Logistic curve parameters.
-data LogisticParameters =
-  LogisticParameters
-    {
-      m    :: Double -- ^ Maximum share.
-    , r    :: Double -- ^ Growth rate.
-    , beta :: Double -- ^ Time scaling.
-    , s0   :: Double -- ^ Reference share.
-    , t0   :: Double -- ^ Reference year.
-    }
-    deriving (Eq, Generic, Ord, Read, Show)
-
-instance FromJSON LogisticParameters
-
-instance ToJSON LogisticParameters where
 
 
 -- | Data Cube for logistics parameters
@@ -115,6 +98,23 @@ type FTimeScaling = '("Time Scaling [yr/yr]", Double)
 -- | Field label for time scaling of a logistic curve.
 fTimeScaling :: SField FTimeScaling
 fTimeScaling = SField
+
+
+-- | Logistic curve parameters.
+data LogisticParameters =
+  LogisticParameters
+    {
+      m    :: Double -- ^ Maximum share.
+    , r    :: Double -- ^ Growth rate.
+    , beta :: Double -- ^ Time scaling.
+    , s0   :: Double -- ^ Reference share.
+    , t0   :: Double -- ^ Reference year.
+    }
+    deriving (Eq, Generic, Ord, Read, Show)
+
+instance FromJSON LogisticParameters
+
+instance ToJSON LogisticParameters where
 
 
 -- | Logistic curve.

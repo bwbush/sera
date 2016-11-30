@@ -21,32 +21,30 @@ module SERA.Service.Introduction (
 -- * Configuration
   ConfigIntroduction(..)
 -- * Computation
-, calculateIntroductions
+, introductionsMain
 ) where
 
 
-import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Source (DataSource(..), withSource)
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
+import Data.Daft.Source (DataSource(..))
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
-import SERA (inform)
+import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Service ()
-import SERA.Scenario.Introduction (StationParameters, introductionYears)
+import SERA.Scenario.Introduction (StationParameters, computeIntroductionYears)
 
 
--- | Configuration for vehicle stock modeling.
+-- | Configuration for computing introduction years.
 data ConfigIntroduction =
   ConfigIntroduction
   {
-    urbanCharacteristicsSource  :: DataSource Void        -- ^ Inputs.
-  , regionalIntroductionParametersSource :: DataSource Void
-  , overrideIntroductionYearsSource   :: DataSource Void
-  , regionalIntroductionsSource :: DataSource Void        -- ^ Outputs.
-  , stationParameters   :: StationParameters -- ^ Logit parameters.
+    urbanCharacteristicsSource           :: DataSource Void   -- ^ Source of urban characteristic data.
+  , regionalIntroductionParametersSource :: DataSource Void   -- ^ Source of introduction year parameters.
+  , overrideIntroductionYearsSource      :: DataSource Void   -- ^ Source of which introduction years to override.
+  , regionalIntroductionsSource          :: DataSource Void   -- ^ Source for regional introductions.
+  , stationParameters                    :: StationParameters -- ^ Logit parameters.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -56,19 +54,14 @@ instance ToJSON ConfigIntroduction
 
 
 -- | Compute introduction years.
-calculateIntroductions :: (IsString e, MonadError e m, MonadIO m)
+introductionsMain :: (IsString e, MonadError e m, MonadIO m)
                        => ConfigIntroduction -- ^ Configuration data.
                        -> m ()               -- ^ Action to compute the introduction years.
-calculateIntroductions ConfigIntroduction{..} =
+introductionsMain ConfigIntroduction{..} =
   do
-    inform $ "Reading urban characteristics from " ++ show urbanCharacteristicsSource ++ " . . ."
-    urbanCharacteristics <- readFieldCubeSource urbanCharacteristicsSource
-    inform $ "Reading regional introduction parameters from " ++ show regionalIntroductionParametersSource ++ " . . ."
-    regionalParameters <- readFieldCubeSource regionalIntroductionParametersSource
-    inform $ "Reading overrides for introduction years from " ++ show overrideIntroductionYearsSource ++ " . . ."
-    overrides <- readFieldCubeSource overrideIntroductionYearsSource
+    urbanCharacteristics <- verboseReadFieldCubeSource "urban characteristics"            urbanCharacteristicsSource
+    regionalParameters   <- verboseReadFieldCubeSource "regional introduction parameters" regionalIntroductionParametersSource
+    overrides            <- verboseReadFieldCubeSource "overrides for introduction years" overrideIntroductionYearsSource
     let
-      regionalIntroductions = introductionYears stationParameters overrides regionalParameters urbanCharacteristics
-    withSource regionalIntroductionsSource $ \source -> do
-      inform $ "Writing regional introduction years to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source regionalIntroductions
+      regionalIntroductions = computeIntroductionYears stationParameters overrides regionalParameters urbanCharacteristics
+    verboseWriteFieldCubeSource "regional introduction years" regionalIntroductionsSource regionalIntroductions

@@ -42,11 +42,11 @@ import SERA.Vehicle.Types (ModelYear)
 data ConfigLogistic =
   ConfigLogistic
   {
-    logisticSource      :: DataSource Void -- ^ Logistic parameters.
+    logisticSource      :: DataSource Void -- ^ Source of logistic parameters.
   , firstModelYear      :: ModelYear       -- ^ The first model year to compute.
   , lastModelYear       :: ModelYear       -- ^ The last moodel year to compute.
-  , overrideShareSource :: DataSource Void -- ^ Which market shares to manually override.
-  , marketShareSource   :: DataSource Void -- ^ The market shares.
+  , overrideShareSource :: DataSource Void -- ^ Source of which market shares to manually override.
+  , marketShareSource   :: DataSource Void -- ^ Source for the market shares.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 

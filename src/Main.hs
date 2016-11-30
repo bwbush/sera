@@ -35,7 +35,7 @@ import Data.Yaml (decodeFileEither)
 import SERA (inform, stringVersion)
 import SERA.Service.Finance (financeMain)
 import SERA.Service.HydrogenSizing (calculateHydrogenSizing)
-import SERA.Service.Introduction (calculateIntroductions)
+import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
 import SERA.Service.Regionalization (calculateRegionalization)
 import SERA.Service.VehicleStock (calculateStock, invertStock)
@@ -246,21 +246,21 @@ dispatch CombineScenarios{..} =
       |
         (scenario, file) <- zip scenarios files
       ]
-dispatch s@VehicleStock{}       = dispatch' calculateStock           s
-dispatch s@InvertVehicleStock{} = dispatch' invertStock              s
-dispatch s@Logistic{}           = dispatch' logisticMain             s
-dispatch s@Introduction{}       = dispatch' calculateIntroductions   s
-dispatch s@Regionalization{}    = dispatch' calculateRegionalization s
-dispatch s@HydrogenSizing{}     = dispatch' calculateHydrogenSizing  s
-dispatch s@HydrogenFinance{}    = dispatch' financeMain              s
+dispatch s@VehicleStock{}       = dispatch' s calculateStock
+dispatch s@InvertVehicleStock{} = dispatch' s invertStock
+dispatch s@Logistic{}           = dispatch' s logisticMain
+dispatch s@Introduction{}       = dispatch' s introductionsMain
+dispatch s@Regionalization{}    = dispatch' s calculateRegionalization
+dispatch s@HydrogenSizing{}     = dispatch' s calculateHydrogenSizing
+dispatch s@HydrogenFinance{}    = dispatch' s financeMain
 
 
 -- | Help dispatch an operation.
 dispatch' :: (IsString e, MonadError e m, MonadIO m, FromJSON a)
-          => (a -> m ()) -- ^ Operation to perform.
-          -> SERA        -- ^ Command-line parameters.
+          => SERA        -- ^ Command-line parameters.
+          -> (a -> m ()) -- ^ Operation to perform.
           -> m ()        -- ^ Action to perform the operation using the command-line parameters.
-dispatch' operation s =
+dispatch' s operation =
   do
     let
       path = configuration s
