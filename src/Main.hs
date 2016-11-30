@@ -34,8 +34,8 @@ import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
 import SERA (inform, stringVersion)
 import SERA.Service.Finance (financeMain)
-import SERA.Service.Introduction (calculateIntroductions)
 import SERA.Service.HydrogenSizing (calculateHydrogenSizing)
+import SERA.Service.Introduction (calculateIntroductions)
 import SERA.Service.Logistic (calculateLogistic)
 import SERA.Service.Regionalization (calculateRegionalization)
 import SERA.Service.VehicleStock (calculateStock, invertStock)
@@ -102,7 +102,7 @@ sera =
       &= help "This tool provides a command-line interface to SERA functions."
 
 
--- | MOde for combining scenarios.
+-- | Mode for combining scenarios.
 combineScenarios :: SERA
 combineScenarios =
   CombineScenarios
@@ -185,6 +185,7 @@ hydrogenSizing =
     &= details []
 
 
+-- | Mode for computing refueling station finances.
 hydrogenFinance :: SERA
 hydrogenFinance =
   HydrogenFinance
@@ -214,7 +215,9 @@ main =
 
 
 -- | Decode a YAML file.
-decodeYaml :: (FromJSON a, IsString e, MonadError e m, MonadIO m) => FilePath -> m a
+decodeYaml :: (FromJSON a, IsString e, MonadError e m, MonadIO m)
+           => FilePath -- ^ The YAML file.
+           -> m a      -- ^ Action to decode the file.
 decodeYaml =
   (either (throwError . fromString . displayException) return =<<)
     . liftIO
@@ -222,9 +225,9 @@ decodeYaml =
 
 
 -- | Dispatch a computation.
-
-dispatch :: (IsString e, MonadError e m, MonadIO m) => SERA -> m ()
-
+dispatch :: (IsString e, MonadError e m, MonadIO m)
+         => SERA -- ^ The command-line parameters.
+         -> m () -- ^ Action to run SERA using the command-line parameters.
 dispatch CombineScenarios{..} =
   do
     let
@@ -243,52 +246,25 @@ dispatch CombineScenarios{..} =
       |
         (scenario, file) <- zip scenarios files
       ]
+dispatch s@VehicleStock{}       = dispatch' calculateStock           s
+dispatch s@InvertVehicleStock{} = dispatch' invertStock              s
+dispatch s@Logistic{}           = dispatch' calculateLogistic        s
+dispatch s@Introduction{}       = dispatch' calculateIntroductions   s
+dispatch s@Regionalization{}    = dispatch' calculateRegionalization s
+dispatch s@HydrogenSizing{}     = dispatch' calculateHydrogenSizing  s
+dispatch s@HydrogenFinance{}    = dispatch' financeMain              s
 
-dispatch VehicleStock{..} =
-  do
-    configuration' <- decodeYaml configuration
-    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
-    liftIO . setCurrentDirectory $ takeDirectory configuration
-    calculateStock configuration'
 
-dispatch InvertVehicleStock{..} =
+-- | Help dispatch an operation.
+dispatch' :: (IsString e, MonadError e m, MonadIO m, FromJSON a)
+          => (a -> m ()) -- ^ Operation to perform.
+          -> SERA        -- ^ Command-line parameters.
+          -> m ()        -- ^ Action to perform the operation using the command-line parameters.
+dispatch' operation s =
   do
-    configuration' <- decodeYaml configuration
-    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
-    liftIO . setCurrentDirectory $ takeDirectory configuration
-    invertStock configuration'
-
-dispatch Logistic{..} =
-  do
-    configuration' <- decodeYaml configuration
-    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
-    liftIO . setCurrentDirectory $ takeDirectory configuration
-    calculateLogistic configuration'
-
-dispatch Introduction{..} =
-  do
-    configuration' <- decodeYaml configuration
-    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
-    liftIO . setCurrentDirectory $ takeDirectory configuration
-    calculateIntroductions configuration'
-
-dispatch Regionalization{..} =
-  do
-    configuration' <- decodeYaml configuration
-    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
-    liftIO . setCurrentDirectory $ takeDirectory configuration
-    calculateRegionalization configuration'
-
-dispatch HydrogenSizing{..} =
-  do
-    configuration' <- decodeYaml configuration
-    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
-    liftIO . setCurrentDirectory $ takeDirectory configuration
-    calculateHydrogenSizing configuration'
-
-dispatch HydrogenFinance{..} =
-  do
-    configuration' <- decodeYaml configuration
-    inform $ "Setting working directory to \"" ++ (takeDirectory configuration) ++ "\""
-    liftIO . setCurrentDirectory $ takeDirectory configuration
-    financeMain configuration'
+    let
+      path = configuration s
+    configuration' <- decodeYaml path
+    inform $ "Setting working directory to \"" ++ (takeDirectory path) ++ "\""
+    liftIO . setCurrentDirectory $ takeDirectory path
+    operation configuration'
