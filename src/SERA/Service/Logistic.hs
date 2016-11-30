@@ -21,34 +21,32 @@ module SERA.Service.Logistic (
 -- * Configuration
   ConfigLogistic(..)
 -- * Computation
-, calculateLogistic
+, logisticMain
 ) where
 
 
-import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Source (DataSource(..), withSource)
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
+import Data.Daft.Source (DataSource(..))
 import Data.Monoid ((<>))
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
-import SERA (inform)
-import SERA.Service ()
+import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Scenario.Logistic (applyLogistic)
+import SERA.Service ()
 import SERA.Vehicle.Types (ModelYear)
 
 
--- | Configuration for vehicle stock modeling.
+-- | Configuration for logistic curve computations.
 data ConfigLogistic =
   ConfigLogistic
   {
-    logisticSource    :: DataSource Void
-  , firstModelYear    :: ModelYear
-  , lastModelYear     :: ModelYear
-  , overrideShareSource :: DataSource Void
-  , marketShareSource :: DataSource Void
+    logisticSource      :: DataSource Void -- ^ Logistic parameters.
+  , firstModelYear      :: ModelYear       -- ^ The first model year to compute.
+  , lastModelYear       :: ModelYear       -- ^ The last moodel year to compute.
+  , overrideShareSource :: DataSource Void -- ^ Which market shares to manually override.
+  , marketShareSource   :: DataSource Void -- ^ The market shares.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -58,17 +56,13 @@ instance ToJSON ConfigLogistic
 
 
 -- | Compute logistic market shares.
-calculateLogistic :: (IsString e, MonadError e m, MonadIO m)
+logisticMain :: (IsString e, MonadError e m, MonadIO m)
                   => ConfigLogistic -- ^ Configuration data.
                   -> m ()           -- ^ Action to compute the logistic scenario.
-calculateLogistic ConfigLogistic{..} =
+logisticMain ConfigLogistic{..} =
   do
-    inform $ "Reading logistic parameters from " ++ show logisticSource ++ " . . ."
-    logistics <- readFieldCubeSource logisticSource
-    inform $ "Reading market share overrides from " ++ show overrideShareSource ++ " . . ."
-    overrides <- readFieldCubeSource overrideShareSource
+    logistics <- verboseReadFieldCubeSource "logistic parameters" logisticSource
+    overrides <- verboseReadFieldCubeSource "market share"        overrideShareSource
     let
       marketShares = overrides <> applyLogistic (firstModelYear, lastModelYear) logistics
-    withSource marketShareSource $ \source -> do
-      inform $ "Writing vehicle-specific sales to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source marketShares
+    verboseWriteFieldCubeSource "vehicle-specific sales" marketShareSource marketShares

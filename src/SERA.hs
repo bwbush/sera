@@ -13,6 +13,11 @@
 -----------------------------------------------------------------------------
 
 
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
+
+
 module SERA (
 -- * Versioning
   numericVersion
@@ -22,11 +27,26 @@ module SERA (
 , trace'
 , inform
 , unsafeInform
+-- * I/O
+, verboseReadFieldCubeSource
+, verboseWriteFieldCubeSource
 ) where
 
 
-import Control.Monad.Except (MonadIO, liftIO)
+import Control.Monad (void)
+import Control.Monad.Except (MonadError, MonadIO, liftIO)
+import Data.Daft.Source (DataSource(..), withSource)
+import Data.Daft.TypeLevel (Union)
+import Data.Daft.Vinyl.FieldCube (FieldCube)
+import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
+import Data.Daft.Vinyl.FieldRec (Labeled)
+import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, ShowFieldRec)
+import Data.Daft.Vinyl.FieldRec.Instances ()
+import Data.String (IsString(..))
 import Data.Version (Version(..), showVersion)
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (type (⊆))
+import Data.Vinyl.TypeLevel (type (++))
 import Debug.Trace (trace)
 import Paths_sera (version)
 import System.IO (hPutStrLn, stderr)
@@ -67,3 +87,17 @@ unsafeInform s x =
     $ do
       hPutStrLn stderr s
       return x
+
+
+verboseReadFieldCubeSource :: forall ks vs e m a . (Show a, ks ⊆ Union ks vs, vs ⊆ Union ks vs, Ord (FieldRec ks), IsString e, MonadError e m, MonadIO m, Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> DataSource a -> m (FieldCube ks vs)
+verboseReadFieldCubeSource label source =
+  do
+    inform $ "Reading " ++ label ++ " from " ++ show source ++ " . . ."
+    readFieldCubeSource source
+
+
+verboseWriteFieldCubeSource :: forall ks vs e m a . (Show a, Ord (FieldRec ks), Labeled (FieldRec (ks ++ vs)), ShowFieldRec (ks ++ vs), IsString e, MonadError e m, MonadIO m) => String -> DataSource a -> FieldCube ks vs -> m ()
+verboseWriteFieldCubeSource label source table =
+    withSource source $ \source' -> do
+      inform $ "Writing " ++ label ++ " sales to " ++ show source ++ " . . ."
+      void $ writeFieldCubeSource source' table

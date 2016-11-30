@@ -36,7 +36,7 @@ import SERA (inform, stringVersion)
 import SERA.Service.Finance (financeMain)
 import SERA.Service.HydrogenSizing (calculateHydrogenSizing)
 import SERA.Service.Introduction (calculateIntroductions)
-import SERA.Service.Logistic (calculateLogistic)
+import SERA.Service.Logistic (logisticMain)
 import SERA.Service.Regionalization (calculateRegionalization)
 import SERA.Service.VehicleStock (calculateStock, invertStock)
 import System.Console.CmdArgs (Typeable, (&=), argPos, args, cmdArgs, def, details, help, modes, name, program, summary, typ, typFile)
@@ -248,7 +248,7 @@ dispatch CombineScenarios{..} =
       ]
 dispatch s@VehicleStock{}       = dispatch' calculateStock           s
 dispatch s@InvertVehicleStock{} = dispatch' invertStock              s
-dispatch s@Logistic{}           = dispatch' calculateLogistic        s
+dispatch s@Logistic{}           = dispatch' logisticMain             s
 dispatch s@Introduction{}       = dispatch' calculateIntroductions   s
 dispatch s@Regionalization{}    = dispatch' calculateRegionalization s
 dispatch s@HydrogenSizing{}     = dispatch' calculateHydrogenSizing  s
