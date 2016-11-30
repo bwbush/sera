@@ -33,7 +33,7 @@ import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
-import SERA.Scenario.Logistic (applyLogistic)
+import SERA.Scenario.Logistic (computeMarketShares)
 import SERA.Service ()
 import SERA.Vehicle.Types (ModelYear)
 
@@ -64,5 +64,5 @@ logisticMain ConfigLogistic{..} =
     logistics <- verboseReadFieldCubeSource "logistic parameters" logisticSource
     overrides <- verboseReadFieldCubeSource "market share"        overrideShareSource
     let
-      marketShares = overrides <> applyLogistic (firstModelYear, lastModelYear) logistics
+      marketShares = overrides <> computeMarketShares (firstModelYear, lastModelYear) logistics
     verboseWriteFieldCubeSource "vehicle-specific sales" marketShareSource marketShares
