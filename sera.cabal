@@ -1,5 +1,5 @@
 name: sera
-version: 2.1.1.8
+version: 2.1.1.9
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -77,10 +77,12 @@ library
                     SERA.Refueling.FCVSE.Cost
                     SERA.Refueling.FCVSE.Cost.NREL56412
                     SERA.Refueling.Hydrogen.Sizing
+                    SERA.Refueling.Types
                     SERA.Scenario.HydrogenSizing
                     SERA.Scenario.Introduction
                     SERA.Scenario.Logistic
                     SERA.Scenario.Regionalization
+                    SERA.Scenario.Types
                     SERA.Service
                     SERA.Service.Finance
                     SERA.Service.HydrogenSizing

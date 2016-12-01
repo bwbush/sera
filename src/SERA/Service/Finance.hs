@@ -65,8 +65,8 @@ import SERA.Finance.Capital (Capital(..))
 import SERA.Finance.IO.Xlsx (formatResultsAsFile)
 import SERA.Finance.Scenario (Scenario(..))
 import SERA.Finance.Solution (solveConstrained')
+import SERA.Refueling.Types
 import SERA.Service ()
-import SERA.Scenario.HydrogenSizing hiding (capitalCost) -- (StationSummaryCube)
 import SERA.Types
 import SERA.Util.Summarization (summation)
 import SERA.Vehicle.Types
