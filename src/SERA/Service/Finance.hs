@@ -35,9 +35,9 @@ module SERA.Service.Finance (
 -- FIXME: This module needs major cleanup.
 
 
-import Control.Arrow ((&&&), first)
+import Control.Arrow ((&&&))
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
-import Data.Aeson (FromJSON(parseJSON), ToJSON(toJSON), withText, defaultOptions, genericToJSON)
+import Data.Aeson (FromJSON, ToJSON(toJSON), defaultOptions, genericToJSON)
 import Data.Daft.DataCube (evaluate)
 import Data.Daft.Source (DataSource(..))
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
@@ -49,14 +49,14 @@ import Data.List (groupBy, intercalate, sortBy, transpose, zipWith4)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe, isNothing)
 import Data.String (IsString)
-import Data.String.ToString (toString)
 import Data.Table (Tabulatable(..))
-import Data.Vinyl.Derived (FieldRec, SField(..))
+import Data.Vinyl.Derived (FieldRec)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import Math.GeometricSeries (GeometricSeries(..), asFunction)
 import SERA (unsafeInform)
 import SERA.Configuration.ScenarioInputs (ScenarioInputs(..))
+import SERA.Energy.Types
 import SERA.Finance.Analysis (computePerformanceAnalyses)
 import SERA.Finance.Analysis.CashFlowStatement (CashFlowStatement(..))
 import SERA.Finance.Analysis.Finances (Finances(..))
@@ -126,105 +126,12 @@ instance FromJSON StationParameters
 instance ToJSON StationParameters
 
 
-newtype HydrogenSource = HydrogenSource {hydrogenSource :: String}
-  deriving (Eq, Ord)
-
-instance Read HydrogenSource where
-  readsPrec
-    | quotedStringTypes = (fmap (first HydrogenSource) .) . readsPrec
-    | otherwise         = const $ return . (, []) . HydrogenSource
-
-instance Show HydrogenSource where
-  show
-    | quotedStringTypes = show . hydrogenSource
-    | otherwise         = hydrogenSource
-
-instance FromJSON HydrogenSource where
-  parseJSON = withText "HydrogenSource" $ return . HydrogenSource . toString
-
-instance ToJSON HydrogenSource where
-  toJSON = toJSON . hydrogenSource
-
-type FHydrogenSource = '("Hydrogen Source", HydrogenSource)
-
-fHydrogenSource :: SField FHydrogenSource
-fHydrogenSource = SField
-
-newtype FeedstockType = FeedstockType {feedstockType :: String}
-  deriving (Eq, Ord)
-
-instance Read FeedstockType where
-  readsPrec
-    | quotedStringTypes = (fmap (first FeedstockType) .) . readsPrec
-    | otherwise         = const $ return . (, []) . FeedstockType
-
-instance Show FeedstockType where
-  show
-    | quotedStringTypes = show . feedstockType
-    | otherwise         = feedstockType
-
-instance FromJSON FeedstockType where
-  parseJSON = withText "FeedstockType" $ return . FeedstockType . toString
-
-instance ToJSON FeedstockType where
-  toJSON = toJSON . feedstockType
-
-type FFeedstockType = '("Feedstock", FeedstockType)
-
-fFeedstockType :: SField FFeedstockType
-fFeedstockType = SField
-
-type FFeedstockUsage = '("Feedstock Usage [/kg]", Double)
-
-fFeedstockUsage :: SField FFeedstockUsage
-fFeedstockUsage = SField
-
-type FeedstockUsageCube = '[FHydrogenSource, FFeedstockType] ↝ '[FFeedstockUsage]
-
-
-type FStationUtilization = '("Utilization [kg/kg]", Double)
-
-fStationUtilization :: SField FStationUtilization
-fStationUtilization = SField
-
-
-type FNonRenewablePrice = '("Non-Renewable Price [$]", Double)
-
-fNonRenewablePrice :: SField FNonRenewablePrice
-fNonRenewablePrice = SField
-
-type FRenewablePrice = '("Renewable Price [$]", Double)
-
-fRenewablePrice :: SField FRenewablePrice
-fRenewablePrice = SField
-
-
-type EnergyPriceCube = '[FYear, FFeedstockType] ↝ '[FNonRenewablePrice, FRenewablePrice]
-
-
-type StationUtilizationCube = '[FYear, FRegion] ↝ '[FStationUtilization]
-
-
-type FNonRenewableCredit = '("Carbon Credit (Non-Renewable) [$/kg]", Double)
-
-fNonRenewableCredit :: SField FNonRenewableCredit
-fNonRenewableCredit = SField
-
-
-type FRenewableCredit = '("Carbon Credit (Renewable) [$/kg]", Double)
-
-fRenewableCredit :: SField FRenewableCredit
-fRenewableCredit = SField
-
-type CarbonCreditCube = '[FHydrogenSource] ↝ '[FNonRenewableCredit, FRenewableCredit]
-
-
-computeRegionalUtilization :: StationSummaryCube -> StationUtilizationCube
+computeRegionalUtilization :: StationSummaryCube -> UtilizationCube
 computeRegionalUtilization =
   let
-    utilization :: k -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity] -> FieldRec '[FStationUtilization]
+    utilization :: k -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity] -> FieldRec '[FUtilization]
     utilization _ rec =
-      fStationUtilization =: fDemand <: rec / fTotalCapacity <: rec
+      fUtilization =: fDemand <: rec / fTotalCapacity <: rec
   in
     π utilization
 
@@ -349,7 +256,7 @@ single parameters capitalScenarios =
     }
 
 
-makeInputs :: Inputs -> FeedstockUsageCube -> EnergyPriceCube -> CarbonCreditCube -> StationUtilizationCube -> StationDetailCube -> [[(String, Capital, Scenario)]]
+makeInputs :: Inputs -> FeedstockUsageCube -> EnergyPriceCube -> CarbonCreditCube -> UtilizationCube -> StationDetailCube -> [[(String, Capital, Scenario)]]
 makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilization stationsDetail =
   let
     makeInputs' :: (Region, StationID, Maybe Int, Int, Double, Double, Double, Double, Double, Double, Double, Maybe Int) -> [FieldRec '[FRegion, FYear, FStationID, FNewCapitalCost, FNewInstallationCost, FNewCapitalIncentives, FNewProductionIncentives, FNewElectrolysisCapacity, FNewPipelineCapacity, FNewOnSiteSMRCapacity, FNewGH2TruckCapacity, FNewLH2TruckCapacity, FRenewableFraction]] -> [(String, Capital, Scenario)]
@@ -439,7 +346,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
                     + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Hydrogen [/kg]"       )) *      renewableFraction
         retailH2    = ((fNonRenewablePrice <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Retail Hydrogen [/kg]")) * (1 - renewableFraction)
                     + ((fRenewablePrice    <:) $ energyPrices ! (fYear =: year <+> fFeedstockType =: FeedstockType "Retail Hydrogen [/kg]")) *      renewableFraction
-        demand = (totalCapacity *) . maybe 0 (fStationUtilization <:) $ stationUtilization `evaluate` τ rec
+        demand = (totalCapacity *) . maybe 0 (fUtilization <:) $ stationUtilization `evaluate` τ rec
         carbonCreditPerKg = (
                               ((fNonRenewableCredit <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Electrolysis")) * electrolysisCapacity
                             + ((fNonRenewableCredit <:) $ carbonCredits ! (fHydrogenSource =: HydrogenSource "Pipeline"    )) * pipelineCapacity
