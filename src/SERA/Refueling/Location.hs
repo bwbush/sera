@@ -22,7 +22,7 @@ module SERA.Refueling.Location {-# DEPRECATED "This module is obsolete and will 
 
 
 import Control.Arrow ((&&&))
-import Control.Monad (liftM, replicateM)
+import Control.Monad (replicateM)
 import Control.Monad.Random (Random, getRandomR, getRandomRs, getRandom, getRandoms)
 import Control.Monad.Random.Class (MonadRandom)
 import Control.Parallel.Strategies (NFData)
@@ -84,7 +84,7 @@ jitter s p =
 
 
 jitter' :: (Num a, Ord a, Random a, MonadRandom g) => (Point2 a, Point2 a) -> a -> Point2 a -> g (Point2 a)
-jitter' bounds s p = liftM (constrain bounds) $ jitter s p
+jitter' bounds s p = constrain bounds <$> jitter s p
 
 
 constrain :: Ord a => (Point2 a, Point2 a) -> Point2 a -> Point2 a

@@ -35,7 +35,7 @@ module SERA.Service.Finance (
 -- FIXME: This module needs major cleanup.
 
 
-import Control.Arrow (first)
+import Control.Arrow ((&&&), first)
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson (FromJSON(parseJSON), ToJSON(toJSON), withText, defaultOptions, genericToJSON)
 import Data.Daft.DataCube (evaluate)
@@ -66,7 +66,7 @@ import SERA.Finance.IO.Xlsx (formatResultsAsFile)
 import SERA.Finance.Scenario (Scenario(..))
 import SERA.Finance.Solution (solveConstrained')
 import SERA.Service ()
-import SERA.Scenario.HydrogenSizing -- (StationSummaryCube)
+import SERA.Scenario.HydrogenSizing hiding (capitalCost) -- (StationSummaryCube)
 import SERA.Types
 import SERA.Util.Summarization (summation)
 import SERA.Vehicle.Types
@@ -364,24 +364,21 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
           else
             makeInputs'
               (region', station', previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity', totalCapital', firstYear')
-              (
-                (
-                    fRegion =: region'
-                <+> fYear   =: nextYear
-                <+> fStationID =: station'
-                <+> fNewCapitalCost =: 0
-                <+> fNewInstallationCost =: 0
-                <+> fNewCapitalIncentives =: 0
-                <+> fNewProductionIncentives =: 0
-                <+> fNewElectrolysisCapacity =: 0
-                <+> fNewPipelineCapacity =: 0
-                <+> fNewOnSiteSMRCapacity =: 0
-                <+> fNewGH2TruckCapacity =: 0
-                <+> fNewLH2TruckCapacity =: 0
-                <+> fRenewableFraction =: 0
-                )
-                : []
-              )
+              [
+                  fRegion =: region'
+              <+> fYear   =: nextYear
+              <+> fStationID =: station'
+              <+> fNewCapitalCost =: 0
+              <+> fNewInstallationCost =: 0
+              <+> fNewCapitalIncentives =: 0
+              <+> fNewProductionIncentives =: 0
+              <+> fNewElectrolysisCapacity =: 0
+              <+> fNewPipelineCapacity =: 0
+              <+> fNewOnSiteSMRCapacity =: 0
+              <+> fNewGH2TruckCapacity =: 0
+              <+> fNewLH2TruckCapacity =: 0
+              <+> fRenewableFraction =: 0
+              ]
     makeInputs' (_, _, previousYear, totalStations', electrolysisCapacity', pipelineCapacity', onSiteSMRCapacity', gh2TruckCapacity', lh2TruckCapacity', renewableCapacity', totalCapital', firstYear') (rec : recs) =
       let
         StationParameters{..} = station parameters
@@ -540,7 +537,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
       $ take (cohortFinish parameters - cohortStart parameters + 1)
       $ drop (cohortStart parameters - 1)
       $ sortBy (compare `on` (\recs -> (fYear <: head recs, isGeneric (show $ fStationID <: head recs), fStationID <: head recs)))
-      $ groupBy ((==) `on` (\rec -> (fRegion <: rec, fStationID <: rec)))
+      $ groupBy ((==) `on` ((fRegion <:) &&& (fStationID <:)))
       $ sortBy (compare `on` (\rec -> (fRegion <: rec, fStationID <: rec, fYear <: rec)))
       $ toKnownRecords stationsDetail
 

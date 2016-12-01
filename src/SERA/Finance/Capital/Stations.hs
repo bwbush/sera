@@ -1,4 +1,3 @@
-{-# LANGUAGE PackageImports  #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
 

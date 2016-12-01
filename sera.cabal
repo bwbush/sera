@@ -1,5 +1,5 @@
 name: sera
-version: 2.1.1.7
+version: 2.1.1.8
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -107,8 +107,10 @@ library
                   , daft
                   , data-default
                   , file-embed
+                  , MonadRandom
                   , monoid-extras
                   , mtl
+                  , parallel
                   , raft
                   , regex-posix
                   , split

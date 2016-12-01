@@ -46,8 +46,7 @@ import qualified Data.Set as S (map)
 byYear :: '[FRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v  -- ^ The data cube.
        -> '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ v -- ^ The data cube year added to the key.
 byYear =
-  rekey
-    $ Rekeyer{..}
+  rekey Rekeyer{..}
     where
       rekeyer   rec = τ (rec <+> fYear =: fAge  <: rec + fModelYear <: rec)
       unrekeyer rec = τ (rec <+> fAge  =: fYear <: rec - fModelYear <: rec)
@@ -181,7 +180,7 @@ inferSales {- FIXME: Implement padding. -} padding survival regionalStock = -- F
     marketShare =
       π fractionalizeSales
       $ sales
-      ⋈ ( π relabelSales regionalSales)
+      ⋈ π relabelSales regionalSales
       where
         fractionalizeSales _ rec = fMarketShare =: fSales <: rec / fTotalSales <: rec
         relabelSales = const $ (fTotalSales =:) . (fSales <:)

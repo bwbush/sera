@@ -84,7 +84,7 @@ locate parameters@Parameters{..} bounds grid =
 
 
 optimize :: MonadRandom g => Parameters -> Bounds -> Grid -> g Individual
-optimize = ((liftM (fst . head) .) .) . iteratePopulation
+optimize = ((fmap (fst . head) .) .) . iteratePopulation
     
 
 iteratePopulation :: MonadRandom g => Parameters -> Bounds -> Grid -> g Population
@@ -96,8 +96,8 @@ iteratePopulation parameters@Parameters{..} bounds grid =
 
 initializePopulation :: MonadRandom g => Parameters -> Bounds -> Grid -> g Population
 initializePopulation parameters@Parameters{..} bounds grid =
-  liftM (map (evaluateIndividual parameters grid))
-    $ replicateM populationSize
+  map (evaluateIndividual parameters grid)
+    <$> replicateM populationSize
     $ rPoints bounds
     $ head locationCounts
 
