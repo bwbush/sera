@@ -26,6 +26,7 @@ module SERA.Scenario.Regionalization (
 -- * Functions
 , travelReduction
 , regionalize
+, urbanToRegion
 ) where
 
 

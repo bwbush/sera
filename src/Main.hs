@@ -34,7 +34,7 @@ import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
 import SERA (inform, stringVersion)
 import SERA.Service.Finance (financeMain)
-import SERA.Service.HydrogenSizing (calculateHydrogenSizing)
+import SERA.Service.HydrogenSizing (hydrogenSizingMain)
 import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
 import SERA.Service.Regionalization (regionalizationMain)
@@ -251,7 +251,7 @@ dispatch s@InvertVehicleStock{} = dispatch' s stockInvertMain
 dispatch s@Logistic{}           = dispatch' s logisticMain
 dispatch s@Introduction{}       = dispatch' s introductionsMain
 dispatch s@Regionalization{}    = dispatch' s regionalizationMain
-dispatch s@HydrogenSizing{}     = dispatch' s calculateHydrogenSizing
+dispatch s@HydrogenSizing{}     = dispatch' s hydrogenSizingMain
 dispatch s@HydrogenFinance{}    = dispatch' s financeMain
 
 
