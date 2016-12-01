@@ -20,3 +20,14 @@
 
 module SERA.Energy.Prices (
 ) where
+
+
+-- Zone, Year -> Price
+
+-- Region, Feedstock, Zone
+
+
+-- regex summary
+
+-- Zone
+-- Locality
