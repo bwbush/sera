@@ -24,8 +24,10 @@
 module SERA.Scenario.HydrogenSizing (
 -- * Types
   CapitalCostParameters
+, SitePreparationParameters
 -- * Computation
 , capitalCost
+, sitePreparationMultiplier
 , sizeStations
 ) where
 
@@ -75,6 +77,33 @@ capitalCost :: CapitalCostParameters -- ^ Capital cost parameters.
             -> Double                -- ^ Cost of new station.
 capitalCost CapitalCostParameters{..} quantity capacity =
   costReference * (capacity / capacityReference)**capacityExponent * (quantity / quantityReference)**quantityExponent
+
+
+-- | Site preparation parameters.
+data SitePreparationParameters =
+  SitePreparationParameters
+  {
+    preparationYear      :: Double -- ^ The reference year for the multiplier.
+  , preparationMultipler :: Double -- ^ The multiplier at the reference year.
+  , preparationReduction :: Double -- ^ The amount the multiplier is reduced each year.
+  }
+    deriving (Eq, Generic, Ord, Read, Show)
+
+instance FromJSON SitePreparationParameters
+
+instance ToJSON SitePreparationParameters
+
+
+-- | Compute the extra site preparation cost.
+sitePreparationMultiplier :: SitePreparationParameters -- ^ Site preparation parameters.
+                          -> Year                      -- ^ The year.
+                          -> Double                    -- ^ The site preparation cost multiplier for the year.
+sitePreparationMultiplier SitePreparationParameters{..} year =
+  maximum
+    [
+      1
+    , preparationMultipler - preparationReduction * (fromIntegral year - preparationYear)
+    ]
 
 
 -- | Field type for a list of years and station capacities.
@@ -231,12 +260,13 @@ extendedStock _ recs =
 -- | Size refueling stations.
 sizeStations :: StationCapacityParameters               -- ^ The station capacity parameters.
              -> CapitalCostParameters                   -- ^ The station cost parameters.
+             -> SitePreparationParameters               -- ^ The site preperation parameters.
              -> GlobalCapacityCube                      -- ^ The station capacity outside the region.
              -> StationDetailCube                       -- ^ The station details for manually input stations.
              -> RegionalIntroductionsCube               -- ^ The regional introduction years.
              -> StockCube                               -- ^ The regional vehicle stock.
              -> (StationDetailCube, StationSummaryCube) -- ^ The station details and summary.
-sizeStations parameters parameters' externals overrides introductions stock =
+sizeStations parameters parameters' parameters'' externals overrides introductions stock =
   let
     regionStations = ω overrides :: Set (FieldRec '[FYear, FStationID])
     pullYear key _ =
@@ -302,13 +332,14 @@ sizeStations parameters parameters' externals overrides introductions stock =
     global = κ regions totalGlobalCapacity summary <> externals
     price key rec =
       let
+        year     = fYear <: key
         quantity = maybe 0 (fTotalCapacity <:) $ global `evaluate` τ key
         capacity = fNewElectrolysisCapacity <: rec
                    + fNewPipelineCapacity <: rec
                    + fNewOnSiteSMRCapacity <: rec
                    + fNewGH2TruckCapacity <: rec
                    + fNewLH2TruckCapacity <: rec
-        cost = capitalCost parameters' quantity capacity
+        cost = capitalCost parameters' quantity capacity * sitePreparationMultiplier parameters'' year
       in
         if isNaN (fNewCapitalCost <: rec)
           then fNewCapitalCost =: cost <+> τ rec

@@ -36,7 +36,7 @@ import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
-import SERA.Scenario.HydrogenSizing (CapitalCostParameters, sizeStations)
+import SERA.Scenario.HydrogenSizing (CapitalCostParameters, SitePreparationParameters, sizeStations)
 import SERA.Service ()
 
 
@@ -52,6 +52,7 @@ data ConfigHydrogenSizing =
   , stationsDetailsSource       :: DataSource Void           -- ^ Source for station details.
   , sizingParameters            :: StationCapacityParameters -- ^ Station capacity parameters.
   , capitalCostParameters       :: CapitalCostParameters     -- ^ Station capital cost parameters.
+  , sitePreparationParameters   :: SitePreparationParameters -- ^ Site preparation parameters.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -71,6 +72,6 @@ hydrogenSizingMain ConfigHydrogenSizing{..} =
     stock <- verboseReadFieldCubeSource "vehicle stock" regionalStockSource
     overrides <- verboseReadFieldCubeSource "overridden stations" overrideStationsSource
     let
-      (details, summary) = sizeStations sizingParameters capitalCostParameters externalCapacity overrides regionalIntroductions stock
+      (details, summary) = sizeStations sizingParameters capitalCostParameters sitePreparationParameters externalCapacity overrides regionalIntroductions stock
     verboseWriteFieldCubeSource "station summary" stationsSummarySource summary
     verboseWriteFieldCubeSource "station details" stationsDetailsSource details
