@@ -27,7 +27,7 @@ module SERA.Vehicle.MHD.EMFAC2010 (
 ) where
 
 
-import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
+import Data.Daft.Vinyl.FieldCube (type (↝), θ, fromRecords)
 import Data.Daft.Vinyl.FieldRec.IO (readFieldRecs)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (rcast)
@@ -41,7 +41,7 @@ vehicles = Vehicle . ("Class " ++) . show <$> ([8,7..3] :: [Int])
 
 -- | Annual travel.
 annualTravel :: '[FVehicle] ↝ '[FAnnualTravel]
-annualTravel = fromRecords $ rcast <$> table6p7
+annualTravel = θ . fromRecords $ rcast <$> table6p7
 
 
 -- | Raw data from EMFAC 2010 Table 6.7.

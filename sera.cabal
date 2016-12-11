@@ -1,5 +1,5 @@
 name: sera
-version: 2.1.3.1
+version: 2.1.3.2
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -46,7 +46,7 @@ library
                     SERA.Configuration.ScenarioInputs
                     SERA.Constants
                     SERA.Energy
-                    SERA.Energy.Price
+                    SERA.Energy.Prices
                     SERA.Energy.Types
                     SERA.Finance.Analysis
                     SERA.Finance.Analysis.Assets

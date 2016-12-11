@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds                 #-}
 -----------------------------------------------------------------------------
 --
 -- Module      :  SERA.Service.Finance
@@ -14,6 +13,7 @@
 -----------------------------------------------------------------------------
 
 
+{-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TupleSections             #-}
@@ -39,6 +39,7 @@ import Control.Arrow ((&&&))
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson (FromJSON, ToJSON(toJSON), defaultOptions, genericToJSON)
 import Data.Daft.DataCube (evaluate)
+import Data.Daft.DataCube.Sum (asTableCube)
 import Data.Daft.Source (DataSource(..))
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource)
@@ -141,11 +142,11 @@ financeMain :: (IsString e, MonadError e m, MonadIO m)
                        -> m ()               -- ^ Action to compute the introduction years.
 financeMain parameters@Inputs{..}=
   do
-    feedstockUsage <- readFieldCubeSource feedstockUsageSource
-    energyPrices <- readFieldCubeSource energyPricesSource
-    carbonCredits <- readFieldCubeSource carbonCreditSource
-    stationsSummary <- readFieldCubeSource stationsSummarySource
-    stationsDetail <- readFieldCubeSource stationsDetailsSource
+    feedstockUsage <- θ <$> readFieldCubeSource feedstockUsageSource
+    energyPrices <- θ <$> readFieldCubeSource energyPricesSource
+    carbonCredits <- θ <$> readFieldCubeSource carbonCreditSource
+    stationsSummary <- θ <$> readFieldCubeSource stationsSummarySource
+    stationsDetail <- θ <$> readFieldCubeSource stationsDetailsSource
     let
       regionalUtilization = computeRegionalUtilization stationsSummary
       prepared = makeInputs parameters feedstockUsage energyPrices carbonCredits regionalUtilization stationsDetail
@@ -446,7 +447,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
       $ sortBy (compare `on` (\recs -> (fYear <: head recs, isGeneric (show $ fStationID <: head recs), fStationID <: head recs)))
       $ groupBy ((==) `on` ((fRegion <:) &&& (fStationID <:)))
       $ sortBy (compare `on` (\rec -> (fRegion <: rec, fStationID <: rec, fYear <: rec)))
-      $ toKnownRecords stationsDetail
+      $ toKnownRecords $ asTableCube stationsDetail
 
 
 -- FIXME: check station cost override ZERO needs to be computed if there is a new station.

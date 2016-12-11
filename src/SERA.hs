@@ -35,9 +35,10 @@ module SERA (
 
 import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
+import Data.Daft.DataCube.Sum (SumCube(TableSumCube), asTableCube)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.TypeLevel (Union)
-import Data.Daft.Vinyl.FieldCube (FieldCube)
+import Data.Daft.Vinyl.FieldCube (type (↝))
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.Daft.Vinyl.FieldRec (Labeled)
 import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, ShowFieldRec)
@@ -89,15 +90,15 @@ unsafeInform s x =
       return x
 
 
-verboseReadFieldCubeSource :: forall ks vs e m a . (Show a, ks ⊆ Union ks vs, vs ⊆ Union ks vs, Ord (FieldRec ks), IsString e, MonadError e m, MonadIO m, Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> DataSource a -> m (FieldCube ks vs)
+verboseReadFieldCubeSource :: forall ks vs e m a . (Show a, ks ⊆ Union ks vs, vs ⊆ Union ks vs, Ord (FieldRec ks), IsString e, MonadError e m, MonadIO m, Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> DataSource a -> m (ks ↝ vs)
 verboseReadFieldCubeSource label source =
   do
     inform $ "Reading " ++ label ++ " from " ++ show source ++ " . . ."
-    readFieldCubeSource source
+    TableSumCube <$> readFieldCubeSource source
 
 
-verboseWriteFieldCubeSource :: forall ks vs e m a . (Show a, Ord (FieldRec ks), Labeled (FieldRec (ks ++ vs)), ShowFieldRec (ks ++ vs), IsString e, MonadError e m, MonadIO m) => String -> DataSource a -> FieldCube ks vs -> m ()
+verboseWriteFieldCubeSource :: forall ks vs e m a . (Show a, Ord (FieldRec ks), Labeled (FieldRec (ks ++ vs)), ShowFieldRec (ks ++ vs), IsString e, MonadError e m, MonadIO m) => String -> DataSource a -> ks ↝ vs -> m ()
 verboseWriteFieldCubeSource label source table =
     withSource source $ \source' -> do
       inform $ "Writing " ++ label ++ " sales to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source' table
+      void $ writeFieldCubeSource source' $ asTableCube table

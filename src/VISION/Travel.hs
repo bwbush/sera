@@ -30,7 +30,8 @@ module VISION.Travel (
 
 import Control.Monad (guard)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Daft.DataCube (fromFunction)
+import Data.Daft.DataCube.Function (fromFunction)
+import Data.Daft.Vinyl.FieldCube (φ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Default (Default(..))
 import GHC.Generics (Generic)
@@ -69,7 +70,7 @@ travelLDV = travel def
 
 travel :: TravelData -> AnnualTravelCube
 travel TravelData{..} =
-  fromFunction $ \rec ->
+  φ . fromFunction $ \rec ->
     do
       let
         age = fromIntegral $ fAge <: rec

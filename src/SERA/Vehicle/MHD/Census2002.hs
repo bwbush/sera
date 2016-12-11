@@ -28,7 +28,7 @@ module SERA.Vehicle.MHD.Census2002 (
 ) where
 
 
-import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
+import Data.Daft.Vinyl.FieldCube (type (↝), θ, fromRecords)
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Daft.Vinyl.FieldRec.IO (readFieldRecs)
 import Data.Vinyl.Derived (FieldRec)
@@ -43,12 +43,12 @@ vehicles = (fVehicle <:) <$> table
 
 -- | Annual travel.
 annualTravel :: '[FVehicle] ↝ '[FAnnualTravel]
-annualTravel = fromRecords $ rcast <$> table
+annualTravel = θ . fromRecords $ rcast <$> table
 
 
 -- | Fuel efficiency.
 fuelEfficiency :: '[FVehicle] ↝ '[FFuelEfficiency]
-fuelEfficiency = fromRecords $ rcast <$> table
+fuelEfficiency = θ . fromRecords $ rcast <$> table
 
 
 -- | Raw data.

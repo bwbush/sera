@@ -99,7 +99,8 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
         <+> fTravel =: travel'
         <+> fEnergy =: energy'
     energy =
-      π consuming
+      φ
+      $ π consuming
       $ travel
       ⋈ fuelSplit
       ⋈ fuelEfficiency

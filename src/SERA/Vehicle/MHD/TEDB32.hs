@@ -29,8 +29,8 @@ module SERA.Vehicle.MHD.TEDB32 (
 
 
 import Control.Arrow (first)
-import Data.Daft.DataCube (fromFunction)
-import Data.Daft.Vinyl.FieldCube (type (↝), fromRecords)
+import Data.Daft.DataCube.Function (fromFunction)
+import Data.Daft.Vinyl.FieldCube (type (↝), θ, φ, fromRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Daft.Vinyl.FieldRec.IO (readFieldRecs)
 import Data.Map.Strict (Map, fromList, keys)
@@ -49,7 +49,7 @@ vehicles = keys regressions5p1and5p2
 -- | Fuel efficiency via linear regression.
 fuelEfficiencyRegression :: '[FVehicle, FModelYear] ↝ '[FFuelEfficiency]
 fuelEfficiencyRegression =
-  fromFunction $ \rec ->
+  φ . fromFunction $ \rec ->
     do
       let
         classification = fVehicle <: rec
@@ -76,7 +76,7 @@ regressions5p1and5p2 =
 
 -- | Fuel efficiency via lookup table.
 fuelEfficiencyTabulated :: '[FVehicle, FModelYear] ↝ '[FFuelEfficiency]
-fuelEfficiencyTabulated = fromRecords $ rcast <$> tables5p1and5p2
+fuelEfficiencyTabulated = θ . fromRecords $ rcast <$> tables5p1and5p2
 
 
 -- | Raw data from Transportation Energy Data Book, Tables 5.1 and 5.2.
