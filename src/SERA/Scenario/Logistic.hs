@@ -31,7 +31,7 @@ module SERA.Scenario.Logistic (
 
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
-import Data.Daft.Vinyl.FieldCube ((⋈), θ, π, fromRecords)
+import Data.Daft.Vinyl.FieldCube ((⋈), ε, π, fromRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import SERA.Scenario.Types
 import SERA.Vehicle.Types (fMarketShare, ModelYear, fModelYear)
@@ -68,7 +68,7 @@ computeMarketShares :: (ModelYear, ModelYear) -- ^ The first and last model year
                     -> MarketShareCube        -- ^ The market shares.
 computeMarketShares (firstYear, lastYear) logistics =
   let
-    modelYears = θ $ fromRecords [fModelYear =: y | y <- [firstYear..lastYear]] :: ModelYearCube
+    modelYears = ε $ fromRecords [fModelYear =: y | y <- [firstYear..lastYear]] :: ModelYearCube
     sharing key rec =
       let
         t    =                fModelYear      <: key

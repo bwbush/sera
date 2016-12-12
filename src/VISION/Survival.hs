@@ -32,7 +32,7 @@ module VISION.Survival (
 import Data.Aeson (FromJSON, ToJSON)
 import Control.Monad (guard)
 import Data.Daft.DataCube.Function (fromFunction)
-import Data.Daft.Vinyl.FieldCube (φ)
+import Data.Daft.Vinyl.FieldCube (ε)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Default (Default(..))
 import Data.List (inits)
@@ -72,7 +72,7 @@ survivalLDV = survival def
 
 survival :: SurvivalData -> SurvivalCube
 survival survivalData =
-  φ . fromFunction $ \rec ->
+  ε . fromFunction $ \rec ->
     do
       let
         products =
@@ -102,7 +102,7 @@ factor SurvivalData{..} age
 -- | Survival function for medium and heavy duty vehicles from VISION 2016.
 survivalHDV :: SurvivalCube
 survivalHDV =
-  φ . fromFunction $ \rec ->
+  ε . fromFunction $ \rec ->
     do
       let
         products =

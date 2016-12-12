@@ -35,10 +35,9 @@ module SERA (
 
 import Control.Monad (void)
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
-import Data.Daft.DataCube.Sum (SumCube(TableSumCube), asTableCube)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.TypeLevel (Union)
-import Data.Daft.Vinyl.FieldCube (type (↝))
+import Data.Daft.Vinyl.FieldCube (type (↝), ε)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.Daft.Vinyl.FieldRec (Labeled)
 import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, ShowFieldRec)
@@ -94,11 +93,11 @@ verboseReadFieldCubeSource :: forall ks vs e m a . (Show a, ks ⊆ Union ks vs, 
 verboseReadFieldCubeSource label source =
   do
     inform $ "Reading " ++ label ++ " from " ++ show source ++ " . . ."
-    TableSumCube <$> readFieldCubeSource source
+    ε <$> readFieldCubeSource source
 
 
 verboseWriteFieldCubeSource :: forall ks vs e m a . (Show a, Ord (FieldRec ks), Labeled (FieldRec (ks ++ vs)), ShowFieldRec (ks ++ vs), IsString e, MonadError e m, MonadIO m) => String -> DataSource a -> ks ↝ vs -> m ()
 verboseWriteFieldCubeSource label source table =
     withSource source $ \source' -> do
       inform $ "Writing " ++ label ++ " sales to " ++ show source ++ " . . ."
-      void $ writeFieldCubeSource source' $ asTableCube table
+      void $ writeFieldCubeSource source' table

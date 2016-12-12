@@ -34,7 +34,6 @@ module SERA.Scenario.HydrogenSizing (
 
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (Rekeyer(..), evaluate, rekey)
-import Data.Daft.DataCube.Sum (asTableCube)
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Default.Util (nan)
@@ -226,7 +225,7 @@ runningTotals cube =
                                   then runningTotal' (y + 1, ((s', s' + st), (c', c' + ct))) zs
                                   else runningTotal' (y + 1, ((0 ,      st), (0 ,      ct))) (z : zs)
   in
-    θ $ fromRecords
+    ε $ fromRecords
       [
             fRegion =: region
         <+> fYear   =: year
@@ -235,7 +234,7 @@ runningTotals cube =
         <+> fNewCapacity =: newCapacity
         <+> fTotalCapacity =: totalCapacity
       |
-        recs <- groupBy ((==) `on` (fRegion <:)) $ toKnownRecords $ asTableCube $ κ stations sumCapacities cube
+        recs <- groupBy ((==) `on` (fRegion <:)) $ toKnownRecords $ κ stations sumCapacities cube
       , let region = fRegion <: head recs
       , (year, ((newStations, totalStations), (newCapacity, totalCapacity)))
           <- runningTotal
@@ -300,11 +299,10 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
         $ stock' ⋈ introductions'
     capacities =
       toKnownRecords
-        $ asTableCube
         $ κ years (sizing parameters)
         $ ((δ years (const τ) overrides' :: '[FYear, FRegion] ↝  '[FStationCount]) ⋈ π dropStationCount daily :: '[FYear, FRegion] ↝  '[FStationCount, FYear, FDemand]) <> daily
     details =
-      θ $ fromRecords
+      ε $ fromRecords
         [
               fRegion                  =: fRegion <: rec
           <+> fYear                    =: y
