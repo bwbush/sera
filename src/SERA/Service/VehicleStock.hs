@@ -22,6 +22,10 @@ module SERA.Service.VehicleStock (
 -- * Configuration
   ConfigStock(..)
 , SurvivalData(..)
+, TravelData(..)
+-- * I/O
+, survivalCube
+, travelCube
 -- * Computation
 , stockMain
 , stockInvertMain
@@ -128,8 +132,8 @@ stockMain :: (IsString e, MonadError e m, MonadIO m)
 stockMain ConfigStock{..} =
   do
     regionalSales <- verboseReadFieldCubeSource "regional sales" regionalSalesSource
-    survival <- survivalCube survivalSource
     marketShare <- verboseReadFieldCubeSource "market share" marketShareSource
+    survival <- survivalCube survivalSource
     annualTravel <- travelCube annualTravelSource
     fuelSplit <- verboseReadFieldCubeSource "fuel split" fuelSplitSource
     fuelEfficiency <- verboseReadFieldCubeSource "fuel efficiency" fuelEfficiencySource

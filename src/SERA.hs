@@ -99,5 +99,5 @@ verboseReadFieldCubeSource label source =
 verboseWriteFieldCubeSource :: forall ks vs e m a . (Show a, Ord (FieldRec ks), Labeled (FieldRec (ks ++ vs)), ShowFieldRec (ks ++ vs), IsString e, MonadError e m, MonadIO m) => String -> DataSource a -> ks ↝ vs -> m ()
 verboseWriteFieldCubeSource label source table =
     withSource source $ \source' -> do
-      inform $ "Writing " ++ label ++ " sales to " ++ show source ++ " . . ."
+      inform $ "Writing " ++ label ++ " to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source' table

@@ -24,6 +24,7 @@
 module SERA.Vehicle.Stock (
 -- * Computation
   computeStock
+, recomputeStock
 , inferSales
 ) where
 
@@ -35,6 +36,7 @@ import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
+import SERA.Scenario.Regionalization (SalesOnlyCube, TravelReductionCube, fTravelReduction)
 import SERA.Types (FRegion, Year, FYear, fYear)
 import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, RegionalStockCube, SalesCube, StockCube, SurvivalCube, SurvivalFunction, asSurvivalFunction)
 import SERA.Vehicle.Types (FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, ModelYear, FModelYear, fModelYear, Sales, FSales, fSales, Stock, FStock, fStock, fSurvival, fTravel, FVehicle, Vocation, FVocation, fVocation)
@@ -100,6 +102,80 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
         <+> fEnergy =: energy'
     energy =
       π consuming
+      $ ε travel
+      ⋈ fuelSplit
+      ⋈ fuelEfficiency
+    emitting _ rec =
+      fEmission =: fEnergy <: rec * fEmissionRate <: rec
+    emission =
+      π emitting
+      $ energy
+      ⋈ emissionRate
+    total _ xs =
+          fSales  =: sum ((fSales  <:) <$> xs)
+      <+> fStock  =: sum ((fStock  <:) <$> xs)
+      <+> fTravel =: sum ((fTravel <:) <$> xs)
+      <+> fEnergy =: sum ((fEnergy <:) <$> xs)
+    totalEmission _ xs =
+          fEmission =: sum ((fEmission <:) <$> xs)
+  in
+    (
+      κ               fuels  total           energy
+    , κ (modelYears × fuels) total           energy
+    , κ  modelYears          ((τ .) . total) energy
+    , κ  modelYears          totalEmission   emission
+    )
+
+
+-- | Compute the vehicle stock.
+recomputeStock :: SalesOnlyCube                                     -- ^ Sales.
+               -> TravelReductionCube                               -- ^ Travel reduction.
+               -> SurvivalCube                                      -- ^ Vehicle survival.
+               -> AnnualTravelCube                                  -- ^ Annual travel.
+               -> FuelSplitCube                                     -- ^ Fuel split.
+               -> FuelEfficiencyCube                                -- ^ Fuel efficiency.
+               -> EmissionRateCube                                  -- ^ Emission rate.
+               -> (SalesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Sales, stock, energy consumed, and pollutants emitted.
+recomputeStock regionalSales travelReduction survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
+  let
+    modelYears = ω regionalSales :: Set (FieldRec '[FModelYear])
+    years = ((fYear =:) . (fModelYear <:)) `S.map` modelYears
+    fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
+    traveling key rec =
+      let
+        sales = fSales <: rec
+        sales' = if fAge <: key == 0 then sales else 0
+        stock = sales * fSurvival <: rec
+        travel' = stock * fAnnualTravel <: rec
+      in
+            fSales  =: sales'
+        <+> fStock  =: stock
+        <+> fTravel =: travel'
+    travel =
+      ρ (years × ω regionalSales)
+      $ byYear
+      (
+        π traveling
+        $ regionalSales
+        ⋈ survival
+        ⋈ annualTravel
+      )
+    consuming _ rec =
+      let
+        split = fFuelSplit <: rec
+        sales = split * fSales <: rec
+        stock = split * fStock <: rec
+        travel' = split * fTravel <: rec
+        energy' = travel' / fFuelEfficiency <: rec
+        reduction = fTravelReduction <: rec
+      in
+            fSales  =: sales
+        <+> fStock  =: stock
+        <+> fTravel =: travel' * (1 - reduction)
+        <+> fEnergy =: energy' * (1 - reduction)
+    energy =
+      π consuming
+      $ (⋈ travelReduction)
       $ ε travel
       ⋈ fuelSplit
       ⋈ fuelEfficiency

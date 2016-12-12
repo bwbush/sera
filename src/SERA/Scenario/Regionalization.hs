@@ -23,6 +23,12 @@
 module SERA.Scenario.Regionalization (
 -- * Types
   RegionalizationParameters(..)
+-- * Cubes
+, SalesOnlyCube
+, TravelReductionCube
+-- * Fields
+, FTravelReduction
+, fTravelReduction
 -- * Functions
 , travelReduction
 , regionalize
@@ -41,7 +47,7 @@ import GHC.Generics (Generic)
 import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, RegionalIntroductionsCube)
 import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear, pushYear, minimumYear)
 import SERA.Vehicle.Stock.Types (StockCube)
-import SERA.Vehicle.Types (fEnergy, FRelativeMarketShare, fRelativeMarketShare, fSales, fStock, hasStock, fTravel, FVehicle, FVocation)
+import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, fStock, hasStock, FVehicle, fVehicle, FVocation, fVocation)
 
 
 -- | Field type for total relative market share.
@@ -70,6 +76,12 @@ fTravelReduction :: SField FTravelReduction
 fTravelReduction = SField
 
 
+type TravelReductionCube = '[FRegion, FYear, FVocation, FVehicle] ↝ '[FTravelReduction]
+
+
+type SalesOnlyCube = '[FRegion, FModelYear, FVocation, FVehicle] ↝ '[FSales]
+
+
 -- | Parameters for regionalizing demand.
 data RegionalizationParameters =
   RegionalizationParameters
@@ -87,16 +99,16 @@ instance ToJSON RegionalizationParameters
 -- | Compute VMT reduction.
 travelReduction :: RegionalizationParameters -- ^ Parameters for regionalizing demand.
                 -> Double                    -- ^ The number of years since vehicles were introduced.
-                -> Double                    -- ^ Multiplier for VMT.
+                -> Double                    -- ^ Fraction reduction for VMT.
 travelReduction RegionalizationParameters{..} time
   | time < 0                       = initialTravelReduction
-  | time > travelReductionDuration = 1
-  | otherwise                      = initialTravelReduction + (1 - initialTravelReduction) * time / travelReductionDuration
+  | time > travelReductionDuration = 0
+  | otherwise                      = initialTravelReduction * (1 - time / travelReductionDuration)
 -- | Regionalize demand.
-regionalize :: RegionalizationParameters -- ^ Regionalization parameters.
-            -> RegionalIntroductionsCube -- ^ Regional introduction years.
-            -> StockCube                 -- ^ Total stock.
-            -> StockCube                 -- ^ Regionalized stock.
+regionalize :: RegionalizationParameters            -- ^ Regionalization parameters.
+            -> RegionalIntroductionsCube            -- ^ Regional introduction years.
+            -> StockCube                            -- ^ Total stock.
+            -> (SalesOnlyCube, TravelReductionCube) -- ^ Regionalized sales and VMT reductions.
 regionalize parameters introductions totals = -- FIXME: Review for opportunities to simplify and clarify.
   let
     universe = ω totals :: Set (FieldRec '[FYear])
@@ -112,7 +124,7 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
         firstYear = (fYear <:) $ firstYears ! τ key
         year' = firstYear + year - maximum [introductionYear, firstYear]
         share = fRelativeMarketShare <: rec
-        reduction = travelReduction parameters $ fromIntegral $ year' - introductionYear
+        reduction = travelReduction parameters $ fromIntegral $ year' - firstYear
       in
         fRelativeMarketShare =:
           (share
@@ -130,26 +142,46 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
     scaling _ rec =
       let
         share = fRelativeMarketShare <: rec / fTotalRelativeMarketShare <: rec
-        reduction = fTravelReduction <: rec
       in
-            fSales  =:             share * fSales   <: rec
-        <+> fStock  =:             share * fStock   <: rec
-        <+> fTravel =: reduction * share * fTravel  <: rec
-        <+> fEnergy =: reduction * share * fEnergy  <: rec
+        fSales =: share * fSales <: rec
   in
-    urbanToRegion
-      $ σ hasStock
-      $ π scaling
-      $ allocations ⋈ totals'' ⋈ totals
+    (
+      urbanToRegion
+        $ π scaling
+        $ allocations ⋈ totals'' ⋈ totals
+    , urbanToRegion'
+        $ π (const τ)
+        allocations
+    )
 
 
 -- | Rekey with urban areas as the main key.
 urbanToRegion :: '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] ↝ v -- ^ Data cube with both region and urban areas.
-              -> '[FYear, FRegion, FVocation, FVehicle] ↝ v                         -- ^ Data cube with urban area as region.
+              -> '[FRegion, FModelYear, FVocation, FVehicle] ↝ v                         -- ^ Data cube with urban area as region.
 urbanToRegion = -- Review for opportunities to simplify and clarify.
   rekey
     $ Rekeyer
-        (\key -> τ $ fRegion =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key)) <+> key)
+        (\key ->     fRegion    =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key))
+                 <+> fModelYear =: fYear     <: key
+                 <+> fVocation  =: fVocation <: key
+                 <+> fVehicle   =: fVehicle  <: key
+        )
+        undefined
+
+
+
+
+-- | Rekey with urban areas as the main key.
+urbanToRegion' :: '[FRegion, FUrbanCode, FUrbanName, FYear, FVocation, FVehicle] ↝ v -- ^ Data cube with both region and urban areas.
+               -> '[FRegion, FYear, FVocation, FVehicle] ↝ v                         -- ^ Data cube with urban area as region.
+urbanToRegion' = -- Review for opportunities to simplify and clarify.
+  rekey
+    $ Rekeyer
+        (\key ->     fRegion    =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key))
+                 <+> fYear      =: fYear     <: key
+                 <+> fVocation  =: fVocation <: key
+                 <+> fVehicle   =: fVehicle  <: key
+        )
         undefined
 
 
