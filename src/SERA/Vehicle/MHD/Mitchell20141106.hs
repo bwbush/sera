@@ -27,7 +27,7 @@ module SERA.Vehicle.MHD.Mitchell20141106 (
 ) where
 
 
-import Data.Daft.Vinyl.FieldCube (type (↝), θ, fromRecords)
+import Data.Daft.Vinyl.FieldCube (type (↝), ε, fromRecords)
 import Data.Daft.Vinyl.FieldRec.IO (readFieldRecs)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (rcast)
@@ -41,7 +41,7 @@ vocations = Vocation . ("Category " ++) . show <$> ['A'..'K']
 
 -- | Annual travel.
 annualTravel :: '[FVocation] ↝ '[FAnnualTravel]
-annualTravel = θ . fromRecords $ rcast <$> table
+annualTravel = ε . fromRecords $ rcast <$> table
 
 
 -- | Raw data.
