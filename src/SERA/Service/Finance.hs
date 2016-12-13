@@ -70,6 +70,7 @@ import SERA.Service ()
 import SERA.Types
 import SERA.Util.Summarization (summation)
 import SERA.Vehicle.Types
+import Text.Regex.Posix ((=~))
 
 
 -- | Parameters for finance computations.
@@ -79,6 +80,7 @@ data Inputs =
       referenceYear         :: Int
     , cohortStart           :: Int
     , cohortFinish          :: Int
+    , cohortFilter          :: String
     , scenario              :: ScenarioInputs
     , station               :: StationParameters
     , feedstockUsageSource  :: DataSource Void
@@ -446,6 +448,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
       $ sortBy (compare `on` (\recs -> (fYear <: head recs, isGeneric (show $ fStationID <: head recs), fStationID <: head recs)))
       $ groupBy ((==) `on` ((fRegion <:) &&& (fStationID <:)))
       $ sortBy (compare `on` (\rec -> (fRegion <: rec, fStationID <: rec, fYear <: rec)))
+      $ filter (\rec -> region (fRegion <: rec) =~ cohortFilter parameters)
       $ toKnownRecords stationsDetail
 
 
