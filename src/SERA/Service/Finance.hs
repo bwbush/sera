@@ -54,7 +54,6 @@ import Data.Vinyl.Derived (FieldRec)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import Math.GeometricSeries (GeometricSeries(..), asFunction)
-import SERA (unsafeInform)
 import SERA.Configuration.ScenarioInputs (ScenarioInputs(..))
 import SERA.Energy.Types
 import SERA.Finance.Analysis (computePerformanceAnalyses)
@@ -165,7 +164,9 @@ financeMain parameters@Inputs{..}=
       (outputs, allOutputs) = multiple parameters prepared'
     liftIO $ sequence_
       [
-        formatResultsAsFile outputFile' $ dumpOutputs' output
+        do
+          putStrLn $ "Computing finances for \"" ++ idx ++ "\" . . ."
+          formatResultsAsFile outputFile' $ dumpOutputs' output
       |
         (idx, output) <- outputs
       , let outputFile' = financesDirectory ++ "/" ++ map (\x -> case x of ':' -> '_' ; '/' -> '_'; '\\' -> '_' ; y -> y) idx ++ ".xlsx"
@@ -453,7 +454,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
       | length x < 7 = False
       | otherwise    = take 7 x == "Generic"
   in
-    map (replicateFirstYear . makeInputs' (undefined, undefined, Nothing, 0, 0, 0, 0, 0, 0, 0, 0, Nothing) . (\x -> unsafeInform ("Computing finances for \"" ++ show (fStationID <: head x) ++ "\" . . .") x))
+    map (replicateFirstYear . makeInputs' (undefined, undefined, Nothing, 0, 0, 0, 0, 0, 0, 0, 0, Nothing))
       $ take (cohortFinish parameters - cohortStart parameters + 1)
       $ drop (cohortStart parameters - 1)
       $ sortBy (compare `on` (\recs -> (fYear <: head recs, isGeneric (show $ fStationID <: head recs), fStationID <: head recs)))
