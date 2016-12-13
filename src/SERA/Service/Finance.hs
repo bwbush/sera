@@ -151,7 +151,6 @@ financeMain parameters@Inputs{..}=
     let
       regionalUtilization = computeRegionalUtilization stationsSummary
       prepared = makeInputs parameters feedstockUsage energyPrices carbonCredits regionalUtilization stationsDetail
-      ids = map ((\(reg, _, _) -> reg) . head) prepared
       prepared' = case targetMargin of
         Nothing     -> prepared
         Just margin -> let
@@ -168,36 +167,46 @@ financeMain parameters@Inputs{..}=
       [
         formatResultsAsFile outputFile' $ dumpOutputs' output
       |
-        (idx, output) <- zip ids outputs
+        (idx, output) <- outputs
       , let outputFile' = financesDirectory ++ "/" ++ map (\x -> case x of ':' -> '_' ; '/' -> '_'; '\\' -> '_' ; y -> y) idx ++ ".xlsx"
       ]
     liftIO $ formatResultsAsFile financesSpreadsheet $ dumpOutputs' allOutputs
     liftIO $ writeFile financesFile $ dumpOutputs9 allOutputs
 
 
-multiple :: Inputs -> [[(String, Capital, Scenario)]] -> ([Outputs], Outputs)
+bundle :: Inputs -> Int -> [Outputs] -> Outputs
+bundle parameters firstYear outputs =
+  let
+    scenarioDefinition'= scenario parameters
+    stations'  = map summation $ transpose $ map (padStations firstYear  . stations ) outputs
+    scenarios' = map summation $ transpose $ map (padScenarios firstYear . scenarios) outputs
+    finances'  = map summation $ transpose $ map (padFinances firstYear  . finances ) outputs
+    performances' = computePerformanceAnalyses scenarioDefinition' $ zip scenarios' finances'
+  in
+    JSONOutputs
+    {
+      scenarioDefinition = scenarioDefinition'
+    , stations           = stations'
+    , scenarios          = scenarios'
+    , finances           = finances'
+    , analyses           = performances'
+    }
+
+
+multiple :: Inputs -> [[(String, Capital, Scenario)]] -> ([(String, Outputs)], Outputs)
 multiple parameters capitalScenarios' =
   let
     capitalScenarios = map (map (\(_, s, t) -> (s, t))) capitalScenarios'
     firstYear = minimum $ map (stationYear . fst . head) capitalScenarios
     outputs = map (single parameters) capitalScenarios
-    outputs' = outputs
-    scenarioDefinition'= scenario parameters
-    stations'  = map summation $ transpose $ map (padStations firstYear  . stations ) outputs'
-    scenarios' = map summation $ transpose $ map (padScenarios firstYear . scenarios) outputs'
-    finances'  = map summation $ transpose $ map (padFinances firstYear  . finances ) outputs'
-    performances' = computePerformanceAnalyses scenarioDefinition' $ zip scenarios' finances'
+    ids = map ((\(reg, _, _) -> reg) . head) capitalScenarios'
   in
     (
-      outputs'
-    , JSONOutputs
-      {
-        scenarioDefinition = scenarioDefinition'
-      , stations           = stations'
-      , scenarios          = scenarios'
-      , finances           = finances'
-      , analyses           = performances'
-      }
+      map (\x -> (fst $ head x, bundle parameters firstYear $ map snd x))
+        $ groupBy ((==) `on` fst)
+        $ sortBy (compare `on` fst)
+        $ zip ids outputs
+    , bundle parameters firstYear outputs
     )
 
 
@@ -368,7 +377,9 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
         if isNothing previousYear || nextYear == year
           then
             (
-              show $ fStationID <: rec
+              case region (fRegion <: rec) =~ cohortFilter parameters of
+                [[_, name]] -> name
+                _           -> show $ fStationID <: rec
             , Station {
                 stationYear                            = year
               , stationTotal                           = totalStations
@@ -448,7 +459,7 @@ makeInputs parameters feedstockUsage energyPrices carbonCredits stationUtilizati
       $ sortBy (compare `on` (\recs -> (fYear <: head recs, isGeneric (show $ fStationID <: head recs), fStationID <: head recs)))
       $ groupBy ((==) `on` ((fRegion <:) &&& (fStationID <:)))
       $ sortBy (compare `on` (\rec -> (fRegion <: rec, fStationID <: rec, fYear <: rec)))
-      $ filter (\rec -> region (fRegion <: rec) =~ cohortFilter parameters)
+      $ filter ((=~ cohortFilter parameters) . region . (fRegion <:))
       $ toKnownRecords stationsDetail
 
 
