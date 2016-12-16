@@ -28,7 +28,7 @@ module SERA.Service.HydrogenSizing (
 ) where
 
 
-import Control.Monad.Except (MonadError, MonadIO)
+import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.Source (DataSource(..))
 import Data.String (IsString)
@@ -72,6 +72,10 @@ hydrogenSizingMain ConfigHydrogenSizing{..} =
     stock <- verboseReadFieldCubeSource "vehicle stock" regionalStockSource
     overrides <- verboseReadFieldCubeSource "overridden stations" overrideStationsSource
     let
-      (details, summary) = sizeStations sizingParameters capitalCostParameters sitePreparationParameters externalCapacity overrides regionalIntroductions stock
+      (details, summary, message) = sizeStations sizingParameters capitalCostParameters sitePreparationParameters externalCapacity overrides regionalIntroductions stock
     verboseWriteFieldCubeSource "station summary" stationsSummarySource summary
     verboseWriteFieldCubeSource "station details" stationsDetailsSource details
+    maybe
+      (return ())
+      (liftIO . putStrLn . init)
+      message

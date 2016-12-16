@@ -33,12 +33,13 @@ module SERA.Scenario.HydrogenSizing (
 
 
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.DataCube (Rekeyer(..), evaluate, rekey)
+import Data.Daft.DataCube (Rekeyer(..), evaluate, knownEmpty, rekey)
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
+import Data.Daft.Vinyl.FieldCube.IO (showFieldCube)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Default.Util (nan)
 import Data.Function (on)
-import Data.List (groupBy)
+import Data.List (groupBy, intercalate)
 import Data.Monoid ((<>))
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
@@ -46,7 +47,7 @@ import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters, stationCapacitiesByQuantile)
 import SERA.Refueling.Types
-import SERA.Scenario.Types (RegionalIntroductionsCube, FStationCount, fStationCount, hasStations)
+import SERA.Scenario.Types (RegionalIntroductionsCube, FFirstYear, fFirstYear, fIntroductionYear, FLastYear, fLastYear, FStationCount, fStationCount, hasStations)
 import SERA.Service ()
 import SERA.Types -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
 import SERA.Vehicle.Stock.Types (StockCube)
@@ -131,9 +132,10 @@ hasNewStation _ rec =
 -- | Find the last year 
 lastOverride :: FieldRec '[FRegion]                -- ^ The region.
              -> [FieldRec '[FYear, FStationCount]] -- ^ The the overridden stations.
-             -> FieldRec '[FYear, FStationCount]   -- ^ The last year.
+             -> FieldRec '[FFirstYear, FLastYear, FStationCount]   -- ^ The last year.
 lastOverride _ rec =
-      fYear         =: maximum ((fYear <:) <$> rec)
+      fFirstYear    =: minimum (fromIntegral . (fYear <:) <$> rec)
+  <+> fLastYear     =: maximum (fromIntegral . (fYear <:) <$> rec)
   <+> fStationCount =: sum ((fStationCount <:) <$> rec)
 
 
@@ -265,7 +267,7 @@ sizeStations :: StationCapacityParameters               -- ^ The station capacit
              -> StationDetailCube                       -- ^ The station details for manually input stations.
              -> RegionalIntroductionsCube               -- ^ The regional introduction years.
              -> StockCube                               -- ^ The regional vehicle stock.
-             -> (StationDetailCube, StationSummaryCube) -- ^ The station details and summary.
+             -> (StationDetailCube, StationSummaryCube, Maybe String) -- ^ The station details and summary.
 sizeStations parameters parameters' parameters'' externals overrides introductions stock =
   let
     regionStations = ω overrides :: Set (FieldRec '[FYear, FStationID])
@@ -300,7 +302,11 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
     capacities =
       toKnownRecords
         $ κ years (sizing parameters)
-        $ ((δ years (const τ) overrides' :: '[FYear, FRegion] ↝  '[FStationCount]) ⋈ π dropStationCount daily :: '[FYear, FRegion] ↝  '[FStationCount, FYear, FDemand]) <> daily
+        $ (
+            (δ years (const τ) overrides' :: '[FYear, FRegion] ↝  '[FStationCount])
+          ⋈ π dropStationCount daily :: '[FYear, FRegion] ↝  '[FStationCount, FYear, FDemand]
+          )
+        <> daily
     details =
       ε $ fromRecords
         [
@@ -321,7 +327,7 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
           rec <- capacities
         , let ysc = fStationList <: rec
         , (y, s, c) <- ysc
-        , maybe True ((y >) . (fYear <:)) $ overrides' `evaluate` τ rec
+        , maybe True ((fromIntegral y >) . (fLastYear <:)) $ overrides' `evaluate` τ rec
         , let california = take 2 (show $ fRegion <: rec) == "CA"
         ]
     details' = overrides <> details
@@ -329,6 +335,10 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
     regions = ω summary :: Set (FieldRec '[FRegion])
     totalGlobalCapacity key recs =
       fTotalCapacity =: maybe 0 (fTotalCapacity <:) (externals `evaluate` τ key) + sum ((fTotalCapacity <:) <$> recs)
+    inconsistent =
+      σ (\_ rec -> fromIntegral (fIntroductionYear <: rec) < fFirstYear <: rec)
+        $ π (\_ rec -> fIntroductionYear =: fIntroductionYear <: rec) introductions'
+       ⋈  π (\_ rec -> fFirstYear =: fFirstYear <: rec) overrides'
     global = κ regions totalGlobalCapacity summary <> externals
     price key rec =
       let
@@ -348,4 +358,14 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
     (
       π price details'
     , summary <> (stock' ⋈ κ years extendedStock summary)
+    , if knownEmpty inconsistent
+        then Nothing
+        else
+          Just
+            $ unlines
+            $ ("" :)
+            $ ("**** Inconsistencies found between manually specified introduction years and manually specified planned stations:" :)
+            $ ("" :)
+            $ map (intercalate "\t")
+            $ showFieldCube inconsistent
     )
