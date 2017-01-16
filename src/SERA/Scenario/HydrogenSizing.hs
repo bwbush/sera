@@ -331,7 +331,8 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
         , let california = take 2 (show $ fRegion <: rec) == "CA"
         ]
     details' = overrides <> details
-    summary = stock' ⋈ runningTotals details'
+    padding = κ (undefined :: Set (FieldRec '[FStationID])) (\_ _ -> fSales =: 0 <+> fStock =: 0 <+> fTravel =: 0 <+> fEnergy =: 0 <+> fDemand =: 0) details'
+    summary = (stock' <> padding) ⋈ runningTotals details'
     regions = ω summary :: Set (FieldRec '[FRegion])
     totalGlobalCapacity key recs =
       fTotalCapacity =: maybe 0 (fTotalCapacity <:) (externals `evaluate` τ key) + sum ((fTotalCapacity <:) <$> recs)
@@ -357,7 +358,7 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
   in
     (
       π price details'
-    , summary <> (stock' ⋈ κ years extendedStock summary)
+    , summary <> ((stock' <> padding) ⋈ κ years extendedStock summary)
     , if knownEmpty inconsistent
         then Nothing
         else
