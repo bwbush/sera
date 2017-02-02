@@ -40,6 +40,7 @@ import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.DataCube (Rekeyer(..), rekey)
 import Data.Daft.Vinyl.FieldCube (type (↝), (!), (⋈), κ, π, σ, τ, ω)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Vinyl.Lens (type (∈))
@@ -88,6 +89,7 @@ data RegionalizationParameters =
   {
     initialTravelReduction  :: Double -- ^ Initial travel reduction.
   , travelReductionDuration :: Double -- ^ Number of years of travel reduction.
+  , logisticIntensification :: Maybe Double
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -129,7 +131,7 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
         fRelativeMarketShare =:
           (share
             * if year >= introductionYear
-                then (fStock <:) $ totals ! (fYear =: year' <+> τ key)
+                then ((fStock <:) $ totals ! (fYear =: year' <+> τ key)) ** (fromMaybe 1 $ logisticIntensification parameters)
                 else 0
           )
             <+> fTravelReduction =: reduction
