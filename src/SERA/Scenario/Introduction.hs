@@ -115,6 +115,7 @@ computeIntroductionYears StationParameters{..} overrides regional urban =
         nearby = introduce $ fNearbyPercentileEAM <: rec
         area = fArea <: rec / 1.60934^(2 :: Int)
         population = fPopulation <: rec
+        sales = fMaximumSales <: rec
         density = population / area
         coverageStations = coverageCount coverageParameters density area
         clustering = fClustering <: rec
@@ -122,7 +123,8 @@ computeIntroductionYears StationParameters{..} overrides regional urban =
         floor'   x = if isNaN population then 0 else floor   x
         ceiling' x = if isNaN population then 0 else ceiling x
       in
-            fRelativeMarketShare =: fIntensification <: rec * fStock <: rec
+            fMaximumSales        =: sales
+        <+> fRelativeMarketShare =: fIntensification <: rec * fStock <: rec
         <+> fIntroductionYear    =: maybe
                                        (round (base * (1 - clustering) + nearby * clustering + delay * eam))
                                        (fIntroductionYear <:)

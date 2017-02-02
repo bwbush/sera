@@ -30,6 +30,8 @@ module SERA.Scenario.Types (
 , fReferenceYear
 , FReferenceShare
 , fReferenceShare
+, FMaximumSales
+, fMaximumSales
 , FMaximumShare
 , fMaximumShare
 , FGrowthRate
@@ -75,7 +77,7 @@ import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Vinyl.Lens (type (∈))
 import SERA.Types (FRegion, FUrbanCode, FUrbanName)
-import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, FStock, FVehicle, FVocation)
+import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FStock, FVehicle, FVocation)
 
 
 -- | Data Cube for logistics parameters
@@ -83,7 +85,7 @@ type LogisticCube = '[FRegion, FVocation, FVehicle] ↝ '[FReferenceYear, FRefer
 
 
 -- | Data cube for urban characteristics.
-type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock]
+type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock, FMaximumSales]
 
 
 -- | Data Cube for introduction year parameters.
@@ -95,7 +97,7 @@ type OverrideIntroductionYearsCube = '[FUrbanCode, FUrbanName] ↝ '[FIntroducti
 
 
 -- | Data cube for regional introductions.
-type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
+type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FMaximumSales, FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
 
 
 -- | Field type for reference year of a logistic curve.
@@ -114,6 +116,15 @@ type FReferenceShare = '("Reference Share [veh/veh]", MarketShare)
 -- | Field label for reference share of a logistic curve.
 fReferenceShare :: SField FReferenceShare
 fReferenceShare = SField
+
+
+-- | Field type for maximum share of a logistic curve.
+type FMaximumSales = '("Maximum Sales [veh]", Sales)
+
+
+-- | Field label for maximum share of a logistic curve.
+fMaximumSales :: SField FMaximumSales
+fMaximumSales = SField
 
 
 -- | Field type for maximum share of a logistic curve.

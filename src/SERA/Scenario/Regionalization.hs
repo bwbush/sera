@@ -40,12 +40,13 @@ import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.DataCube (Rekeyer(..), rekey)
 import Data.Daft.Vinyl.FieldCube (type (↝), (!), (⋈), κ, π, σ, τ, ω)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Default.Util (nan)
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
-import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, RegionalIntroductionsCube)
+import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, fMaximumSales, RegionalIntroductionsCube)
 import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear, pushYear, minimumYear)
 import SERA.Vehicle.Stock.Types (StockCube)
 import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, fStock, hasStock, Vehicle(..), FVehicle, fVehicle, FVocation, fVocation)
@@ -90,6 +91,7 @@ data RegionalizationParameters =
     initialTravelReduction  :: Double -- ^ Initial travel reduction.
   , travelReductionDuration :: Double -- ^ Number of years of travel reduction.
   , logisticIntensification :: Maybe Double
+  , salesLimit              :: Maybe Double
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -136,6 +138,7 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
                 else 0
           )
             <+> fTravelReduction =: reduction
+            <+> fMaximumSales =: fMaximumSales <: rec
     allocations =
       π allocating
         $ σ pruneTooEarly
@@ -145,8 +148,10 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
     scaling _ rec =
       let
         share = fRelativeMarketShare <: rec / fTotalRelativeMarketShare <: rec
+        sales = share * fSales <: rec
+        maximumSales = maybe nan (* (fMaximumSales <: rec)) $ salesLimit parameters
       in
-        fSales =: share * fSales <: rec
+        fSales =: if isNaN maximumSales || sales <= maximumSales then sales else maximumSales
   in
     (
       urbanToRegion
