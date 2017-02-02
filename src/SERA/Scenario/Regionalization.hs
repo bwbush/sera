@@ -48,7 +48,7 @@ import GHC.Generics (Generic)
 import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, RegionalIntroductionsCube)
 import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear, pushYear, minimumYear)
 import SERA.Vehicle.Stock.Types (StockCube)
-import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, fStock, hasStock, FVehicle, fVehicle, FVocation, fVocation)
+import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, fStock, hasStock, Vehicle(..), FVehicle, fVehicle, FVocation, fVocation)
 
 
 -- | Field type for total relative market share.
@@ -113,12 +113,13 @@ regionalize :: RegionalizationParameters            -- ^ Regionalization paramet
             -> (SalesOnlyCube, TravelReductionCube) -- ^ Regionalized sales and VMT reductions.
 regionalize parameters introductions totals = -- FIXME: Review for opportunities to simplify and clarify.
   let
-    universe = ω totals :: Set (FieldRec '[FYear])
+    totals' = σ (\key _ -> fVehicle <: key == Vehicle "FCEV") totals
+    universe = ω totals' :: Set (FieldRec '[FYear])
     firstYears :: '[FRegion, FVocation, FVehicle] ↝ '[FYear]
     firstYears =
         κ universe minimumYear
       $ π pushYear
-      $ σ hasStock totals
+      $ σ hasStock totals'
     allocating key rec =
       let
         year = fYear <: key
@@ -131,14 +132,14 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
         fRelativeMarketShare =:
           (share
             * if year >= introductionYear
-                then ((fStock <:) $ totals ! (fYear =: year' <+> τ key)) ** (fromMaybe 1 $ logisticIntensification parameters)
+                then ((fStock <:) $ totals' ! (fYear =: year' <+> τ key)) ** (fromMaybe 1 $ logisticIntensification parameters)
                 else 0
           )
             <+> fTravelReduction =: reduction
     allocations =
       π allocating
         $ σ pruneTooEarly
-        $ σ hasStations introductions ⋈ totals
+        $ σ hasStations introductions ⋈ totals'
     universe' = ω allocations :: Set (FieldRec '[FUrbanCode, FUrbanName, FVocation, FVehicle])
     totals'' = κ universe' totalRelativeMarketShare allocations :: '[FRegion, FVocation, FVehicle, FYear] ↝ '[FTotalRelativeMarketShare]
     scaling _ rec =
@@ -150,7 +151,7 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
     (
       urbanToRegion
         $ π scaling
-        $ allocations ⋈ totals'' ⋈ totals
+        $ allocations ⋈ totals'' ⋈ totals'
     , urbanToRegion'
         $ π (const τ)
         allocations
