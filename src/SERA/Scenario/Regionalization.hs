@@ -49,7 +49,7 @@ import GHC.Generics (Generic)
 import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, fMaximumSales, RegionalIntroductionsCube)
 import SERA.Types (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear, pushYear, minimumYear)
 import SERA.Vehicle.Stock.Types (StockCube)
-import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, fStock, hasStock, Vehicle(..), FVehicle, fVehicle, FVocation, fVocation)
+import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, hasStock, Vehicle(..), FVehicle, fVehicle, FVocation, fVocation)
 
 
 -- | Field type for total relative market share.
@@ -135,7 +135,7 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
         fRelativeMarketShare =:
           (share
             * if year >= introductionYear
-                then ((fStock <:) $ totals' ! (fYear =: year' <+> τ key)) ** fromMaybe 1 (logisticIntensification parameters)
+                then ((fSales <:) $ totals' ! (fYear =: year' <+> τ key)) ** fromMaybe 1 (logisticIntensification parameters)
                 else 0
           )
             <+> fTravelReduction =: reduction
