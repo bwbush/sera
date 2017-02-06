@@ -91,6 +91,7 @@ data RegionalizationParameters =
     initialTravelReduction  :: Double -- ^ Initial travel reduction.
   , travelReductionDuration :: Double -- ^ Number of years of travel reduction.
   , logisticIntensification :: Maybe Double
+  , shareIntensification    :: Maybe Double
   , salesLimit              :: Maybe Double
   }
     deriving (Eq, Generic, Ord, Read, Show)
@@ -128,13 +129,13 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
         introductionYear = fIntroductionYear <: rec
         firstYear = (fYear <:) $ firstYears ! τ key
         year' = firstYear + year - maximum [introductionYear, firstYear]
-        share = fRelativeMarketShare <: rec
+        share = (fRelativeMarketShare <: rec) ** fromMaybe 1 (shareIntensification parameters)
         reduction = travelReduction parameters $ fromIntegral $ year' - firstYear
       in
         fRelativeMarketShare =:
           (share
             * if year >= introductionYear
-                then ((fStock <:) $ totals' ! (fYear =: year' <+> τ key)) ** (fromMaybe 1 $ logisticIntensification parameters)
+                then ((fStock <:) $ totals' ! (fYear =: year' <+> τ key)) ** fromMaybe 1 (logisticIntensification parameters)
                 else 0
           )
             <+> fTravelReduction =: reduction
