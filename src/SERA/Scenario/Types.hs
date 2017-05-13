@@ -77,7 +77,7 @@ import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Vinyl.Lens (type (∈))
 import SERA.Types (FRegion, FUrbanCode, FUrbanName)
-import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FStock, FVehicle, FVocation)
+import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FVehicle, FVocation)
 
 
 -- | Data Cube for logistics parameters
@@ -85,7 +85,7 @@ type LogisticCube = '[FRegion, FVocation, FVehicle] ↝ '[FReferenceYear, FRefer
 
 
 -- | Data cube for urban characteristics.
-type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FStock, FMaximumSales]
+type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FMaximumSales]
 
 
 -- | Data Cube for introduction year parameters.

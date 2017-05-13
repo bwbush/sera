@@ -36,7 +36,7 @@ import Data.Daft.Vinyl.FieldCube ((⋈), π, τ)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import GHC.Generics (Generic)
 import SERA.Scenario.Types
-import SERA.Vehicle.Types (fRelativeMarketShare, fStock)
+import SERA.Vehicle.Types (fRelativeMarketShare)
 
 
 -- | Parameters for computing number of stations for an urban area.
@@ -124,7 +124,7 @@ computeIntroductionYears StationParameters{..} overrides regional urban =
         ceiling' x = if isNaN population then 0 else ceiling x
       in
             fMaximumSales        =: sales
-        <+> fRelativeMarketShare =: fIntensification <: rec * fStock <: rec
+        <+> fRelativeMarketShare =: fIntensification <: rec * sales
         <+> fIntroductionYear    =: maybe
                                        (round (base * (1 - clustering) + nearby * clustering + delay * eam))
                                        (fIntroductionYear <:)
