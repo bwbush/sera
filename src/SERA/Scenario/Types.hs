@@ -14,7 +14,10 @@
 
 
 {-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeOperators    #-}
 
 
@@ -25,6 +28,8 @@ module SERA.Scenario.Types (
 , RegionalIntroductionParametersCube
 , OverrideIntroductionYearsCube
 , RegionalIntroductionsCube
+, GrantsCube
+
 -- * Fields and labels
 , FReferenceYear
 , fReferenceYear
@@ -69,15 +74,33 @@ module SERA.Scenario.Types (
 , FMaximumStations
 , fMaximumStations
 , hasStations
+, Cohort(..)
+, FCohort
+, fCohort
+, FGrants
+, fGrants
+, FInitialGrant
+, fInitialGrant
+, FAnnualGrant
+, fAnnualGrant
+, FGrantDuration
+, fGrantDuration
+, FRollover
+, fRollover
 ) where
 
 
+import Control.Arrow (first)
+import Data.Aeson.Types (FromJSON(..), ToJSON(..), withText)
 import Data.Daft.Vinyl.FieldCube (type (↝))
 import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Default (Default)
+import Data.String.ToString (toString)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Vinyl.Lens (type (∈))
-import SERA.Types (FRegion, FUrbanCode, FUrbanName)
-import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FVehicle, FVocation)
+import GHC.Generics (Generic)
+import SERA.Types (FRegion, FUrbanCode, FUrbanName, FYear, quotedStringTypes)
+import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FStock, FVehicle, FVocation)
 
 
 -- | Data Cube for logistics parameters
@@ -98,6 +121,60 @@ type OverrideIntroductionYearsCube = '[FUrbanCode, FUrbanName] ↝ '[FIntroducti
 
 -- | Data cube for regional introductions.
 type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FMaximumSales, FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
+
+
+-- | Data cube for regional incentives.
+type GrantsCube = '[FCohort, FYear] ↝ '[FGrants, FInitialGrant, FAnnualGrant, FGrantDuration, FRollover]
+
+
+newtype Cohort = Cohort {cohort :: String}
+  deriving (Default, Eq, Generic, Ord)
+
+instance Read Cohort where
+  readsPrec
+    | quotedStringTypes = (fmap (first Cohort) .) . readsPrec
+    | otherwise         = const $ return . (, []) . Cohort
+
+instance Show Cohort where
+  show
+    | quotedStringTypes = show . cohort
+    | otherwise         = cohort
+
+instance FromJSON Cohort where
+  parseJSON = withText "SERA.Types.Cohort" $ return . Cohort . toString
+
+instance ToJSON Cohort where
+  toJSON = toJSON . cohort
+
+type FCohort = '("Cohort", Cohort)
+
+fCohort :: SField FCohort
+fCohort = SField
+
+type FGrants = '("Grants [$]", Double)
+
+fGrants :: SField FGrants
+fGrants = SField
+
+type FInitialGrant = '("Fixed Grant [$/$]", Double)
+
+fInitialGrant :: SField FInitialGrant
+fInitialGrant = SField
+
+type FAnnualGrant = '("Operating Grant [$]", Double)
+
+fAnnualGrant :: SField FAnnualGrant
+fAnnualGrant = SField
+
+type FGrantDuration = '("Grant Duration [yr]", Int)
+
+fGrantDuration :: SField FGrantDuration
+fGrantDuration = SField
+
+type FRollover = '("Rollover?", Bool)
+
+fRollover :: SField FRollover
+fRollover = SField
 
 
 -- | Field type for reference year of a logistic curve.

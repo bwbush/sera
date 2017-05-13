@@ -60,7 +60,7 @@ numericVersion = versionBranch version
 
 -- | Report the version string.
 stringVersion :: String
-stringVersion = showVersion version ++ " (2016)"
+stringVersion = showVersion version ++ " (2017)"
 
 
 -- | Whether debugging is activated.
