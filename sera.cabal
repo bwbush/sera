@@ -1,5 +1,5 @@
 name: sera
-version: 2.1.8.0
+version: 3.0.0.0
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -76,6 +76,7 @@ library
                     SERA.Finance.Solution
                     SERA.Finance.Summarization
                     SERA.Finance.Types
+                    SERA.Infrastructure.Types
                     SERA.Refueling.FCVSE.Cost
                     SERA.Refueling.FCVSE.Cost.NREL56412
                     SERA.Refueling.Hydrogen.Sizing
@@ -93,6 +94,7 @@ library
                     SERA.Service.Regionalization
                     SERA.Service.VehicleStock
                     SERA.Types
+                    SERA.Types.TH
                     SERA.Util.Summarization
                     SERA.Util.Time
                     SERA.Util.Units
@@ -120,6 +122,7 @@ library
                   , regex-posix
                   , split
                   , statistics
+                  , template-haskell
                   , text
                   , tostring
                   , vinyl
@@ -150,6 +153,7 @@ executable sera
                   , regex-posix
                   , split
                   , statistics
+                  , template-haskell
                   , text
                   , tostring
                   , vinyl

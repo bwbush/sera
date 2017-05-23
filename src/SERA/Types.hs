@@ -17,6 +17,7 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE Trustworthy                #-}
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -54,41 +55,11 @@ import Data.String.ToString (toString)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
-
-
--- | Whether to quote string types in 'Show' and 'Read' instances.
-quotedStringTypes :: Bool
-quotedStringTypes = False
+import SERA.Types.TH (makeField, makeStringField, quotedStringTypes)
 
 
 -- | Data type for geographic regions.
-newtype Region = Region {region :: String}
-  deriving (Default, Eq, Generic, Ord)
-
-instance Read Region where
-  readsPrec
-    | quotedStringTypes = (fmap (first Region) .) . readsPrec
-    | otherwise         = const $ return . (, []) . Region
-
-instance Show Region where
-  show
-    | quotedStringTypes = show . region
-    | otherwise         = region
-
-instance FromJSON Region where
-  parseJSON = withText "SERA.Types.Region" $ return . Region . toString
-
-instance ToJSON Region where
-  toJSON = toJSON . region
-
-
--- | Field type for geographic regions.
-type FRegion = '("Region", Region)
-
-
--- | Field label for geographic regions.
-fRegion :: SField FRegion
-fRegion = SField
+$(makeStringField "Region" "Region" "Region")
 
 
 -- | Data type for calendar years.
