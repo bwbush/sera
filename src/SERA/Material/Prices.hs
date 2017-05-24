@@ -14,6 +14,8 @@
 
 
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Material.Prices (
@@ -25,14 +27,22 @@ module SERA.Material.Prices (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
+import Data.Daft.Vinyl.FieldCube ((⋈), κ, ω)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
+import Data.Set (Set)
 import Data.String (IsString)
+import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (PriceCube, FZone, ZoneCube)
+import SERA.Types (FRegion, FYear)
 
 
-readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FZone])
+readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FYear, FZone])
 readPrices = (mconcat <$>) . mapM readFieldCubeFile
 
 
-rezonePrices :: PriceCube '[FZone] -> ZoneCube key -> PriceCube key
-rezonePrices = undefined
+rezonePrices :: PriceCube '[FYear, FZone]
+             -> ZoneCube '[FRegion]
+             -> PriceCube '[FYear, FRegion]
+rezonePrices prices zones = -- FIXME: Generalize this to `key` instead of `FRegion`.
+  κ (ω zones :: Set (FieldRec '[FZone])) (const head)
+    $ prices ⋈ zones

@@ -32,7 +32,6 @@ module SERA.Material.Types (
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
-import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
@@ -54,4 +53,4 @@ type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate]
 type PriceCube key = (FMaterial ': key) *↝ '[FPrice]
 
 
-type ZoneCube key = (FMaterial ': key) *↝ '[FZone]
+type ZoneCube key = (FZone ': key) *↝ '[]
