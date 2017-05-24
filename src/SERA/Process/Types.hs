@@ -6,13 +6,14 @@
 {-# LANGUAGE TypeOperators              #-}
 
 
-module SERA.Infrastructure.Types
+module SERA.Process.Types
 -- FIXME
 where
 
 
-import Data.Daft.Vinyl.FieldCube (type (↝))
-import SERA.Material.Types (FConsumptionRate, FMaterial, FProductionRate)
+import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Vinyl.Derived (FieldRec)
+import SERA.Material.Types (ConsumptionCube, ProductionCube)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 import SERA.Vehicle.Types (Age)
@@ -29,16 +30,45 @@ $(makeField       "OnSite"                "On Site?"                       ''Boo
 $(makeField       "Lifetime"              "Lifetime [yr]"                  ''Age   )
 
 
-type ProcessKey = '[FTechnology, FDistance, FCapacity, FYear]
+type ProcessKey = '[FTechnology, FYear, FCapacity, FDistance]
 
 
-type ProcessCube = ProcessKey ↝ '[FOnSite, FLifetime]
+type ProcessProperties = '[FOnSite, FLifetime]
 
 
-type ProcessCostCube = ProcessKey ↝ '[FCapitalCost, FFixedOperatingCost, FVariableOperatingCost, FYield]
+type ProcessCube = ProcessKey *↝ ProcessProperties
 
 
-type ProcessInputCube = (FMaterial ': ProcessKey) ↝ '[FConsumptionRate]
+type ProcessCost = '[FCapitalCost, FFixedOperatingCost, FVariableOperatingCost, FYield]
 
 
-type ProcessOutputCube = (FMaterial ': ProcessKey) ↝ '[FProductionRate]
+type ProcessCostCube = ProcessKey *↝ ProcessCost
+
+
+type ProcessInputCube = ConsumptionCube ProcessKey
+
+
+type ProcessOutputCube = ProductionCube ProcessKey
+
+
+data ProcessLibrary =
+  ProcessLibrary
+  {
+    processCube       :: ProcessCube
+  , processCostCube   :: ProcessCostCube
+  , processInputCube  :: ProcessInputCube
+  , processOutputCube :: ProcessOutputCube
+  }
+    deriving (Eq, Ord, Show)
+
+
+data Component =
+  Component
+  {
+    componentSpecification :: FieldRec ProcessKey
+  , componentProperties    :: FieldRec ProcessProperties
+  , componentCosts         :: FieldRec ProcessCost
+  , componentInputs        :: ConsumptionCube '[]
+  , componentOutputs       :: ProductionCube '[]
+  }
+    deriving (Eq, Ord, Show)

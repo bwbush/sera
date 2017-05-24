@@ -24,6 +24,8 @@ module SERA.Material.Types (
 , fTotalConsumption
 , fTotalProduction
 -- * Data cubes
+, ConsumptionCube
+, ProductionCube
 , PriceCube
 , ZoneCube
 ) where
@@ -43,7 +45,13 @@ $(makeField       "TotalConsumption" "Consumption [unit]"    ''Double)
 $(makeField       "TotalProduction"  "Production [unit]"     ''Double)
 
 
-type PriceCube key = '[FMaterial, key, FYear] *↝ '[FPrice]
+type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate]
 
 
-type ZoneCube key = '[key, FMaterial] *↝ '[FZone]
+type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate]
+
+
+type PriceCube key = (FMaterial ': key) *↝ '[FPrice]
+
+
+type ZoneCube key = (FMaterial ': key) *↝ '[FZone]

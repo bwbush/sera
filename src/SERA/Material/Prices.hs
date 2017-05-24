@@ -13,6 +13,9 @@
 -----------------------------------------------------------------------------
 
 
+{-# LANGUAGE DataKinds                  #-}
+
+
 module SERA.Material.Prices (
 -- * Input/output
   readPrices
@@ -27,9 +30,9 @@ import Data.String (IsString)
 import SERA.Material.Types (PriceCube, FZone, ZoneCube)
 
 
-readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube FZone)
+readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FZone])
 readPrices = (mconcat <$>) . mapM readFieldCubeFile
 
 
-rezonePrices :: PriceCube FZone -> ZoneCube key -> PriceCube key
+rezonePrices :: PriceCube '[FZone] -> ZoneCube key -> PriceCube key
 rezonePrices = undefined
