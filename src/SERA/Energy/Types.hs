@@ -13,9 +13,12 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE TupleSections             #-}
-{-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Energy.Types (
@@ -46,13 +49,34 @@ module SERA.Energy.Types (
 ) where
 
 
-import Control.Arrow (first)
-import Data.Aeson (FromJSON(parseJSON), ToJSON(toJSON), withText)
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
-import Data.String.ToString (toString)
-import Data.Vinyl.Derived (SField(..))
 import SERA.Service ()
 import SERA.Types
+import SERA.Types.TH (makeField, makeStringField)
+
+
+$(makeStringField "HydrogenSource" "Hydrogen Source")
+
+
+$(makeStringField "FeedstockType" "Feedstock")
+
+
+$(makeField "FeedstockUsage" "Feedstock Usage [/kg]" ''Double)
+
+
+$(makeField "NonRenewablePrice" "Non-Renewable Price [$]" ''Double)
+
+
+$(makeField "RenewablePrice" "Renewable Price [$]" ''Double)
+
+
+$(makeField "NonRenewableCredit" "Carbon Credit (Non-Renewable) [$/kg]" ''Double)
+
+
+$(makeField "RenewableCredit" "Carbon Credit (Renewable) [$/kg]" ''Double)
+
+
+$(makeField "Utilization" "Utilization [kg/kg]" ''Double)
 
 
 type EnergyPriceCube = '[FYear, FFeedstockType] ↝ '[FNonRenewablePrice, FRenewablePrice]
@@ -65,99 +89,3 @@ type CarbonCreditCube = '[FHydrogenSource] ↝ '[FNonRenewableCredit, FRenewable
 
 
 type UtilizationCube = '[FYear, FRegion] ↝ '[FUtilization]
-
-
-newtype HydrogenSource = HydrogenSource {hydrogenSource :: String}
-  deriving (Eq, Ord)
-
-instance Read HydrogenSource where
-  readsPrec
-    | quotedStringTypes = (fmap (first HydrogenSource) .) . readsPrec
-    | otherwise         = const $ return . (, []) . HydrogenSource
-
-instance Show HydrogenSource where
-  show
-    | quotedStringTypes = show . hydrogenSource
-    | otherwise         = hydrogenSource
-
-instance FromJSON HydrogenSource where
-  parseJSON = withText "HydrogenSource" $ return . HydrogenSource . toString
-
-instance ToJSON HydrogenSource where
-  toJSON = toJSON . hydrogenSource
-
-
-type FHydrogenSource = '("Hydrogen Source", HydrogenSource)
-
-
-fHydrogenSource :: SField FHydrogenSource
-fHydrogenSource = SField
-
-
-newtype FeedstockType = FeedstockType {feedstockType :: String}
-  deriving (Eq, Ord)
-
-instance Read FeedstockType where
-  readsPrec
-    | quotedStringTypes = (fmap (first FeedstockType) .) . readsPrec
-    | otherwise         = const $ return . (, []) . FeedstockType
-
-instance Show FeedstockType where
-  show
-    | quotedStringTypes = show . feedstockType
-    | otherwise         = feedstockType
-
-instance FromJSON FeedstockType where
-  parseJSON = withText "FeedstockType" $ return . FeedstockType . toString
-
-instance ToJSON FeedstockType where
-  toJSON = toJSON . feedstockType
-
-
-type FFeedstockType = '("Feedstock", FeedstockType)
-
-
-fFeedstockType :: SField FFeedstockType
-fFeedstockType = SField
-
-
-type FFeedstockUsage = '("Feedstock Usage [/kg]", Double)
-
-
-fFeedstockUsage :: SField FFeedstockUsage
-fFeedstockUsage = SField
-
-
-type FNonRenewablePrice = '("Non-Renewable Price [$]", Double)
-
-
-fNonRenewablePrice :: SField FNonRenewablePrice
-fNonRenewablePrice = SField
-
-
-type FRenewablePrice = '("Renewable Price [$]", Double)
-
-
-fRenewablePrice :: SField FRenewablePrice
-fRenewablePrice = SField
-
-
-type FNonRenewableCredit = '("Carbon Credit (Non-Renewable) [$/kg]", Double)
-
-
-fNonRenewableCredit :: SField FNonRenewableCredit
-fNonRenewableCredit = SField
-
-
-type FRenewableCredit = '("Carbon Credit (Renewable) [$/kg]", Double)
-
-
-fRenewableCredit :: SField FRenewableCredit
-fRenewableCredit = SField
-
-
-type FUtilization = '("Utilization [kg/kg]", Double)
-
-
-fUtilization :: SField FUtilization
-fUtilization = SField

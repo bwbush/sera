@@ -40,9 +40,9 @@ makeField name label typeName =
       ]
 
 
-makeStringField :: String -> String -> String -> Q [Dec]
-makeStringField name label typName =
-  liftM2 (++) (makeStringType typName) (makeField name label $ mkName typName)
+makeStringField :: String -> String -> Q [Dec]
+makeStringField name label =
+  liftM2 (++) (makeStringType name) (makeField name label $ mkName name)
 
 
 makeStringType :: String -> Q [Dec]

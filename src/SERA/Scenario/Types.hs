@@ -13,12 +13,12 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TupleSections              #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Scenario.Types (
@@ -90,17 +90,142 @@ module SERA.Scenario.Types (
 ) where
 
 
-import Control.Arrow (first)
-import Data.Aeson.Types (FromJSON(..), ToJSON(..), withText)
 import Data.Daft.Vinyl.FieldCube (type (↝))
 import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Default (Default)
-import Data.String.ToString (toString)
-import Data.Vinyl.Derived (FieldRec, SField(..))
+import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
-import GHC.Generics (Generic)
-import SERA.Types (FRegion, FUrbanCode, FUrbanName, FYear, quotedStringTypes)
-import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FStock, FVehicle, FVocation)
+import SERA.Types (FRegion, FUrbanCode, FUrbanName, FYear)
+import SERA.Types.TH (makeField, makeStringField)
+import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FVehicle, FVocation)
+
+
+$(makeStringField "Cohort" "Cohort")
+
+$(makeField "Grants" "Grants [$]" ''Double)
+
+$(makeField "InitialGrant" "Fixed Grant [$/$]" ''Double)
+
+$(makeField "AnnualGrant" "Operating Grant [$]" ''Double)
+
+$(makeField "GrantDuration" "Grant Duration [yr]" ''Int)
+
+$(makeField "Rollover" "Rollover?" ''Bool)
+
+
+-- | Field type for reference year of a logistic curve.
+-- | Field label for reference year of a logistic curve.
+$(makeField "ReferenceYear" "Reference Year" ''ModelYear)
+
+
+-- | Field type for reference share of a logistic curve.
+-- | Field label for reference share of a logistic curve.
+$(makeField "ReferenceShare" "Reference Share [veh/veh]" ''MarketShare)
+
+
+-- | Field type for maximum share of a logistic curve.
+-- | Field label for maximum share of a logistic curve.
+$(makeField "MaximumSales" "Maximum Sales [veh]" ''Sales)
+
+
+-- | Field type for maximum share of a logistic curve.
+-- | Field label for maximum share of a logistic curve.
+$(makeField "MaximumShare" "Maximum Share [veh/veh]" ''MarketShare)
+
+
+-- | Field type for growth rate of a logistic curve.
+-- | Field label for growth rate of a logistic curve.
+$(makeField "GrowthRate" "Growth Rate [/yr]" ''Double)
+
+
+-- | Field type for time scaling of a logistic curve.
+-- | Field label for time scaling of a logistic curve.
+$(makeField "TimeScaling" "Time Scaling [yr/yr]" ''Double)
+
+
+-- | Field type for area.
+-- | Field label for area.
+$(makeField "Area" "Area [km^2]" ''Double)
+
+
+-- | Field type for population.
+-- | Field label for population.
+$(makeField "Population" "Population" ''Double)
+
+
+-- | Field type for EAM percentile.
+-- | Field label for EAM percentile.
+$(makeField "PercentileEAM" "EAM Percentile" ''Double)
+
+
+-- | Field type for nearby EAM percentile.
+-- | Field label for nearby EAM percentile.
+$(makeField "NearbyPercentileEAM" "Nearby EAM Percentile" ''Double)
+
+
+-- | Field type for first year.
+-- | Field label for first year.
+$(makeField "FirstYear" "First Year" ''Double)
+
+
+-- | Field type for last year.
+-- | Field label for last year.
+$(makeField "LastYear" "Last Year" ''Double)
+
+
+-- | Field type for clustering parameter.
+-- | Field label for clustering parameter.
+$(makeField "Clustering" "Clustering" ''Double)
+
+
+-- | Field type for delay parameter.
+-- | Field label for delay parameter.
+$(makeField "Delay" "Delay" ''Double)
+
+
+-- | Field type for intensification parameter.
+-- | Field label for intensification parameter.
+$(makeField "Intensification" "Intensification" ''Double)
+
+
+-- | Type for introduction year.
+type IntroductionYear = Int
+
+
+-- | Field type for introduction year.
+-- | Field label for introduction year.
+$(makeField "IntroductionYear" "Introduction Year" ''IntroductionYear)
+
+
+-- | Type for station count.
+type StationCount = Int
+
+
+-- | Field type for station count.
+-- | Field label for station count.
+$(makeField "StationCount" "Station Count" ''StationCount)
+
+
+-- | Field type for coverage stations.
+-- | Field label for coverage stations.
+$(makeField "CoverageStations" "Coverage Stations" ''StationCount)
+
+
+-- | Field type for threshhold stations.
+-- | Field type for threshhold stations.
+$(makeField "ThreshholdStations" "Threshhold Stations" ''StationCount)
+
+
+-- | Field type for maximum stations.
+-- | Field label for maximum stations.
+$(makeField "MaximumStations" "Maximum Stations" ''StationCount)
+
+
+-- | Determine whether a record has stations.
+hasStations :: (FMaximumStations ∈ vs)
+            => k           -- ^ The key.
+            -> FieldRec vs -- ^ The value.
+            -> Bool        -- ^ Whether the value has stations.
+hasStations = const $ (/= 0) . (fMaximumStations <:)
 
 
 -- | Data Cube for logistics parameters
@@ -125,249 +250,3 @@ type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FMaxim
 
 -- | Data cube for regional incentives.
 type GrantsCube = '[FCohort, FYear] ↝ '[FGrants, FInitialGrant, FAnnualGrant, FGrantDuration, FRollover]
-
-
-newtype Cohort = Cohort {cohort :: String}
-  deriving (Default, Eq, Generic, Ord)
-
-instance Read Cohort where
-  readsPrec
-    | quotedStringTypes = (fmap (first Cohort) .) . readsPrec
-    | otherwise         = const $ return . (, []) . Cohort
-
-instance Show Cohort where
-  show
-    | quotedStringTypes = show . cohort
-    | otherwise         = cohort
-
-instance FromJSON Cohort where
-  parseJSON = withText "SERA.Types.Cohort" $ return . Cohort . toString
-
-instance ToJSON Cohort where
-  toJSON = toJSON . cohort
-
-type FCohort = '("Cohort", Cohort)
-
-fCohort :: SField FCohort
-fCohort = SField
-
-type FGrants = '("Grants [$]", Double)
-
-fGrants :: SField FGrants
-fGrants = SField
-
-type FInitialGrant = '("Fixed Grant [$/$]", Double)
-
-fInitialGrant :: SField FInitialGrant
-fInitialGrant = SField
-
-type FAnnualGrant = '("Operating Grant [$]", Double)
-
-fAnnualGrant :: SField FAnnualGrant
-fAnnualGrant = SField
-
-type FGrantDuration = '("Grant Duration [yr]", Int)
-
-fGrantDuration :: SField FGrantDuration
-fGrantDuration = SField
-
-type FRollover = '("Rollover?", Bool)
-
-fRollover :: SField FRollover
-fRollover = SField
-
-
--- | Field type for reference year of a logistic curve.
-type FReferenceYear = '("Reference Year", ModelYear)
-
-
--- | Field label for reference year of a logistic curve.
-fReferenceYear :: SField FReferenceYear
-fReferenceYear = SField
-
-
--- | Field type for reference share of a logistic curve.
-type FReferenceShare = '("Reference Share [veh/veh]", MarketShare)
-
-
--- | Field label for reference share of a logistic curve.
-fReferenceShare :: SField FReferenceShare
-fReferenceShare = SField
-
-
--- | Field type for maximum share of a logistic curve.
-type FMaximumSales = '("Maximum Sales [veh]", Sales)
-
-
--- | Field label for maximum share of a logistic curve.
-fMaximumSales :: SField FMaximumSales
-fMaximumSales = SField
-
-
--- | Field type for maximum share of a logistic curve.
-type FMaximumShare = '("Maximum Share [veh/veh]", MarketShare)
-
-
--- | Field label for maximum share of a logistic curve.
-fMaximumShare :: SField FMaximumShare
-fMaximumShare = SField
-
-
--- | Field type for growth rate of a logistic curve.
-type FGrowthRate = '("Growth Rate [/yr]", Double)
-
-
--- | Field label for growth rate of a logistic curve.
-fGrowthRate :: SField FGrowthRate
-fGrowthRate = SField
-
-
--- | Field type for time scaling of a logistic curve.
-type FTimeScaling = '("Time Scaling [yr/yr]", Double)
-
-
--- | Field label for time scaling of a logistic curve.
-fTimeScaling :: SField FTimeScaling
-fTimeScaling = SField
-
-
--- | Field type for area.
-type FArea = '("Area [km^2]", Double)
-
-
--- | Field label for area.
-fArea :: SField FArea
-fArea = SField
-
-
--- | Field type for population.
-type FPopulation = '("Population", Double)
-
-
--- | Field label for population.
-fPopulation :: SField FPopulation
-fPopulation = SField
-
-
--- | Field type for EAM percentile.
-type FPercentileEAM = '("EAM Percentile", Double)
-
-
--- | Field label for EAM percentile.
-fPercentileEAM :: SField FPercentileEAM
-fPercentileEAM = SField
-
-
--- | Field type for nearby EAM percentile.
-type FNearbyPercentileEAM = '("Nearby EAM Percentile", Double)
-
-
--- | Field label for nearby EAM percentile.
-fNearbyPercentileEAM :: SField FNearbyPercentileEAM
-fNearbyPercentileEAM = SField
-
-
--- | Field type for first year.
-type FFirstYear = '("First Year", Double)
-
-
--- | Field label for first year.
-fFirstYear :: SField FFirstYear
-fFirstYear = SField
-
-
--- | Field type for last year.
-type FLastYear = '("Last Year", Double)
-
-
--- | Field label for last year.
-fLastYear :: SField FLastYear
-fLastYear = SField
-
-
--- | Field type for clustering parameter.
-type FClustering = '("Clustering", Double)
-
-
--- | Field label for clustering parameter.
-fClustering :: SField FClustering
-fClustering = SField
-
-
--- | Field type for delay parameter.
-type FDelay = '("Delay", Double)
-
-
--- | Field label for delay parameter.
-fDelay :: SField FDelay
-fDelay = SField
-
-
--- | Field type for intensification parameter.
-type FIntensification = '("Intensification", Double)
-
-
--- | Field label for intensification parameter.
-fIntensification :: SField FIntensification
-fIntensification = SField
-
-
--- | Type for introduction year.
-type IntroductionYear = Int
-
-
--- | Field type for introduction year.
-type FIntroductionYear = '("Introduction Year", IntroductionYear)
-
-
--- | Field label for introduction year.
-fIntroductionYear :: SField FIntroductionYear
-fIntroductionYear = SField
-
-
--- | Type for station count.
-type StationCount = Int
-
-
--- | Field type for station count.
-type FStationCount = '("Station Count", StationCount)
-
-
--- | Field label for station count.
-fStationCount :: SField FStationCount
-fStationCount = SField
-
-
--- | Field type for coverage stations.
-type FCoverageStations = '("Coverage Stations", StationCount)
-
-
--- | Field label for coverage stations.
-fCoverageStations :: SField FCoverageStations
-fCoverageStations = SField
-
-
--- | Field type for threshhold stations.
-type FThreshholdStations = '("Threshhold Stations", StationCount)
-
-
--- | Field type for threshhold stations.
-fThreshholdStations :: SField FThreshholdStations
-fThreshholdStations = SField
-
-
--- | Field type for maximum stations.
-type FMaximumStations = '("Maximum Stations", StationCount)
-
-
--- | Field label for maximum stations.
-fMaximumStations :: SField FMaximumStations
-fMaximumStations = SField
-
-
--- | Determine whether a record has stations.
-hasStations :: (FMaximumStations ∈ vs)
-            => k           -- ^ The key.
-            -> FieldRec vs -- ^ The value.
-            -> Bool        -- ^ Whether the value has stations.
-hasStations = const $ (/= 0) . (fMaximumStations <:)

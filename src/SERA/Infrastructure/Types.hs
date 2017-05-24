@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeOperators              #-}
 
 
@@ -12,78 +11,38 @@ module SERA.Infrastructure.Types
 where
 
 
-import SERA.Types.TH (makeField, makeStringType)
+import Data.Daft.Vinyl.FieldCube (type (↝))
+import SERA.Types (FYear)
+import SERA.Types.TH (makeField, makeStringField)
+import SERA.Vehicle.Types (Age, FPollutant)
 
 
-$(makeStringType "Technology")
-
--- $(makeField "Technology" "Technology Type"   ''Technology)
-$(makeField "Distance"   "Distance [km]"     ''Double    )
---  $(makeField "Capacity"   "Capacity [kg/day]" ''Double    )
---  $(makeField "Year"       "Year"              ''Int       )
-
-
-{-
-name
-
-distance
-capacity
-year
-capacity
-Capital [$]
-Fixed Operating [$/yr]
-Variable Operating [$/kg]
-Feedstock
-Yield
+$(makeStringField "Technology"            "Technology"                             )
+$(makeField       "Distance"              "Distance [km]"                  ''Double)
+$(makeField       "Capacity"              "Capacity [kg/yr]"               ''Double)
+$(makeField       "CapitalCost"           "Capital Cost [$]"               ''Double)
+$(makeField       "FixedOperatingCost"    "Fixed Operating Cost [$/yr]"    ''Double)
+$(makeField       "VariableOperatingCost" "Variable Operating Cost [$/kg]" ''Double)
+$(makeStringField "Feedstock"             "Feedstock"                              )
+$(makeField       "Yield"                 "Yield [kg/kg]"                  ''Double)
+$(makeField       "Efficiency"            "Efficiency [kg/]"               ''Double)
+$(makeField       "Consumption"           "Consumption [/kg]"              ''Double)
+$(makeField       "FeedstockPrice"        "Feedstock Price [$/]"           ''Double)
+$(makeField       "OnSite"                "On Site?"                       ''Bool  )
+$(makeField       "Lifetime"              "Lifetime [yr]"                  ''Age   )
+$(makeField       "Emission"              "Emission [/kg]"                 ''Double)
 
 
+type ProcessKey = '[FTechnology, FDistance, FCapacity, FYear]
 
 
+type ProcessCube = ProcessKey ↝ '[FOnSite, FLifetime]
 
 
-Technology
-name
-capacity
-distance
-year
-property
-  capital
-  fixed
-  vari
-  oper
-  feedstock
-  output
-yield
+type ProcessCostCube = ProcessKey ↝ '[FCapitalCost, FFixedOperatingCost, FVariableOperatingCost, FYield]
 
 
-infrastructure
-name
-centralized
-lifetime
+type ProcessInputCube = ProcessKey ↝ '[FFeedstock, FConsumption]
 
-costs
-name
-year
-capacity
-distance
-capitalCost
-fixedOperating
-variableOperatingCost
-efficiency
 
-input
-name
-year
-capacity
-distance
-feedstock
-rate
-
-output
-name
-year
-capacity
-distance
-emission
-rate
--}
+type ProcessOutputCube = ProcessKey ↝ '[FPollutant, FEmission]
