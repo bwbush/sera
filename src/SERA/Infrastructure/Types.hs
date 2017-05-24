@@ -12,9 +12,10 @@ where
 
 
 import Data.Daft.Vinyl.FieldCube (type (↝))
+import SERA.Material.Types (FConsumptionRate, FMaterial, FProductionRate)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
-import SERA.Vehicle.Types (Age, FPollutant)
+import SERA.Vehicle.Types (Age)
 
 
 $(makeStringField "Technology"            "Technology"                             )
@@ -23,14 +24,9 @@ $(makeField       "Capacity"              "Capacity [kg/yr]"               ''Dou
 $(makeField       "CapitalCost"           "Capital Cost [$]"               ''Double)
 $(makeField       "FixedOperatingCost"    "Fixed Operating Cost [$/yr]"    ''Double)
 $(makeField       "VariableOperatingCost" "Variable Operating Cost [$/kg]" ''Double)
-$(makeStringField "Feedstock"             "Feedstock"                              )
 $(makeField       "Yield"                 "Yield [kg/kg]"                  ''Double)
-$(makeField       "Efficiency"            "Efficiency [kg/]"               ''Double)
-$(makeField       "Consumption"           "Consumption [/kg]"              ''Double)
-$(makeField       "FeedstockPrice"        "Feedstock Price [$/]"           ''Double)
 $(makeField       "OnSite"                "On Site?"                       ''Bool  )
 $(makeField       "Lifetime"              "Lifetime [yr]"                  ''Age   )
-$(makeField       "Emission"              "Emission [/kg]"                 ''Double)
 
 
 type ProcessKey = '[FTechnology, FDistance, FCapacity, FYear]
@@ -42,7 +38,7 @@ type ProcessCube = ProcessKey ↝ '[FOnSite, FLifetime]
 type ProcessCostCube = ProcessKey ↝ '[FCapitalCost, FFixedOperatingCost, FVariableOperatingCost, FYield]
 
 
-type ProcessInputCube = ProcessKey ↝ '[FFeedstock, FConsumption]
+type ProcessInputCube = (FMaterial ': ProcessKey) ↝ '[FConsumptionRate]
 
 
-type ProcessOutputCube = ProcessKey ↝ '[FPollutant, FEmission]
+type ProcessOutputCube = (FMaterial ': ProcessKey) ↝ '[FProductionRate]

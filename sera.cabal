@@ -1,5 +1,5 @@
 name: sera
-version: 3.0.0.1
+version: 3.0.0.2
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -46,7 +46,6 @@ library
                     SERA.Configuration.ScenarioInputs
                     SERA.Constants
                     SERA.Energy
-                    SERA.Energy.Prices
                     SERA.Energy.Types
                     SERA.Finance.Analysis
                     SERA.Finance.Analysis.Assets
@@ -77,6 +76,8 @@ library
                     SERA.Finance.Summarization
                     SERA.Finance.Types
                     SERA.Infrastructure.Types
+                    SERA.Material.Types
+                    SERA.Material.Prices
                     SERA.Refueling.FCVSE.Cost
                     SERA.Refueling.FCVSE.Cost.NREL56412
                     SERA.Refueling.Hydrogen.Sizing
