@@ -39,7 +39,7 @@ $(makeStringField "Material"         "Material"                      )
 $(makeField       "ConsumptionRate"  "Consumption [unit/kg]" ''Double)
 $(makeField       "ProductionRate"   "Production [unit/kg]"  ''Double)
 $(makeField       "Price"            "Price [$/unit]"        ''Double)
-$(makeStringField "Zone"             "Price Zone"                    )
+$(makeStringField "Zone"             "Zone"                          )
 $(makeField       "TotalConsumption" "Consumption [unit]"    ''Double)
 $(makeField       "TotalProduction"  "Production [unit]"     ''Double)
 

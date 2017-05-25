@@ -1,0 +1,4 @@
+priceFiles:
+ - energy-prices-aeo2010.tsv
+ - biogas.tsv
+ - biomass.tsv

@@ -1,5 +1,5 @@
 name: sera
-version: 3.0.0.4
+version: 3.0.0.5
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -92,6 +92,7 @@ library
                     SERA.Service
                     SERA.Service.Finance
                     SERA.Service.HydrogenSizing
+                    SERA.Service.HydrogenProduction
                     SERA.Service.Logistic
                     SERA.Service.Regionalization
                     SERA.Service.VehicleStock

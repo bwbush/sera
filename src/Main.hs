@@ -34,6 +34,7 @@ import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
 import SERA (inform, stringVersion)
 import SERA.Service.Finance (financeMain)
+import SERA.Service.HydrogenProduction (productionMain)
 import SERA.Service.HydrogenSizing (hydrogenSizingMain)
 import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
@@ -80,6 +81,10 @@ data SERA =
     {
       configuration :: FilePath
     }
+  | HydrogenProduction
+    {
+      configuration :: FilePath
+    }
     deriving (Data, Show, Typeable)
 
 
@@ -96,6 +101,7 @@ sera =
     , regionalization
     , hydrogenSizing
     , hydrogenFinance
+    , hydrogenProduction
     ]
       &= summary ("SERA command-Line, Version " ++ stringVersion ++ ", National Renewable Energy Laboratory")
       &= program "sera"
@@ -196,6 +202,17 @@ hydrogenFinance =
     &= details []
 
 
+-- | Mode for computing optimal hydrogen production.
+hydrogenProduction :: SERA
+hydrogenProduction =
+  HydrogenProduction
+  {
+  }
+    &= name "hydrogen-production-optimization"
+    &= help "Compute optimial hydrogen production."
+    &= details []
+
+
 -- | Main action.
 main :: IO ()
 main =
@@ -253,6 +270,7 @@ dispatch s@Introduction{}       = dispatch' s introductionsMain
 dispatch s@Regionalization{}    = dispatch' s regionalizationMain
 dispatch s@HydrogenSizing{}     = dispatch' s hydrogenSizingMain
 dispatch s@HydrogenFinance{}    = dispatch' s financeMain
+dispatch s@HydrogenProduction{} = dispatch' s productionMain
 
 
 -- | Help dispatch an operation.
