@@ -35,18 +35,20 @@ import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
+import SERA.Material.Prices (readPrices)
+import SERA.Process (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
 import SERA.Scenario.Grants (allocateGrants)
 import SERA.Scenario.HydrogenSizing (CapitalCostParameters, SitePreparationParameters, sizeStations)
 import SERA.Service ()
-import SERA.Material.Prices (readPrices)
 
 
 -- | Configuration for hydrogen station sizing.
 data ConfigProduction =
   ConfigProduction
   {
-    priceFiles :: [FilePath]
+    priceFiles          :: [FilePath]
+  , processLibraryFiles :: [ProcessLibraryFiles]
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -63,3 +65,5 @@ productionMain ConfigProduction{..} =
   do
     x <- readPrices priceFiles
     liftIO $ print x
+    y <- readProcessLibrary processLibraryFiles
+    liftIO $ print y

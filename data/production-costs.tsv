@@ -1,0 +1,351 @@
+Technology	Year	Capacity [kg/yr]	Yield [kg/kg]	Scaling Exponent	Capital Cost [$]	Capital Cost [$/km]	Fixed Operating Cost [$/yr]	Fixed Operating Cost [$/km/yr]	Variable Operating Cost [$/kg]	Variable Operating Cost [$/km/kg]
+Central Biomass Gasification	2005	1397120.0	1	0.6	0	0	4.48909E9	0	0.177905	0
+Central Biomass Gasification	2005	139712.0	1	0.6	0	0	1.08823E9	0	0.521748	0
+Central Biomass Gasification	2005	2794240.0	1	0.6	0	0	6.96764E9	0	0.15408	0
+Central Biomass Gasification	2005	279424.0	1	0.6	0	0	1.65659E9	0	0.337643	0
+Central Biomass Gasification	2005	27942.4	1	0.6	0	0	4.20119E8	0	1.91706	0
+Central Biomass Gasification	2005	698561.0	1	0.6	0	0	2.91114E9	0	0.220635	0
+Central Biomass Gasification	2005	69856.1	1	0.6	0	0	7.18981E8	0	0.877596	0
+Central Biomass Gasification	2025	1392820.0	1	0.6	0	0	4.20859E9	0	0.146892	0
+Central Biomass Gasification	2025	139282.0	1	0.6	0	0	1.01887E9	0	0.433401	0
+Central Biomass Gasification	2025	2785650.0	1	0.6	0	0	6.53273E9	0	0.12653	0
+Central Biomass Gasification	2025	278565.0	1	0.6	0	0	1.55202E9	0	0.280742	0
+Central Biomass Gasification	2025	27856.5	1	0.6	0	0	3.92081E8	0	1.58171	0
+Central Biomass Gasification	2025	696411.0	1	0.6	0	0	2.72874E9	0	0.182985	0
+Central Biomass Gasification	2025	69641.1	1	0.6	0	0	6.72465E8	0	0.727085	0
+Central Coal Gasification	2005	1277240.0	1	0.6	0	0	8.07752E9	0	0.100258	0
+Central Coal Gasification	2005	127724.0	1	0.6	0	0	2.27368E9	0	0.526715	0
+Central Coal Gasification	2005	1397120.0	1	0.6	0	0	4.48909E9	0	0.177905	0
+Central Coal Gasification	2005	139712.0	1	0.6	0	0	1.08823E9	0	0.521748	0
+Central Coal Gasification	2005	2554470.0	1	0.6	0	0	1.21192E10	0	0.0675053	0
+Central Coal Gasification	2005	255447.0	1	0.6	0	0	3.27121E9	0	0.30307	0
+Central Coal Gasification	2005	2794240.0	1	0.6	0	0	6.96764E9	0	0.15408	0
+Central Coal Gasification	2005	279424.0	1	0.6	0	0	1.65659E9	0	0.337643	0
+Central Coal Gasification	2005	27942.4	1	0.6	0	0	4.20119E8	0	1.91706	0
+Central Coal Gasification	2005	5108940.0	1	0.6	0	0	1.83019E10	0	0.0475515	0
+Central Coal Gasification	2005	510894.0	1	0.6	0	0	4.78885E9	0	0.182261	0
+Central Coal Gasification	2005	51089.4	1	0.6	0	0	1.45822E9	0	1.15682	0
+Central Coal Gasification	2005	698561.0	1	0.6	0	0	2.91114E9	0	0.220635	0
+Central Coal Gasification	2005	69856.1	1	0.6	0	0	7.18981E8	0	0.877596	0
+Central Coal Gasification	2025	1109150.0	1	0.6	0	0	9.61073E9	0	0.122176	0
+Central Coal Gasification	2025	110915.0	1	0.6	0	0	2.44212E9	0	0.667336	0
+Central Coal Gasification	2025	1392820.0	1	0.6	0	0	4.20859E9	0	0.146892	0
+Central Coal Gasification	2025	139282.0	1	0.6	0	0	1.01887E9	0	0.433401	0
+Central Coal Gasification	2025	2218300.0	1	0.6	0	0	1.45379E10	0	0.0811459	0
+Central Coal Gasification	2025	221830.0	1	0.6	0	0	3.68372E9	0	0.380209	0
+Central Coal Gasification	2025	2785650.0	1	0.6	0	0	6.53273E9	0	0.12653	0
+Central Coal Gasification	2025	278565.0	1	0.6	0	0	1.55202E9	0	0.280742	0
+Central Coal Gasification	2025	27856.5	1	0.6	0	0	3.92081E8	0	1.58171	0
+Central Coal Gasification	2025	4436600.0	1	0.6	0	0	2.19936E10	0	0.0563897	0
+Central Coal Gasification	2025	443660.0	1	0.6	0	0	5.56437E9	0	0.225991	0
+Central Coal Gasification	2025	44366.0	1	0.6	0	0	1.42336E9	0	1.48031	0
+Central Coal Gasification	2025	696411.0	1	0.6	0	0	2.72874E9	0	0.182985	0
+Central Coal Gasification	2025	69641.1	1	0.6	0	0	6.72465E8	0	0.727085	0
+Central Grid Electrolysis	2005	1014620.0	1	0.6	0	0	6.01479E9	0	0.12271	0
+Central Grid Electrolysis	2005	101462.0	1	0.6	0	0	1.33479E9	0	0.279977	0
+Central Grid Electrolysis	2005	10146.2	1	0.6	0	0	3.18432E8	0	0.832588	0
+Central Grid Electrolysis	2005	1277240.0	1	0.6	0	0	8.07752E9	0	0.100258	0
+Central Grid Electrolysis	2005	127724.0	1	0.6	0	0	2.27368E9	0	0.526715	0
+Central Grid Electrolysis	2005	1397120.0	1	0.6	0	0	4.48909E9	0	0.177905	0
+Central Grid Electrolysis	2005	139712.0	1	0.6	0	0	1.08823E9	0	0.521748	0
+Central Grid Electrolysis	2005	253655.0	1	0.6	0	0	2.40195E9	0	0.196499	0
+Central Grid Electrolysis	2005	25365.5	1	0.6	0	0	5.59955E8	0	0.517851	0
+Central Grid Electrolysis	2005	2554470.0	1	0.6	0	0	1.21192E10	0	0.0675053	0
+Central Grid Electrolysis	2005	255447.0	1	0.6	0	0	3.27121E9	0	0.30307	0
+Central Grid Electrolysis	2005	2794240.0	1	0.6	0	0	6.96764E9	0	0.15408	0
+Central Grid Electrolysis	2005	279424.0	1	0.6	0	0	1.65659E9	0	0.337643	0
+Central Grid Electrolysis	2005	27942.4	1	0.6	0	0	4.20119E8	0	1.91706	0
+Central Grid Electrolysis	2005	507310.0	1	0.6	0	0	3.78175E9	0	0.153837	0
+Central Grid Electrolysis	2005	50731.0	1	0.6	0	0	8.62322E8	0	0.375671	0
+Central Grid Electrolysis	2005	5108940.0	1	0.6	0	0	1.83019E10	0	0.0475515	0
+Central Grid Electrolysis	2005	510894.0	1	0.6	0	0	4.78885E9	0	0.182261	0
+Central Grid Electrolysis	2005	51089.4	1	0.6	0	0	1.45822E9	0	1.15682	0
+Central Grid Electrolysis	2005	698561.0	1	0.6	0	0	2.91114E9	0	0.220635	0
+Central Grid Electrolysis	2005	69856.1	1	0.6	0	0	7.18981E8	0	0.877596	0
+Central Grid Electrolysis	2025	1014620.0	1	0.6	0	0	2.82276E9	0	0.0661059	0
+Central Grid Electrolysis	2025	101462.0	1	0.6	0	0	5.55528E8	0	0.137793	0
+Central Grid Electrolysis	2025	10146.2	1	0.6	0	0	1.24944E8	0	0.475437	0
+Central Grid Electrolysis	2025	1109150.0	1	0.6	0	0	9.61073E9	0	0.122176	0
+Central Grid Electrolysis	2025	110915.0	1	0.6	0	0	2.44212E9	0	0.667336	0
+Central Grid Electrolysis	2025	1392820.0	1	0.6	0	0	4.20859E9	0	0.146892	0
+Central Grid Electrolysis	2025	139282.0	1	0.6	0	0	1.01887E9	0	0.433401	0
+Central Grid Electrolysis	2025	2218300.0	1	0.6	0	0	1.45379E10	0	0.0811459	0
+Central Grid Electrolysis	2025	221830.0	1	0.6	0	0	3.68372E9	0	0.380209	0
+Central Grid Electrolysis	2025	253655.0	1	0.6	0	0	1.04015E9	0	0.0979448	0
+Central Grid Electrolysis	2025	25365.5	1	0.6	0	0	2.23524E8	0	0.270294	0
+Central Grid Electrolysis	2025	2785650.0	1	0.6	0	0	6.53273E9	0	0.12653	0
+Central Grid Electrolysis	2025	278565.0	1	0.6	0	0	1.55202E9	0	0.280742	0
+Central Grid Electrolysis	2025	27856.5	1	0.6	0	0	3.92081E8	0	1.58171	0
+Central Grid Electrolysis	2025	4436600.0	1	0.6	0	0	2.19936E10	0	0.0563897	0
+Central Grid Electrolysis	2025	443660.0	1	0.6	0	0	5.56437E9	0	0.225991	0
+Central Grid Electrolysis	2025	44366.0	1	0.6	0	0	1.42336E9	0	1.48031	0
+Central Grid Electrolysis	2025	507310.0	1	0.6	0	0	1.69961E9	0	0.0791465	0
+Central Grid Electrolysis	2025	50731.0	1	0.6	0	0	3.50582E8	0	0.188057	0
+Central Grid Electrolysis	2025	696411.0	1	0.6	0	0	2.72874E9	0	0.182985	0
+Central Grid Electrolysis	2025	69641.1	1	0.6	0	0	6.72465E8	0	0.727085	0
+Central Natural Gas Reforming	2005	1014620.0	1	0.6	0	0	6.01479E9	0	0.12271	0
+Central Natural Gas Reforming	2005	101462.0	1	0.6	0	0	1.33479E9	0	0.279977	0
+Central Natural Gas Reforming	2005	10146.2	1	0.6	0	0	3.18432E8	0	0.832588	0
+Central Natural Gas Reforming	2005	1277240.0	1	0.6	0	0	8.07752E9	0	0.100258	0
+Central Natural Gas Reforming	2005	127724.0	1	0.6	0	0	2.27368E9	0	0.526715	0
+Central Natural Gas Reforming	2005	1397120.0	1	0.6	0	0	4.48909E9	0	0.177905	0
+Central Natural Gas Reforming	2005	139712.0	1	0.6	0	0	1.08823E9	0	0.521748	0
+Central Natural Gas Reforming	2005	1707240.0	1	0.6	0	0	1.79719E9	0	0.0629519	0
+Central Natural Gas Reforming	2005	170724.0	1	0.6	0	0	1.2072E9	0	0.196698	0
+Central Natural Gas Reforming	2005	253655.0	1	0.6	0	0	2.40195E9	0	0.196499	0
+Central Natural Gas Reforming	2005	25365.5	1	0.6	0	0	5.59955E8	0	0.517851	0
+Central Natural Gas Reforming	2005	2554470.0	1	0.6	0	0	1.21192E10	0	0.0675053	0
+Central Natural Gas Reforming	2005	255447.0	1	0.6	0	0	3.27121E9	0	0.30307	0
+Central Natural Gas Reforming	2005	2794240.0	1	0.6	0	0	6.96764E9	0	0.15408	0
+Central Natural Gas Reforming	2005	279424.0	1	0.6	0	0	1.65659E9	0	0.337643	0
+Central Natural Gas Reforming	2005	27942.4	1	0.6	0	0	4.20119E8	0	1.91706	0
+Central Natural Gas Reforming	2005	3414480.0	1	0.6	0	0	2.45273E9	0	0.0555216	0
+Central Natural Gas Reforming	2005	341448.0	1	0.6	0	0	1.27276E9	0	0.122395	0
+Central Natural Gas Reforming	2005	507310.0	1	0.6	0	0	3.78175E9	0	0.153837	0
+Central Natural Gas Reforming	2005	50731.0	1	0.6	0	0	8.62322E8	0	0.375671	0
+Central Natural Gas Reforming	2005	5108940.0	1	0.6	0	0	1.83019E10	0	0.0475515	0
+Central Natural Gas Reforming	2005	510894.0	1	0.6	0	0	4.78885E9	0	0.182261	0
+Central Natural Gas Reforming	2005	51089.4	1	0.6	0	0	1.45822E9	0	1.15682	0
+Central Natural Gas Reforming	2005	6828970.0	1	0.6	0	0	3.7638E9	0	0.0518064	0
+Central Natural Gas Reforming	2005	682897.0	1	0.6	0	0	1.40387E9	0	0.0852429	0
+Central Natural Gas Reforming	2005	68289.7	1	0.6	0	0	1.16787E9	0	0.419608	0
+Central Natural Gas Reforming	2005	698561.0	1	0.6	0	0	2.91114E9	0	0.220635	0
+Central Natural Gas Reforming	2005	69856.1	1	0.6	0	0	7.18981E8	0	0.877596	0
+Central Natural Gas Reforming	2025	1014620.0	1	0.6	0	0	2.82276E9	0	0.0661059	0
+Central Natural Gas Reforming	2025	101462.0	1	0.6	0	0	5.55528E8	0	0.137793	0
+Central Natural Gas Reforming	2025	10146.2	1	0.6	0	0	1.24944E8	0	0.475437	0
+Central Natural Gas Reforming	2025	1109150.0	1	0.6	0	0	9.61073E9	0	0.122176	0
+Central Natural Gas Reforming	2025	110915.0	1	0.6	0	0	2.44212E9	0	0.667336	0
+Central Natural Gas Reforming	2025	1392820.0	1	0.6	0	0	4.20859E9	0	0.146892	0
+Central Natural Gas Reforming	2025	139282.0	1	0.6	0	0	1.01887E9	0	0.433401	0
+Central Natural Gas Reforming	2025	1707240.0	1	0.6	0	0	1.59638E9	0	0.0641144	0
+Central Natural Gas Reforming	2025	170724.0	1	0.6	0	0	9.26098E8	0	0.181231	0
+Central Natural Gas Reforming	2025	2218300.0	1	0.6	0	0	1.45379E10	0	0.0811459	0
+Central Natural Gas Reforming	2025	221830.0	1	0.6	0	0	3.68372E9	0	0.380209	0
+Central Natural Gas Reforming	2025	253655.0	1	0.6	0	0	1.04015E9	0	0.0979448	0
+Central Natural Gas Reforming	2025	25365.5	1	0.6	0	0	2.23524E8	0	0.270294	0
+Central Natural Gas Reforming	2025	2785650.0	1	0.6	0	0	6.53273E9	0	0.12653	0
+Central Natural Gas Reforming	2025	278565.0	1	0.6	0	0	1.55202E9	0	0.280742	0
+Central Natural Gas Reforming	2025	27856.5	1	0.6	0	0	3.92081E8	0	1.58171	0
+Central Natural Gas Reforming	2025	3414480.0	1	0.6	0	0	2.34113E9	0	0.0576079	0
+Central Natural Gas Reforming	2025	341448.0	1	0.6	0	0	1.00057E9	0	0.116166	0
+Central Natural Gas Reforming	2025	4436600.0	1	0.6	0	0	2.19936E10	0	0.0563897	0
+Central Natural Gas Reforming	2025	443660.0	1	0.6	0	0	5.56437E9	0	0.225991	0
+Central Natural Gas Reforming	2025	44366.0	1	0.6	0	0	1.42336E9	0	1.48031	0
+Central Natural Gas Reforming	2025	507310.0	1	0.6	0	0	1.69961E9	0	0.0791465	0
+Central Natural Gas Reforming	2025	50731.0	1	0.6	0	0	3.50582E8	0	0.188057	0
+Central Natural Gas Reforming	2025	6828970.0	1	0.6	0	0	3.83065E9	0	0.0543547	0
+Central Natural Gas Reforming	2025	682897.0	1	0.6	0	0	1.14952E9	0	0.0836339	0
+Central Natural Gas Reforming	2025	68289.7	1	0.6	0	0	8.81412E8	0	0.376426	0
+Central Natural Gas Reforming	2025	696411.0	1	0.6	0	0	2.72874E9	0	0.182985	0
+Central Natural Gas Reforming	2025	69641.1	1	0.6	0	0	6.72465E8	0	0.727085	0
+Onsite Electrolysis	2005	1014620.0	1	0.6	0	0	6.01479E9	0	0.12271	0
+Onsite Electrolysis	2005	101462.0	1	0.6	0	0	1.33479E9	0	0.279977	0
+Onsite Electrolysis	2005	10146.2	1	0.6	0	0	3.18432E8	0	0.832588	0
+Onsite Electrolysis	2005	1277240.0	1	0.6	0	0	8.07752E9	0	0.100258	0
+Onsite Electrolysis	2005	127724.0	1	0.6	0	0	2.27368E9	0	0.526715	0
+Onsite Electrolysis	2005	12780.0	1	0.6	0	0	4.17382E8	0	1.94215	0
+Onsite Electrolysis	2005	1278.0	1	0.6	0	0	2.08821E7	0	1.00658	0
+Onsite Electrolysis	2005	1397120.0	1	0.6	0	0	4.48909E9	0	0.177905	0
+Onsite Electrolysis	2005	139712.0	1	0.6	0	0	1.08823E9	0	0.521748	0
+Onsite Electrolysis	2005	1707240.0	1	0.6	0	0	1.79719E9	0	0.0629519	0
+Onsite Electrolysis	2005	170724.0	1	0.6	0	0	1.2072E9	0	0.196698	0
+Onsite Electrolysis	2005	253655.0	1	0.6	0	0	2.40195E9	0	0.196499	0
+Onsite Electrolysis	2005	25365.5	1	0.6	0	0	5.59955E8	0	0.517851	0
+Onsite Electrolysis	2005	2554470.0	1	0.6	0	0	1.21192E10	0	0.0675053	0
+Onsite Electrolysis	2005	255447.0	1	0.6	0	0	3.27121E9	0	0.30307	0
+Onsite Electrolysis	2005	25560.0	1	0.6	0	0	1.14347E9	0	2.70013	0
+Onsite Electrolysis	2005	2556.0	1	0.6	0	0	4.53597E7	0	1.07512	0
+Onsite Electrolysis	2005	255.6	1	0.6	0	0	6928660.0	0	1.78029	0
+Onsite Electrolysis	2005	2794240.0	1	0.6	0	0	6.96764E9	0	0.15408	0
+Onsite Electrolysis	2005	279424.0	1	0.6	0	0	1.65659E9	0	0.337643	0
+Onsite Electrolysis	2005	27942.4	1	0.6	0	0	4.20119E8	0	1.91706	0
+Onsite Electrolysis	2005	3414480.0	1	0.6	0	0	2.45273E9	0	0.0555216	0
+Onsite Electrolysis	2005	341448.0	1	0.6	0	0	1.27276E9	0	0.122395	0
+Onsite Electrolysis	2005	507310.0	1	0.6	0	0	3.78175E9	0	0.153837	0
+Onsite Electrolysis	2005	50731.0	1	0.6	0	0	8.62322E8	0	0.375671	0
+Onsite Electrolysis	2005	5108940.0	1	0.6	0	0	1.83019E10	0	0.0475515	0
+Onsite Electrolysis	2005	510894.0	1	0.6	0	0	4.78885E9	0	0.182261	0
+Onsite Electrolysis	2005	51089.4	1	0.6	0	0	1.45822E9	0	1.15682	0
+Onsite Electrolysis	2005	6390.0	1	0.6	0	0	1.6413E8	0	1.47084	0
+Onsite Electrolysis	2005	639.0	1	0.6	0	0	1.11971E7	0	1.10927	0
+Onsite Electrolysis	2005	6828970.0	1	0.6	0	0	3.7638E9	0	0.0518064	0
+Onsite Electrolysis	2005	682897.0	1	0.6	0	0	1.40387E9	0	0.0852429	0
+Onsite Electrolysis	2005	68289.7	1	0.6	0	0	1.16787E9	0	0.419608	0
+Onsite Electrolysis	2005	698561.0	1	0.6	0	0	2.91114E9	0	0.220635	0
+Onsite Electrolysis	2005	69856.1	1	0.6	0	0	7.18981E8	0	0.877596	0
+Onsite Electrolysis	2025	1014620.0	1	0.6	0	0	2.82276E9	0	0.0661059	0
+Onsite Electrolysis	2025	101462.0	1	0.6	0	0	5.55528E8	0	0.137793	0
+Onsite Electrolysis	2025	10146.2	1	0.6	0	0	1.24944E8	0	0.475437	0
+Onsite Electrolysis	2025	1109150.0	1	0.6	0	0	9.61073E9	0	0.122176	0
+Onsite Electrolysis	2025	110915.0	1	0.6	0	0	2.44212E9	0	0.667336	0
+Onsite Electrolysis	2025	12780.0	1	0.6	0	0	1.25553E8	0	0.562897	0
+Onsite Electrolysis	2025	1278.0	1	0.6	0	0	1.57359E7	0	0.768014	0
+Onsite Electrolysis	2025	1392820.0	1	0.6	0	0	4.20859E9	0	0.146892	0
+Onsite Electrolysis	2025	139282.0	1	0.6	0	0	1.01887E9	0	0.433401	0
+Onsite Electrolysis	2025	1707240.0	1	0.6	0	0	1.59638E9	0	0.0641144	0
+Onsite Electrolysis	2025	170724.0	1	0.6	0	0	9.26098E8	0	0.181231	0
+Onsite Electrolysis	2025	2218300.0	1	0.6	0	0	1.45379E10	0	0.0811459	0
+Onsite Electrolysis	2025	221830.0	1	0.6	0	0	3.68372E9	0	0.380209	0
+Onsite Electrolysis	2025	253655.0	1	0.6	0	0	1.04015E9	0	0.0979448	0
+Onsite Electrolysis	2025	25365.5	1	0.6	0	0	2.23524E8	0	0.270294	0
+Onsite Electrolysis	2025	25560.0	1	0.6	0	0	2.28729E8	0	0.53527	0
+Onsite Electrolysis	2025	2556.0	1	0.6	0	0	2.67507E7	0	0.639216	0
+Onsite Electrolysis	2025	255.6	1	0.6	0	0	6898050.0	0	1.77868	0
+Onsite Electrolysis	2025	2785650.0	1	0.6	0	0	6.53273E9	0	0.12653	0
+Onsite Electrolysis	2025	278565.0	1	0.6	0	0	1.55202E9	0	0.280742	0
+Onsite Electrolysis	2025	27856.5	1	0.6	0	0	3.92081E8	0	1.58171	0
+Onsite Electrolysis	2025	3414480.0	1	0.6	0	0	2.34113E9	0	0.0576079	0
+Onsite Electrolysis	2025	341448.0	1	0.6	0	0	1.00057E9	0	0.116166	0
+Onsite Electrolysis	2025	4436600.0	1	0.6	0	0	2.19936E10	0	0.0563897	0
+Onsite Electrolysis	2025	443660.0	1	0.6	0	0	5.56437E9	0	0.225991	0
+Onsite Electrolysis	2025	44366.0	1	0.6	0	0	1.42336E9	0	1.48031	0
+Onsite Electrolysis	2025	507310.0	1	0.6	0	0	1.69961E9	0	0.0791465	0
+Onsite Electrolysis	2025	50731.0	1	0.6	0	0	3.50582E8	0	0.188057	0
+Onsite Electrolysis	2025	6390.0	1	0.6	0	0	7.28248E7	0	0.609892	0
+Onsite Electrolysis	2025	639.0	1	0.6	0	0	9995650.0	0	1.00089	0
+Onsite Electrolysis	2025	6828970.0	1	0.6	0	0	3.83065E9	0	0.0543547	0
+Onsite Electrolysis	2025	682897.0	1	0.6	0	0	1.14952E9	0	0.0836339	0
+Onsite Electrolysis	2025	68289.7	1	0.6	0	0	8.81412E8	0	0.376426	0
+Onsite Electrolysis	2025	696411.0	1	0.6	0	0	2.72874E9	0	0.182985	0
+Onsite Electrolysis	2025	69641.1	1	0.6	0	0	6.72465E8	0	0.727085	0
+Onsite Ethanol Reforming	2005	1014620.0	1	0.6	0	0	6.01479E9	0	0.12271	0
+Onsite Ethanol Reforming	2005	101462.0	1	0.6	0	0	1.33479E9	0	0.279977	0
+Onsite Ethanol Reforming	2005	10146.2	1	0.6	0	0	3.18432E8	0	0.832588	0
+Onsite Ethanol Reforming	2005	1277240.0	1	0.6	0	0	8.07752E9	0	0.100258	0
+Onsite Ethanol Reforming	2005	127724.0	1	0.6	0	0	2.27368E9	0	0.526715	0
+Onsite Ethanol Reforming	2005	12780.0	1	0.6	0	0	4.17382E8	0	1.94215	0
+Onsite Ethanol Reforming	2005	1278.0	1	0.6	0	0	1.71941E7	0	0.88084	0
+Onsite Ethanol Reforming	2005	1397120.0	1	0.6	0	0	4.48909E9	0	0.177905	0
+Onsite Ethanol Reforming	2005	139712.0	1	0.6	0	0	1.08823E9	0	0.521748	0
+Onsite Ethanol Reforming	2005	1707240.0	1	0.6	0	0	1.79719E9	0	0.0629519	0
+Onsite Ethanol Reforming	2005	170724.0	1	0.6	0	0	1.2072E9	0	0.196698	0
+Onsite Ethanol Reforming	2005	253655.0	1	0.6	0	0	2.40195E9	0	0.196499	0
+Onsite Ethanol Reforming	2005	25365.5	1	0.6	0	0	5.59955E8	0	0.517851	0
+Onsite Ethanol Reforming	2005	2554470.0	1	0.6	0	0	1.21192E10	0	0.0675053	0
+Onsite Ethanol Reforming	2005	255447.0	1	0.6	0	0	3.27121E9	0	0.30307	0
+Onsite Ethanol Reforming	2005	25560.0	1	0.6	0	0	1.14347E9	0	2.70013	0
+Onsite Ethanol Reforming	2005	2556.0	1	0.6	0	0	4.53597E7	0	1.07512	0
+Onsite Ethanol Reforming	2005	255.6	1	0.6	0	0	6928660.0	0	1.78029	0
+Onsite Ethanol Reforming	2005	2794240.0	1	0.6	0	0	6.96764E9	0	0.15408	0
+Onsite Ethanol Reforming	2005	279424.0	1	0.6	0	0	1.65659E9	0	0.337643	0
+Onsite Ethanol Reforming	2005	27942.4	1	0.6	0	0	4.20119E8	0	1.91706	0
+Onsite Ethanol Reforming	2005	3414480.0	1	0.6	0	0	2.45273E9	0	0.0555216	0
+Onsite Ethanol Reforming	2005	341448.0	1	0.6	0	0	1.27276E9	0	0.122395	0
+Onsite Ethanol Reforming	2005	507310.0	1	0.6	0	0	3.78175E9	0	0.153837	0
+Onsite Ethanol Reforming	2005	50731.0	1	0.6	0	0	8.62322E8	0	0.375671	0
+Onsite Ethanol Reforming	2005	5108940.0	1	0.6	0	0	1.83019E10	0	0.0475515	0
+Onsite Ethanol Reforming	2005	510894.0	1	0.6	0	0	4.78885E9	0	0.182261	0
+Onsite Ethanol Reforming	2005	51089.4	1	0.6	0	0	1.45822E9	0	1.15682	0
+Onsite Ethanol Reforming	2005	6390.0	1	0.6	0	0	1.6413E8	0	1.47084	0
+Onsite Ethanol Reforming	2005	639.0	1	0.6	0	0	1.11971E7	0	1.10927	0
+Onsite Ethanol Reforming	2005	6828970.0	1	0.6	0	0	3.7638E9	0	0.0518064	0
+Onsite Ethanol Reforming	2005	682897.0	1	0.6	0	0	1.40387E9	0	0.0852429	0
+Onsite Ethanol Reforming	2005	68289.7	1	0.6	0	0	1.16787E9	0	0.419608	0
+Onsite Ethanol Reforming	2005	698561.0	1	0.6	0	0	2.91114E9	0	0.220635	0
+Onsite Ethanol Reforming	2005	69856.1	1	0.6	0	0	7.18981E8	0	0.877596	0
+Onsite Ethanol Reforming	2025	1014620.0	1	0.6	0	0	2.82276E9	0	0.0661059	0
+Onsite Ethanol Reforming	2025	101462.0	1	0.6	0	0	5.55528E8	0	0.137793	0
+Onsite Ethanol Reforming	2025	10146.2	1	0.6	0	0	1.24944E8	0	0.475437	0
+Onsite Ethanol Reforming	2025	1109150.0	1	0.6	0	0	9.61073E9	0	0.122176	0
+Onsite Ethanol Reforming	2025	110915.0	1	0.6	0	0	2.44212E9	0	0.667336	0
+Onsite Ethanol Reforming	2025	12780.0	1	0.6	0	0	1.25553E8	0	0.562897	0
+Onsite Ethanol Reforming	2025	1278.0	1	0.6	0	0	1.60152E7	0	0.966828	0
+Onsite Ethanol Reforming	2025	1392820.0	1	0.6	0	0	4.20859E9	0	0.146892	0
+Onsite Ethanol Reforming	2025	139282.0	1	0.6	0	0	1.01887E9	0	0.433401	0
+Onsite Ethanol Reforming	2025	1707240.0	1	0.6	0	0	1.59638E9	0	0.0641144	0
+Onsite Ethanol Reforming	2025	170724.0	1	0.6	0	0	9.26098E8	0	0.181231	0
+Onsite Ethanol Reforming	2025	2218300.0	1	0.6	0	0	1.45379E10	0	0.0811459	0
+Onsite Ethanol Reforming	2025	221830.0	1	0.6	0	0	3.68372E9	0	0.380209	0
+Onsite Ethanol Reforming	2025	253655.0	1	0.6	0	0	1.04015E9	0	0.0979448	0
+Onsite Ethanol Reforming	2025	25365.5	1	0.6	0	0	2.23524E8	0	0.270294	0
+Onsite Ethanol Reforming	2025	25560.0	1	0.6	0	0	2.28729E8	0	0.53527	0
+Onsite Ethanol Reforming	2025	2556.0	1	0.6	0	0	2.67507E7	0	0.639216	0
+Onsite Ethanol Reforming	2025	255.6	1	0.6	0	0	6898050.0	0	1.77868	0
+Onsite Ethanol Reforming	2025	2785650.0	1	0.6	0	0	6.53273E9	0	0.12653	0
+Onsite Ethanol Reforming	2025	278565.0	1	0.6	0	0	1.55202E9	0	0.280742	0
+Onsite Ethanol Reforming	2025	27856.5	1	0.6	0	0	3.92081E8	0	1.58171	0
+Onsite Ethanol Reforming	2025	3414480.0	1	0.6	0	0	2.34113E9	0	0.0576079	0
+Onsite Ethanol Reforming	2025	341448.0	1	0.6	0	0	1.00057E9	0	0.116166	0
+Onsite Ethanol Reforming	2025	4436600.0	1	0.6	0	0	2.19936E10	0	0.0563897	0
+Onsite Ethanol Reforming	2025	443660.0	1	0.6	0	0	5.56437E9	0	0.225991	0
+Onsite Ethanol Reforming	2025	44366.0	1	0.6	0	0	1.42336E9	0	1.48031	0
+Onsite Ethanol Reforming	2025	507310.0	1	0.6	0	0	1.69961E9	0	0.0791465	0
+Onsite Ethanol Reforming	2025	50731.0	1	0.6	0	0	3.50582E8	0	0.188057	0
+Onsite Ethanol Reforming	2025	6390.0	1	0.6	0	0	7.28248E7	0	0.609892	0
+Onsite Ethanol Reforming	2025	639.0	1	0.6	0	0	9995650.0	0	1.00089	0
+Onsite Ethanol Reforming	2025	6828970.0	1	0.6	0	0	3.83065E9	0	0.0543547	0
+Onsite Ethanol Reforming	2025	682897.0	1	0.6	0	0	1.14952E9	0	0.0836339	0
+Onsite Ethanol Reforming	2025	68289.7	1	0.6	0	0	8.81412E8	0	0.376426	0
+Onsite Ethanol Reforming	2025	696411.0	1	0.6	0	0	2.72874E9	0	0.182985	0
+Onsite Ethanol Reforming	2025	69641.1	1	0.6	0	0	6.72465E8	0	0.727085	0
+Onsite Natural Gas Reforming	2005	1014620.0	1	0.6	0	0	6.01479E9	0	0.12271	0
+Onsite Natural Gas Reforming	2005	101462.0	1	0.6	0	0	1.33479E9	0	0.279977	0
+Onsite Natural Gas Reforming	2005	10146.2	1	0.6	0	0	3.18432E8	0	0.832588	0
+Onsite Natural Gas Reforming	2005	1277240.0	1	0.6	0	0	8.07752E9	0	0.100258	0
+Onsite Natural Gas Reforming	2005	127724.0	1	0.6	0	0	2.27368E9	0	0.526715	0
+Onsite Natural Gas Reforming	2005	12780.0	1	0.6	0	0	4.17382E8	0	1.94215	0
+Onsite Natural Gas Reforming	2005	1278.0	1	0.6	0	0	1.59211E7	0	0.885483	0
+Onsite Natural Gas Reforming	2005	1397120.0	1	0.6	0	0	4.48909E9	0	0.177905	0
+Onsite Natural Gas Reforming	2005	139712.0	1	0.6	0	0	1.08823E9	0	0.521748	0
+Onsite Natural Gas Reforming	2005	1707240.0	1	0.6	0	0	1.79719E9	0	0.0629519	0
+Onsite Natural Gas Reforming	2005	170724.0	1	0.6	0	0	1.2072E9	0	0.196698	0
+Onsite Natural Gas Reforming	2005	253655.0	1	0.6	0	0	2.40195E9	0	0.196499	0
+Onsite Natural Gas Reforming	2005	25365.5	1	0.6	0	0	5.59955E8	0	0.517851	0
+Onsite Natural Gas Reforming	2005	2554470.0	1	0.6	0	0	1.21192E10	0	0.0675053	0
+Onsite Natural Gas Reforming	2005	255447.0	1	0.6	0	0	3.27121E9	0	0.30307	0
+Onsite Natural Gas Reforming	2005	25560.0	1	0.6	0	0	1.14347E9	0	2.70013	0
+Onsite Natural Gas Reforming	2005	2556.0	1	0.6	0	0	4.53597E7	0	1.07512	0
+Onsite Natural Gas Reforming	2005	255.6	1	0.6	0	0	6928660.0	0	1.78029	0
+Onsite Natural Gas Reforming	2005	2794240.0	1	0.6	0	0	6.96764E9	0	0.15408	0
+Onsite Natural Gas Reforming	2005	279424.0	1	0.6	0	0	1.65659E9	0	0.337643	0
+Onsite Natural Gas Reforming	2005	27942.4	1	0.6	0	0	4.20119E8	0	1.91706	0
+Onsite Natural Gas Reforming	2005	3414480.0	1	0.6	0	0	2.45273E9	0	0.0555216	0
+Onsite Natural Gas Reforming	2005	341448.0	1	0.6	0	0	1.27276E9	0	0.122395	0
+Onsite Natural Gas Reforming	2005	507310.0	1	0.6	0	0	3.78175E9	0	0.153837	0
+Onsite Natural Gas Reforming	2005	50731.0	1	0.6	0	0	8.62322E8	0	0.375671	0
+Onsite Natural Gas Reforming	2005	5108940.0	1	0.6	0	0	1.83019E10	0	0.0475515	0
+Onsite Natural Gas Reforming	2005	510894.0	1	0.6	0	0	4.78885E9	0	0.182261	0
+Onsite Natural Gas Reforming	2005	51089.4	1	0.6	0	0	1.45822E9	0	1.15682	0
+Onsite Natural Gas Reforming	2005	6390.0	1	0.6	0	0	1.6413E8	0	1.47084	0
+Onsite Natural Gas Reforming	2005	639.0	1	0.6	0	0	1.11971E7	0	1.10927	0
+Onsite Natural Gas Reforming	2005	6828970.0	1	0.6	0	0	3.7638E9	0	0.0518064	0
+Onsite Natural Gas Reforming	2005	682897.0	1	0.6	0	0	1.40387E9	0	0.0852429	0
+Onsite Natural Gas Reforming	2005	68289.7	1	0.6	0	0	1.16787E9	0	0.419608	0
+Onsite Natural Gas Reforming	2005	698561.0	1	0.6	0	0	2.91114E9	0	0.220635	0
+Onsite Natural Gas Reforming	2005	69856.1	1	0.6	0	0	7.18981E8	0	0.877596	0
+Onsite Natural Gas Reforming	2025	1014620.0	1	0.6	0	0	2.82276E9	0	0.0661059	0
+Onsite Natural Gas Reforming	2025	101462.0	1	0.6	0	0	5.55528E8	0	0.137793	0
+Onsite Natural Gas Reforming	2025	10146.2	1	0.6	0	0	1.24944E8	0	0.475437	0
+Onsite Natural Gas Reforming	2025	1109150.0	1	0.6	0	0	9.61073E9	0	0.122176	0
+Onsite Natural Gas Reforming	2025	110915.0	1	0.6	0	0	2.44212E9	0	0.667336	0
+Onsite Natural Gas Reforming	2025	12780.0	1	0.6	0	0	1.25553E8	0	0.562897	0
+Onsite Natural Gas Reforming	2025	1278.0	1	0.6	0	0	1.47061E7	0	0.939208	0
+Onsite Natural Gas Reforming	2025	1392820.0	1	0.6	0	0	4.20859E9	0	0.146892	0
+Onsite Natural Gas Reforming	2025	139282.0	1	0.6	0	0	1.01887E9	0	0.433401	0
+Onsite Natural Gas Reforming	2025	1707240.0	1	0.6	0	0	1.59638E9	0	0.0641144	0
+Onsite Natural Gas Reforming	2025	170724.0	1	0.6	0	0	9.26098E8	0	0.181231	0
+Onsite Natural Gas Reforming	2025	2218300.0	1	0.6	0	0	1.45379E10	0	0.0811459	0
+Onsite Natural Gas Reforming	2025	221830.0	1	0.6	0	0	3.68372E9	0	0.380209	0
+Onsite Natural Gas Reforming	2025	253655.0	1	0.6	0	0	1.04015E9	0	0.0979448	0
+Onsite Natural Gas Reforming	2025	25365.5	1	0.6	0	0	2.23524E8	0	0.270294	0
+Onsite Natural Gas Reforming	2025	25560.0	1	0.6	0	0	2.28729E8	0	0.53527	0
+Onsite Natural Gas Reforming	2025	2556.0	1	0.6	0	0	2.67507E7	0	0.639216	0
+Onsite Natural Gas Reforming	2025	255.6	1	0.6	0	0	6898050.0	0	1.77868	0
+Onsite Natural Gas Reforming	2025	2785650.0	1	0.6	0	0	6.53273E9	0	0.12653	0
+Onsite Natural Gas Reforming	2025	278565.0	1	0.6	0	0	1.55202E9	0	0.280742	0
+Onsite Natural Gas Reforming	2025	27856.5	1	0.6	0	0	3.92081E8	0	1.58171	0
+Onsite Natural Gas Reforming	2025	3414480.0	1	0.6	0	0	2.34113E9	0	0.0576079	0
+Onsite Natural Gas Reforming	2025	341448.0	1	0.6	0	0	1.00057E9	0	0.116166	0
+Onsite Natural Gas Reforming	2025	4436600.0	1	0.6	0	0	2.19936E10	0	0.0563897	0
+Onsite Natural Gas Reforming	2025	443660.0	1	0.6	0	0	5.56437E9	0	0.225991	0
+Onsite Natural Gas Reforming	2025	44366.0	1	0.6	0	0	1.42336E9	0	1.48031	0
+Onsite Natural Gas Reforming	2025	507310.0	1	0.6	0	0	1.69961E9	0	0.0791465	0
+Onsite Natural Gas Reforming	2025	50731.0	1	0.6	0	0	3.50582E8	0	0.188057	0
+Onsite Natural Gas Reforming	2025	6390.0	1	0.6	0	0	7.28248E7	0	0.609892	0
+Onsite Natural Gas Reforming	2025	639.0	1	0.6	0	0	9995650.0	0	1.00089	0
+Onsite Natural Gas Reforming	2025	6828970.0	1	0.6	0	0	3.83065E9	0	0.0543547	0
+Onsite Natural Gas Reforming	2025	682897.0	1	0.6	0	0	1.14952E9	0	0.0836339	0
+Onsite Natural Gas Reforming	2025	68289.7	1	0.6	0	0	8.81412E8	0	0.376426	0
+Onsite Natural Gas Reforming	2025	696411.0	1	0.6	0	0	2.72874E9	0	0.182985	0
+Onsite Natural Gas Reforming	2025	69641.1	1	0.6	0	0	6.72465E8	0	0.727085	0

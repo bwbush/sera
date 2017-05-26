@@ -2,3 +2,9 @@ priceFiles:
  - energy-prices-aeo2010.tsv
  - biogas.tsv
  - biomass.tsv
+
+processLibraryFiles:
+  - propertiesFile : production-properties.tsv
+    costsFile      : production-costs.tsv
+    inputsFile     : production-inputs.tsv
+    outputsFile    : production-outputs.tsv

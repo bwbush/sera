@@ -7,8 +7,11 @@
 
 
 module SERA.Material.Types (
+-- * Data types
+  Material
+, Zone
 -- * Field types
-  FMaterial
+, FMaterial
 , FConsumptionRate
 , FProductionRate
 , FPrice
