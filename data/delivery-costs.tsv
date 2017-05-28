@@ -1,15 +1,15 @@
 Technology	Year	Capacity [kg/yr]	Yield [kg/kg]	Scaling Exponent	Capital Cost [$]	Capital Cost [$/km]	Fixed Operating Cost [$/yr]	Fixed Operating Cost [$/km/yr]	Variable Operating Cost [$/kg]	Variable Operating Cost [$/km/kg]
 GH2 Station	2005	365240	1	1	0	0	0	0	1.04	0
-GH2 Truck	2005	365240	1	1	0	0	0	0	0	0.00447
+GH2 Truck	2005	365240	1	1	0	0	0	0	0.5134	0.00422
 GH2 Truck Terminal	2005	245807	1	1	0	0	0	0	4.64	0
 GH2 Truck Terminal	2005	491248	1	1	0	0	0	0	3.13	0
 GH2 Truck Terminal	2005	737054	1	1	0	0	0	0	2.57	0
 GH2 Truck Terminal	2005	982496	1	1	0	0	0	0	2.27	0
-GH2 Truck Terminal	2005	1.2283e+06	1	1	0	0	0	0	2.08	0
-GH2 Truck Terminal	2005	1.47374e+06	1	1	0	0	0	0	1.94	0
-GH2 Truck Terminal	2005	1.71955e+06	1	1	0	0	0	0	1.85	0
-GH2 Truck Terminal	2005	1.96499e+06	1	1	0	0	0	0	1.77	0
-GH2 Truck Terminal	2005	2.2108e+06	1	1	0	0	0	0	1.7	0
+GH2 Truck Terminal	2005	1.23E+06	1	1	0	0	0	0	2.08	0
+GH2 Truck Terminal	2005	1.47E+06	1	1	0	0	0	0	1.94	0
+GH2 Truck Terminal	2005	1.72E+06	1	1	0	0	0	0	1.85	0
+GH2 Truck Terminal	2005	1.96E+06	1	1	0	0	0	0	1.77	0
+GH2 Truck Terminal	2005	2.21E+06	1	1	0	0	0	0	1.7	0
 GH2 Truck Terminal	2005	2456239	1	1	0	0	0	0	1.65	0
 GH2 Truck Terminal	2005	4912478	1	1	0	0	0	0	1.71	0
 GH2 Truck Terminal	2005	7368717	1	1	0	0	0	0	1.49	0
@@ -33,223 +33,352 @@ GH2 Truck Terminal	2005	49124780	1	1	0	0	0	0	0.87	0
 GH2 Truck Terminal	2005	51581019	1	1	0	0	0	0	0.86	0
 GH2 Truck Terminal	2005	54037258	1	1	0	0	0	0	0.85	0
 GH2 Truck Terminal	2005	56493497	1	1	0	0	0	0	0.84	0
+GH2 Truck Terminal	2005	58949736	1	1	0	0	0	0	0.84	0
 GH2 Truck Terminal	2005	61405975	1	1	0	0	0	0	0.83	0
 GH2 Truck Terminal	2005	63862214	1	1	0	0	0	0	0.82	0
 GH2 Truck Terminal	2005	66318453	1	1	0	0	0	0	0.81	0
+GH2 Truck Terminal	2005	68774692	1	1	0	0	0	0	0.81	0
 GH2 Truck Terminal	2005	71230931	1	1	0	0	0	0	0.8	0
+GH2 Truck Terminal	2005	73687170	1	1	0	0	0	0	0.8	0
 GH2 Truck Terminal	2005	76143409	1	1	0	0	0	0	0.79	0
+GH2 Truck Terminal	2005	78599648	1	1	0	0	0	0	0.79	0
 GH2 Truck Terminal	2005	81055887	1	1	0	0	0	0	0.78	0
+GH2 Truck Terminal	2005	83512126	1	1	0	0	0	0	0.78	0
 GH2 Truck Terminal	2005	85968365	1	1	0	0	0	0	0.77	0
+GH2 Truck Terminal	2005	88424604	1	1	0	0	0	0	0.77	0
 GH2 Truck Terminal	2005	90880843	1	1	0	0	0	0	0.76	0
+GH2 Truck Terminal	2005	95793321	1	1	0	0	0	0	0.76	0
 GH2 Truck Terminal	2005	98249560	1	1	0	0	0	0	0.75	0
+GH2 Truck Terminal	2005	100705799	1	1	0	0	0	0	0.75	0
 GH2 Truck Terminal	2005	103162038	1	1	0	0	0	0	0.74	0
+GH2 Truck Terminal	2005	108074516	1	1	0	0	0	0	0.74	0
 GH2 Truck Terminal	2005	110530755	1	1	0	0	0	0	0.73	0
+GH2 Truck Terminal	2005	115443233	1	1	0	0	0	0	0.73	0
 GH2 Truck Terminal	2005	117899472	1	1	0	0	0	0	0.72	0
+GH2 Truck Terminal	2005	122811950	1	1	0	0	0	0	0.72	0
 GH2 Truck Terminal	2005	125268189	1	1	0	0	0	0	0.88	0
 GH2 Truck Terminal	2005	127724428	1	1	0	0	0	0	0.87	0
+GH2 Truck Terminal	2005	130180667	1	1	0	0	0	0	0.87	0
 GH2 Truck Terminal	2005	132636906	1	1	0	0	0	0	0.86	0
+GH2 Truck Terminal	2005	140005623	1	1	0	0	0	0	0.86	0
 GH2 Truck Terminal	2005	142461862	1	1	0	0	0	0	0.85	0
+GH2 Truck Terminal	2005	147374340	1	1	0	0	0	0	0.85	0
 GH2 Truck Terminal	2005	149830579	1	1	0	0	0	0	0.84	0
+GH2 Truck Terminal	2005	154743057	1	1	0	0	0	0	0.84	0
 GH2 Truck Terminal	2005	157199296	1	1	0	0	0	0	0.83	0
+GH2 Truck Terminal	2005	164568013	1	1	0	0	0	0	0.83	0
 GH2 Truck Terminal	2005	167024252	1	1	0	0	0	0	0.82	0
+GH2 Truck Terminal	2005	174392969	1	1	0	0	0	0	0.82	0
 GH2 Truck Terminal	2005	176849208	1	1	0	0	0	0	0.81	0
+GH2 Truck Terminal	2005	184217925	1	1	0	0	0	0	0.81	0
 GH2 Truck Terminal	2005	186674164	1	1	0	0	0	0	0.8	0
 GH2 Truck Terminal	2005	189130403	1	1	0	0	0	0	0.96	0
+GH2 Truck Terminal	2005	191586642	1	1	0	0	0	0	0.96	0
 GH2 Truck Terminal	2005	194042881	1	1	0	0	0	0	0.95	0
+GH2 Truck Terminal	2005	198955359	1	1	0	0	0	0	0.95	0
 GH2 Truck Terminal	2005	201411598	1	1	0	0	0	0	0.94	0
+GH2 Truck Terminal	2005	208780315	1	1	0	0	0	0	0.94	0
 GH2 Truck Terminal	2005	211236554	1	1	0	0	0	0	0.93	0
+GH2 Truck Terminal	2005	218605271	1	1	0	0	0	0	0.93	0
 GH2 Truck Terminal	2005	221061510	1	1	0	0	0	0	0.92	0
+GH2 Truck Terminal	2005	230886466	1	1	0	0	0	0	0.92	0
 GH2 Truck Terminal	2005	233342705	1	1	0	0	0	0	0.91	0
+GH2 Truck Terminal	2005	240711422	1	1	0	0	0	0	0.91	0
 GH2 Truck Terminal	2005	243167661	1	1	0	0	0	0	0.9	0
+GH2 Truck Terminal	2005	250536378	1	1	0	0	0	0	0.9	0
 GH2 Truck Terminal	2005	252992617	1	1	0	0	0	0	1.05	0
+GH2 Truck Terminal	2005	257905095	1	1	0	0	0	0	1.05	0
 GH2 Truck Terminal	2005	260361334	1	1	0	0	0	0	1.04	0
+GH2 Truck Terminal	2005	267730051	1	1	0	0	0	0	1.04	0
 GH2 Truck Terminal	2005	270186290	1	1	0	0	0	0	1.03	0
+GH2 Truck Terminal	2005	277555007	1	1	0	0	0	0	1.03	0
 GH2 Truck Terminal	2005	280011246	1	1	0	0	0	0	1.02	0
+GH2 Truck Terminal	2005	289836202	1	1	0	0	0	0	1.02	0
 GH2 Truck Terminal	2005	292292441	1	1	0	0	0	0	1.01	0
+GH2 Truck Terminal	2005	302117397	1	1	0	0	0	0	1.01	0
 GH2 Truck Terminal	2005	304573636	1	1	0	0	0	0	1	0
+GH2 Truck Terminal	2005	314398592	1	1	0	0	0	0	1	0
 GH2 Truck Terminal	2005	316854831	1	1	0	0	0	0	0.99	0
 GH2 Truck Terminal	2005	319311070	1	1	0	0	0	0	1.15	0
 GH2 Truck Terminal	2005	321767309	1	1	0	0	0	0	1.14	0
+GH2 Truck Terminal	2005	329136026	1	1	0	0	0	0	1.14	0
 GH2 Truck Terminal	2005	331592265	1	1	0	0	0	0	1.13	0
+GH2 Truck Terminal	2005	341417221	1	1	0	0	0	0	1.13	0
 GH2 Truck Terminal	2005	343873460	1	1	0	0	0	0	1.12	0
+GH2 Truck Terminal	2005	353698416	1	1	0	0	0	0	1.12	0
 GH2 Truck Terminal	2005	356154655	1	1	0	0	0	0	1.11	0
+GH2 Truck Terminal	2005	365979611	1	1	0	0	0	0	1.11	0
 GH2 Truck Terminal	2005	368435850	1	1	0	0	0	0	1.1	0
+GH2 Truck Terminal	2005	378260806	1	1	0	0	0	0	1.1	0
 GH2 Truck Terminal	2005	380717045	1	1	0	0	0	0	1.09	0
+GH2 Truck Terminal	2005	383173284	1	1	0	0	0	0	1.09	0
 GH2 Truck Terminal	2005	385629523	1	1	0	0	0	0	1.24	0
+GH2 Truck Terminal	2005	392998240	1	1	0	0	0	0	1.24	0
 GH2 Truck Terminal	2005	395454479	1	1	0	0	0	0	1.23	0
+GH2 Truck Terminal	2005	405279435	1	1	0	0	0	0	1.23	0
 GH2 Truck Terminal	2005	407735674	1	1	0	0	0	0	1.22	0
+GH2 Truck Terminal	2005	420016869	1	1	0	0	0	0	1.22	0
 GH2 Truck Terminal	2005	422473108	1	1	0	0	0	0	1.21	0
+GH2 Truck Terminal	2005	432298064	1	1	0	0	0	0	1.21	0
 GH2 Truck Terminal	2005	434754303	1	1	0	0	0	0	1.2	0
+GH2 Truck Terminal	2005	447035498	1	1	0	0	0	0	1.2	0
 GH2 Truck Terminal	2005	449491737	1	1	0	0	0	0	1.19	0
 GH2 Truck Terminal	2005	451947976	1	1	0	0	0	0	1.34	0
+GH2 Truck Terminal	2005	459316693	1	1	0	0	0	0	1.34	0
 GH2 Truck Terminal	2005	461772932	1	1	0	0	0	0	1.33	0
+GH2 Truck Terminal	2005	471597888	1	1	0	0	0	0	1.33	0
 GH2 Truck Terminal	2005	474054127	1	1	0	0	0	0	1.32	0
+GH2 Truck Terminal	2005	486335322	1	1	0	0	0	0	1.32	0
 GH2 Truck Terminal	2005	488791561	1	1	0	0	0	0	1.31	0
+GH2 Truck Terminal	2005	501072756	1	1	0	0	0	0	1.31	0
 GH2 Truck Terminal	2005	503528995	1	1	0	0	0	0	1.3	0
+GH2 Truck Terminal	2005	515810190	1	1	0	0	0	0	1.3	0
 GH2 Truck Terminal	2005	518266429	1	1	0	0	0	0	1.29	0
 GH2 Truck Terminal	2005	520722668	1	1	0	0	0	0	1.44	0
+GH2 Truck Terminal	2005	528091385	1	1	0	0	0	0	1.44	0
 GH2 Truck Terminal	2005	530547624	1	1	0	0	0	0	1.43	0
+GH2 Truck Terminal	2005	540372580	1	1	0	0	0	0	1.43	0
 GH2 Truck Terminal	2005	542828819	1	1	0	0	0	0	1.42	0
+GH2 Truck Terminal	2005	555110014	1	1	0	0	0	0	1.42	0
 GH2 Truck Terminal	2005	557566253	1	1	0	0	0	0	1.41	0
+GH2 Truck Terminal	2005	569847448	1	1	0	0	0	0	1.41	0
 GH2 Truck Terminal	2005	572303687	1	1	0	0	0	0	1.4	0
+GH2 Truck Terminal	2005	584584882	1	1	0	0	0	0	1.4	0
 GH2 Truck Terminal	2005	587041121	1	1	0	0	0	0	1.39	0
 GH2 Truck Terminal	2005	589497360	1	1	0	0	0	0	1.54	0
+GH2 Truck Terminal	2005	596866077	1	1	0	0	0	0	1.54	0
 GH2 Truck Terminal	2005	599322316	1	1	0	0	0	0	1.53	0
+GH2 Truck Terminal	2005	611603511	1	1	0	0	0	0	1.53	0
 GH2 Truck Terminal	2005	614059750	1	1	0	0	0	0	1.52	0
+GH2 Truck Terminal	2005	626340945	1	1	0	0	0	0	1.52	0
 GH2 Truck Terminal	2005	628797184	1	1	0	0	0	0	1.51	0
+GH2 Truck Terminal	2005	641078379	1	1	0	0	0	0	1.51	0
 GH2 Truck Terminal	2005	643534618	1	1	0	0	0	0	1.5	0
+GH2 Truck Terminal	2005	655815813	1	1	0	0	0	0	1.5	0
 GH2 Truck Terminal	2005	658272052	1	1	0	0	0	0	1.64	0
+GH2 Truck Terminal	2005	668097008	1	1	0	0	0	0	1.64	0
 GH2 Truck Terminal	2005	670553247	1	1	0	0	0	0	1.63	0
+GH2 Truck Terminal	2005	680378203	1	1	0	0	0	0	1.63	0
 GH2 Truck Terminal	2005	682834442	1	1	0	0	0	0	1.62	0
+GH2 Truck Terminal	2005	685290681	1	1	0	0	0	0	1.62	0
 GH2 Truck Terminal	2005	687746920	1	1	0	0	0	0	1.64	0
+GH2 Truck Terminal	2005	700028115	1	1	0	0	0	0	1.64	0
 GH2 Truck Terminal	2005	702484354	1	1	0	0	0	0	1.63	0
+GH2 Truck Terminal	2005	714765549	1	1	0	0	0	0	1.63	0
 GH2 Truck Terminal	2005	717221788	1	1	0	0	0	0	1.62	0
+GH2 Truck Terminal	2005	727046744	1	1	0	0	0	0	1.62	0
 GH2 Truck Terminal	2005	729502983	1	1	0	0	0	0	1.76	0
+GH2 Truck Terminal	2005	739327939	1	1	0	0	0	0	1.76	0
 GH2 Truck Terminal	2005	741784178	1	1	0	0	0	0	1.75	0
+GH2 Truck Terminal	2005	754065373	1	1	0	0	0	0	1.75	0
 GH2 Truck Terminal	2005	756521612	1	1	0	0	0	0	1.74	0
+GH2 Truck Terminal	2005	768802807	1	1	0	0	0	0	1.74	0
 GH2 Truck Terminal	2005	771259046	1	1	0	0	0	0	1.73	0
-LH2 Train	2005	1.51173e+06	1	1	0	0	0	0	0.722	0.000278
-LH2 Train	2005	4.53519e+06	1	1	0	0	0	0	0.481	0.000184
-LH2 Train	2005	7.55864e+06	1	1	0	0	0	0	0.433	0.000168
-LH2 Train	2005	1.05821e+07	1	1	0	0	0	0	0.414	0.000157
-LH2 Train	2005	1.36056e+07	1	1	0	0	0	0	0.404	0.000152
-LH2 Train	2005	1.6629e+07	1	1	0	0	0	0	0.394	0.000152
-LH2 Train	2005	1.96525e+07	1	1	0	0	0	0	0.384	0.000152
-LH2 Train	2005	2.26759e+07	1	1	0	0	0	0	0.385	0.000147
-LH2 Train	2005	2.87228e+07	1	1	0	0	0	0	0.375	0.000147
+GH2 Truck Terminal	2005	785996480	1	1	0	0	0	0	1.73	0
+LH2 Train	2005	1.51E+06	1	1	0	0	0	0	0.722	0.000278
+LH2 Train	2005	4.54E+06	1	1	0	0	0	0	0.481	0.000184
+LH2 Train	2005	7.56E+06	1	1	0	0	0	0	0.433	0.000168
+LH2 Train	2005	1.06E+07	1	1	0	0	0	0	0.414	0.000157
+LH2 Train	2005	1.36E+07	1	1	0	0	0	0	0.404	0.000152
+LH2 Train	2005	1.66E+07	1	1	0	0	0	0	0.394	0.000152
+LH2 Train	2005	1.97E+07	1	1	0	0	0	0	0.384	0.000152
+LH2 Train	2005	2.27E+07	1	1	0	0	0	0	0.385	0.000147
+LH2 Train	2005	2.57E+07	1	1	0	0	0	0	0.385	0.000147
+LH2 Train	2005	2.87E+07	1	1	0	0	0	0	0.375	0.000147
+LH2 Train	2005	3.48E+07	1	1	0	0	0	0	0.375	0.000147
 LH2 Train	2005	37793209	1	1	0	0	0	0	0.375	0.000142
-LH2 Train	2005	5.59339e+07	1	1	0	0	0	0	0.365	0.000147
-LH2 Train	2005	6.19809e+07	1	1	0	0	0	0	0.365	0.000142
-LH2 Train	2005	1.67802e+08	1	1	0	0	0	0	0.366	0.000136
-LH2 Train	2005	2.16177e+08	1	1	0	0	0	0	0.365	0.000142
-LH2 Train	2005	5.03406e+08	1	1	0	0	0	0	0.366	0.000136
-LH2 Train	2005	6.45508e+08	1	1	0	0	0	0	0.365	0.000142
-LH2 Truck	2005	1.51173e+06	1	1	0	0	0	0	0.16	0
-LH2 Truck	2005	4.53519e+06	1	1	0	0	0	0	0.14	0
-LH2 Truck	2005	7.55864e+06	1	1	0	0	0	0	0.12	0
-LH2 Truck	2005	1.6629e+07	1	1	0	0	0	0	0.11	0
-LH2 Truck	2005	2.26759e+07	1	1	0	0	0	0	0.12	0
-LH2 Truck	2005	2.56994e+07	1	1	0	0	0	0	0.11	0
-LH2 Truck	2005	3.47698e+07	1	1	0	0	0	0	0.12	0
-LH2 Truck	2005	37793209	1	1	0	0	0	0	0.11	0
-LH2 Train Terminal	2005	1.51173e+06	1	1	0	0	0	0	4.22	0
-LH2 Train Terminal	2005	4.53519e+06	1	1	0	0	0	0	2.88	0
-LH2 Train Terminal	2005	7.55864e+06	1	1	0	0	0	0	2.44	0
-LH2 Train Terminal	2005	1.05821e+07	1	1	0	0	0	0	2.2	0
-LH2 Train Terminal	2005	1.36056e+07	1	1	0	0	0	0	2.04	0
-LH2 Train Terminal	2005	1.6629e+07	1	1	0	0	0	0	1.92	0
-LH2 Train Terminal	2005	1.96525e+07	1	1	0	0	0	0	1.82	0
-LH2 Train Terminal	2005	2.26759e+07	1	1	0	0	0	0	1.75	0
-LH2 Train Terminal	2005	2.56994e+07	1	1	0	0	0	0	1.69	0
-LH2 Train Terminal	2005	2.87228e+07	1	1	0	0	0	0	1.63	0
-LH2 Train Terminal	2005	3.17463e+07	1	1	0	0	0	0	1.59	0
-LH2 Train Terminal	2005	3.47698e+07	1	1	0	0	0	0	1.54	0
+LH2 Train	2005	5.29E+07	1	1	0	0	0	0	0.375	0.000142
+LH2 Train	2005	5.59E+07	1	1	0	0	0	0	0.365	0.000147
+LH2 Train	2005	5.90E+07	1	1	0	0	0	0	0.365	0.000147
+LH2 Train	2005	6.20E+07	1	1	0	0	0	0	0.365	0.000142
+LH2 Train	2005	1.65E+08	1	1	0	0	0	0	0.365	0.000142
+LH2 Train	2005	1.68E+08	1	1	0	0	0	0	0.366	0.000136
+LH2 Train	2005	2.13E+08	1	1	0	0	0	0	0.366	0.000136
+LH2 Train	2005	2.16E+08	1	1	0	0	0	0	0.365	0.000142
+LH2 Train	2005	5.00E+08	1	1	0	0	0	0	0.365	0.000142
+LH2 Train	2005	5.03E+08	1	1	0	0	0	0	0.366	0.000136
+LH2 Train	2005	642484553	1	1	0	0	0	0	0.366	0.000136
+LH2 Train	2005	6.46E+08	1	1	0	0	0	0	0.365	0.000142
+LH2 Train	2005	7.66E+08	1	1	0	0	0	0	0.365	0.000142
+LH2 Train Terminal	2005	1.51E+06	1	1	0	0	0	0	4.22	0
+LH2 Train Terminal	2005	4.54E+06	1	1	0	0	0	0	2.88	0
+LH2 Train Terminal	2005	7.56E+06	1	1	0	0	0	0	2.44	0
+LH2 Train Terminal	2005	1.06E+07	1	1	0	0	0	0	2.2	0
+LH2 Train Terminal	2005	1.36E+07	1	1	0	0	0	0	2.04	0
+LH2 Train Terminal	2005	1.66E+07	1	1	0	0	0	0	1.92	0
+LH2 Train Terminal	2005	1.97E+07	1	1	0	0	0	0	1.82	0
+LH2 Train Terminal	2005	2.27E+07	1	1	0	0	0	0	1.75	0
+LH2 Train Terminal	2005	2.57E+07	1	1	0	0	0	0	1.69	0
+LH2 Train Terminal	2005	2.87E+07	1	1	0	0	0	0	1.63	0
+LH2 Train Terminal	2005	3.17E+07	1	1	0	0	0	0	1.59	0
+LH2 Train Terminal	2005	3.48E+07	1	1	0	0	0	0	1.54	0
 LH2 Train Terminal	2005	37793209	1	1	0	0	0	0	1.51	0
-LH2 Train Terminal	2005	4.08167e+07	1	1	0	0	0	0	1.48	0
-LH2 Train Terminal	2005	4.38401e+07	1	1	0	0	0	0	1.45	0
-LH2 Train Terminal	2005	4.68636e+07	1	1	0	0	0	0	1.42	0
-LH2 Train Terminal	2005	4.9887e+07	1	1	0	0	0	0	1.39	0
-LH2 Train Terminal	2005	5.29105e+07	1	1	0	0	0	0	1.37	0
-LH2 Train Terminal	2005	5.59339e+07	1	1	0	0	0	0	1.35	0
-LH2 Train Terminal	2005	5.89574e+07	1	1	0	0	0	0	1.33	0
-LH2 Train Terminal	2005	6.19809e+07	1	1	0	0	0	0	1.31	0
-LH2 Train Terminal	2005	6.50043e+07	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	6.80278e+07	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	7.10512e+07	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	7.40747e+07	1	1	0	0	0	0	1.5	0
-LH2 Train Terminal	2005	7.70981e+07	1	1	0	0	0	0	1.49	0
-LH2 Train Terminal	2005	8.01216e+07	1	1	0	0	0	0	1.47	0
-LH2 Train Terminal	2005	8.31451e+07	1	1	0	0	0	0	1.46	0
-LH2 Train Terminal	2005	8.61685e+07	1	1	0	0	0	0	1.44	0
-LH2 Train Terminal	2005	8.9192e+07	1	1	0	0	0	0	1.43	0
-LH2 Train Terminal	2005	9.22154e+07	1	1	0	0	0	0	1.42	0
-LH2 Train Terminal	2005	9.52389e+07	1	1	0	0	0	0	1.4	0
-LH2 Train Terminal	2005	9.82623e+07	1	1	0	0	0	0	1.39	0
-LH2 Train Terminal	2005	1.01286e+08	1	1	0	0	0	0	1.38	0
-LH2 Train Terminal	2005	1.04309e+08	1	1	0	0	0	0	1.37	0
-LH2 Train Terminal	2005	1.07333e+08	1	1	0	0	0	0	1.36	0
-LH2 Train Terminal	2005	1.10356e+08	1	1	0	0	0	0	1.35	0
+LH2 Train Terminal	2005	4.08E+07	1	1	0	0	0	0	1.48	0
+LH2 Train Terminal	2005	4.38E+07	1	1	0	0	0	0	1.45	0
+LH2 Train Terminal	2005	4.69E+07	1	1	0	0	0	0	1.42	0
+LH2 Train Terminal	2005	4.99E+07	1	1	0	0	0	0	1.39	0
+LH2 Train Terminal	2005	5.29E+07	1	1	0	0	0	0	1.37	0
+LH2 Train Terminal	2005	5.59E+07	1	1	0	0	0	0	1.35	0
+LH2 Train Terminal	2005	5.90E+07	1	1	0	0	0	0	1.33	0
+LH2 Train Terminal	2005	6.20E+07	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	6.50E+07	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	6.80E+07	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	7.11E+07	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	7.41E+07	1	1	0	0	0	0	1.5	0
+LH2 Train Terminal	2005	7.71E+07	1	1	0	0	0	0	1.49	0
+LH2 Train Terminal	2005	8.01E+07	1	1	0	0	0	0	1.47	0
+LH2 Train Terminal	2005	8.31E+07	1	1	0	0	0	0	1.46	0
+LH2 Train Terminal	2005	8.62E+07	1	1	0	0	0	0	1.44	0
+LH2 Train Terminal	2005	8.92E+07	1	1	0	0	0	0	1.43	0
+LH2 Train Terminal	2005	9.22E+07	1	1	0	0	0	0	1.42	0
+LH2 Train Terminal	2005	9.52E+07	1	1	0	0	0	0	1.4	0
+LH2 Train Terminal	2005	9.83E+07	1	1	0	0	0	0	1.39	0
+LH2 Train Terminal	2005	1.01E+08	1	1	0	0	0	0	1.38	0
+LH2 Train Terminal	2005	1.04E+08	1	1	0	0	0	0	1.37	0
+LH2 Train Terminal	2005	1.07E+08	1	1	0	0	0	0	1.36	0
+LH2 Train Terminal	2005	1.10E+08	1	1	0	0	0	0	1.35	0
 LH2 Train Terminal	2005	113379627	1	1	0	0	0	0	1.34	0
-LH2 Train Terminal	2005	1.16403e+08	1	1	0	0	0	0	1.33	0
-LH2 Train Terminal	2005	1.19427e+08	1	1	0	0	0	0	1.32	0
-LH2 Train Terminal	2005	1.2245e+08	1	1	0	0	0	0	1.31	0
-LH2 Train Terminal	2005	1.25473e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	1.28497e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	1.34544e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	1.37567e+08	1	1	0	0	0	0	1.27	0
-LH2 Train Terminal	2005	1.40591e+08	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	1.43614e+08	1	1	0	0	0	0	1.25	0
-LH2 Train Terminal	2005	1.46638e+08	1	1	0	0	0	0	1.39	0
-LH2 Train Terminal	2005	1.49661e+08	1	1	0	0	0	0	1.38	0
-LH2 Train Terminal	2005	1.55708e+08	1	1	0	0	0	0	1.37	0
-LH2 Train Terminal	2005	1.58731e+08	1	1	0	0	0	0	1.36	0
-LH2 Train Terminal	2005	1.64778e+08	1	1	0	0	0	0	1.35	0
-LH2 Train Terminal	2005	1.67802e+08	1	1	0	0	0	0	1.34	0
-LH2 Train Terminal	2005	1.73849e+08	1	1	0	0	0	0	1.33	0
-LH2 Train Terminal	2005	1.76872e+08	1	1	0	0	0	0	1.32	0
-LH2 Train Terminal	2005	1.82919e+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	1.16E+08	1	1	0	0	0	0	1.33	0
+LH2 Train Terminal	2005	1.19E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	1.22E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	1.25E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	1.28E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	1.32E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	1.35E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	1.38E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	1.41E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	1.44E+08	1	1	0	0	0	0	1.25	0
+LH2 Train Terminal	2005	1.47E+08	1	1	0	0	0	0	1.39	0
+LH2 Train Terminal	2005	1.50E+08	1	1	0	0	0	0	1.38	0
+LH2 Train Terminal	2005	1.53E+08	1	1	0	0	0	0	1.38	0
+LH2 Train Terminal	2005	1.56E+08	1	1	0	0	0	0	1.37	0
+LH2 Train Terminal	2005	1.59E+08	1	1	0	0	0	0	1.36	0
+LH2 Train Terminal	2005	1.62E+08	1	1	0	0	0	0	1.36	0
+LH2 Train Terminal	2005	1.65E+08	1	1	0	0	0	0	1.35	0
+LH2 Train Terminal	2005	1.68E+08	1	1	0	0	0	0	1.34	0
+LH2 Train Terminal	2005	1.71E+08	1	1	0	0	0	0	1.34	0
+LH2 Train Terminal	2005	1.74E+08	1	1	0	0	0	0	1.33	0
+LH2 Train Terminal	2005	1.77E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	1.80E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	1.83E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	1.86E+08	1	1	0	0	0	0	1.31	0
 LH2 Train Terminal	2005	188966045	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	1.9199e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	1.98036e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	2.04083e+08	1	1	0	0	0	0	1.27	0
-LH2 Train Terminal	2005	2.1013e+08	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	2.16177e+08	1	1	0	0	0	0	1.35	0
-LH2 Train Terminal	2005	2.22224e+08	1	1	0	0	0	0	1.34	0
-LH2 Train Terminal	2005	2.31294e+08	1	1	0	0	0	0	1.33	0
-LH2 Train Terminal	2005	2.37341e+08	1	1	0	0	0	0	1.32	0
-LH2 Train Terminal	2005	2.43388e+08	1	1	0	0	0	0	1.31	0
-LH2 Train Terminal	2005	2.49435e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	2.58506e+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	1.92E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	1.95E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	1.98E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	2.01E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	2.04E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	2.07E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	2.10E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	2.13E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	2.16E+08	1	1	0	0	0	0	1.35	0
+LH2 Train Terminal	2005	2.19E+08	1	1	0	0	0	0	1.35	0
+LH2 Train Terminal	2005	2.22E+08	1	1	0	0	0	0	1.34	0
+LH2 Train Terminal	2005	2.28E+08	1	1	0	0	0	0	1.34	0
+LH2 Train Terminal	2005	2.31E+08	1	1	0	0	0	0	1.33	0
+LH2 Train Terminal	2005	2.34E+08	1	1	0	0	0	0	1.33	0
+LH2 Train Terminal	2005	2.37E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	2.40E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	2.43E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	2.46E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	2.49E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	2.55E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	2.59E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	2.62E+08	1	1	0	0	0	0	1.29	0
 LH2 Train Terminal	2005	264552463	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	2.73623e+08	1	1	0	0	0	0	1.27	0
-LH2 Train Terminal	2005	2.7967e+08	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	2.8874e+08	1	1	0	0	0	0	1.33	0
-LH2 Train Terminal	2005	2.94787e+08	1	1	0	0	0	0	1.32	0
-LH2 Train Terminal	2005	3.03857e+08	1	1	0	0	0	0	1.31	0
-LH2 Train Terminal	2005	3.12928e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	3.21998e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	3.31069e+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	2.71E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	2.74E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	2.77E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	2.80E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	2.86E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	2.89E+08	1	1	0	0	0	0	1.33	0
+LH2 Train Terminal	2005	2.92E+08	1	1	0	0	0	0	1.33	0
+LH2 Train Terminal	2005	2.95E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	3.01E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	3.04E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	3.10E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	3.13E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	3.19E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	3.22E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	3.28E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	3.31E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	3.37E+08	1	1	0	0	0	0	1.28	0
 LH2 Train Terminal	2005	340138881	1	1	0	0	0	0	1.27	0
-LH2 Train Terminal	2005	3.52233e+08	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	3.61303e+08	1	1	0	0	0	0	1.32	0
-LH2 Train Terminal	2005	3.64327e+08	1	1	0	0	0	0	1.31	0
-LH2 Train Terminal	2005	3.7642e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	3.88514e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	3.97585e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	4.09678e+08	1	1	0	0	0	0	1.27	0
-LH2 Train Terminal	2005	4.21772e+08	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	4.33866e+08	1	1	0	0	0	0	1.31	0
-LH2 Train Terminal	2005	4.39913e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	4.52007e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	4.67124e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	4.82241e+08	1	1	0	0	0	0	1.27	0
-LH2 Train Terminal	2005	4.94335e+08	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	5.03406e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	5.18523e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	5.36664e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	5.51781e+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	3.49E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	3.52E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	3.58E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	3.61E+08	1	1	0	0	0	0	1.32	0
+LH2 Train Terminal	2005	3.64E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	3.73E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	3.76E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	3.85E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	3.89E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	3.95E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	3.98E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	4.07E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	4.10E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	4.19E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	4.22E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	4.31E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	4.34E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	4.37E+08	1	1	0	0	0	0	1.31	0
+LH2 Train Terminal	2005	4.40E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	4.49E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	4.52E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	4.64E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	4.67E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	4.79E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	4.82E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	491311717	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	4.94E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	5.00E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	5.03E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	5.15E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	5.19E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	5.34E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	5.37E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	5.49E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	5.52E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	5.64E+08	1	1	0	0	0	0	1.27	0
 LH2 Train Terminal	2005	566898135	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	5.75969e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	5.85039e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	6.0318e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	6.24344e+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	5.73E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	5.76E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	5.82E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	5.85E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	6.00E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	6.03E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	6.21E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	6.24E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	6.39E+08	1	1	0	0	0	0	1.27	0
 LH2 Train Terminal	2005	642484553	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	6.48531e+08	1	1	0	0	0	0	1.3	0
-LH2 Train Terminal	2005	6.54578e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	6.72719e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	6.93883e+08	1	1	0	0	0	0	1.27	0
-LH2 Train Terminal	2005	7.15048e+08	1	1	0	0	0	0	1.26	0
-LH2 Train Terminal	2005	7.21094e+08	1	1	0	0	0	0	1.29	0
-LH2 Train Terminal	2005	7.45282e+08	1	1	0	0	0	0	1.28	0
-LH2 Train Terminal	2005	7.66446e+08	1	1	0	0	0	0	1.27	0
-LH2 Train Truck Terminal	2005	1.51173e+06	1	1	0	0	0	0	0.17	0
-LH2 Train Truck Terminal	2005	4.53519e+06	1	1	0	0	0	0	0.1	0
-LH2 Train Truck Terminal	2005	7.55864e+06	1	1	0	0	0	0	0.08	0
-LH2 Train Truck Terminal	2005	1.05821e+07	1	1	0	0	0	0	0.07	0
-LH2 Train Truck Terminal	2005	1.36056e+07	1	1	0	0	0	0	0.06	0
-LH2 Train Truck Terminal	2005	1.96525e+07	1	1	0	0	0	0	0.05	0
-LH2 Train Truck Terminal	2005	4.08167e+07	1	1	0	0	0	0	0.04	0
-LH2 Train Truck Terminal	2005	5.54804e+08	1	1	0	0	0	0	0.05	0
+LH2 Train Terminal	2005	6.46E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	6.49E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	6.52E+08	1	1	0	0	0	0	1.3	0
+LH2 Train Terminal	2005	6.55E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	6.70E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	6.73E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	6.91E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	6.94E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	7.12E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Terminal	2005	7.15E+08	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	718070971	1	1	0	0	0	0	1.26	0
+LH2 Train Terminal	2005	7.21E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	7.42E+08	1	1	0	0	0	0	1.29	0
+LH2 Train Terminal	2005	7.45E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	7.63E+08	1	1	0	0	0	0	1.28	0
+LH2 Train Terminal	2005	7.66E+08	1	1	0	0	0	0	1.27	0
+LH2 Train Truck Terminal	2005	1.51E+06	1	1	0	0	0	0	0.17	0
+LH2 Train Truck Terminal	2005	4.54E+06	1	1	0	0	0	0	0.1	0
+LH2 Train Truck Terminal	2005	7.56E+06	1	1	0	0	0	0	0.08	0
+LH2 Train Truck Terminal	2005	1.06E+07	1	1	0	0	0	0	0.07	0
+LH2 Train Truck Terminal	2005	1.36E+07	1	1	0	0	0	0	0.06	0
+LH2 Train Truck Terminal	2005	1.66E+07	1	1	0	0	0	0	0.06	0
+LH2 Train Truck Terminal	2005	1.97E+07	1	1	0	0	0	0	0.05	0
+LH2 Train Truck Terminal	2005	37793209	1	1	0	0	0	0	0.05	0
+LH2 Train Truck Terminal	2005	4.08E+07	1	1	0	0	0	0	0.04	0
+LH2 Train Truck Terminal	2005	5.52E+08	1	1	0	0	0	0	0.04	0
+LH2 Train Truck Terminal	2005	5.55E+08	1	1	0	0	0	0	0.05	0
+LH2 Train Truck Terminal	2005	7.66E+08	1	1	0	0	0	0	0.05	0
 LH2 Storage	2005	37793209	1	1	0	0	0	0	0.04	0
 LH2 Storage	2005	75586418	1	1	0	0	0	0	0.05	0
 LH2 Storage	2005	113379627	1	1	0	0	0	0	0.07	0
@@ -351,159 +480,250 @@ LH2 Storage	2005	3703734482	1	1	0	0	0	0	2.14	0
 LH2 Storage	2005	3741527691	1	1	0	0	0	0	2.17	0
 LH2 Storage	2005	3779320900	1	1	0	0	0	0	2.19	0
 LH2 Station	2005	365240	1	1	0	0	0	0	1.05	0
-LH2 Truck Terminal	2005	1.51173e+06	1	1	0	0	0	0	4.25	0
-LH2 Truck Terminal	2005	3.02346e+06	1	1	0	0	0	0	3.32	0
-LH2 Truck Terminal	2005	4.53519e+06	1	1	0	0	0	0	2.9	0
-LH2 Truck Terminal	2005	6.04691e+06	1	1	0	0	0	0	2.64	0
-LH2 Truck Terminal	2005	7.55864e+06	1	1	0	0	0	0	2.46	0
-LH2 Truck Terminal	2005	9.07037e+06	1	1	0	0	0	0	2.32	0
-LH2 Truck Terminal	2005	1.05821e+07	1	1	0	0	0	0	2.21	0
-LH2 Truck Terminal	2005	1.20938e+07	1	1	0	0	0	0	2.12	0
-LH2 Truck Terminal	2005	1.36056e+07	1	1	0	0	0	0	2.05	0
-LH2 Truck Terminal	2005	1.51173e+07	1	1	0	0	0	0	1.99	0
-LH2 Truck Terminal	2005	1.6629e+07	1	1	0	0	0	0	1.93	0
-LH2 Truck Terminal	2005	1.81407e+07	1	1	0	0	0	0	1.88	0
-LH2 Truck Terminal	2005	1.96525e+07	1	1	0	0	0	0	1.84	0
-LH2 Truck Terminal	2005	2.11642e+07	1	1	0	0	0	0	1.8	0
-LH2 Truck Terminal	2005	2.26759e+07	1	1	0	0	0	0	1.76	0
-LH2 Truck Terminal	2005	2.41877e+07	1	1	0	0	0	0	1.73	0
-LH2 Truck Terminal	2005	2.56994e+07	1	1	0	0	0	0	1.7	0
-LH2 Truck Terminal	2005	2.72111e+07	1	1	0	0	0	0	1.67	0
-LH2 Truck Terminal	2005	2.87228e+07	1	1	0	0	0	0	1.64	0
-LH2 Truck Terminal	2005	3.02346e+07	1	1	0	0	0	0	1.62	0
-LH2 Truck Terminal	2005	3.17463e+07	1	1	0	0	0	0	1.6	0
-LH2 Truck Terminal	2005	3.3258e+07	1	1	0	0	0	0	1.58	0
-LH2 Truck Terminal	2005	3.47698e+07	1	1	0	0	0	0	1.56	0
-LH2 Truck Terminal	2005	3.62815e+07	1	1	0	0	0	0	1.54	0
+LH2 Truck Terminal	2005	1.51E+06	1	1	0	0	0	0	4.25	0
+LH2 Truck Terminal	2005	3.02E+06	1	1	0	0	0	0	3.32	0
+LH2 Truck Terminal	2005	4.54E+06	1	1	0	0	0	0	2.9	0
+LH2 Truck Terminal	2005	6.05E+06	1	1	0	0	0	0	2.64	0
+LH2 Truck Terminal	2005	7.56E+06	1	1	0	0	0	0	2.46	0
+LH2 Truck Terminal	2005	9.07E+06	1	1	0	0	0	0	2.32	0
+LH2 Truck Terminal	2005	1.06E+07	1	1	0	0	0	0	2.21	0
+LH2 Truck Terminal	2005	1.21E+07	1	1	0	0	0	0	2.12	0
+LH2 Truck Terminal	2005	1.36E+07	1	1	0	0	0	0	2.05	0
+LH2 Truck Terminal	2005	1.51E+07	1	1	0	0	0	0	1.99	0
+LH2 Truck Terminal	2005	1.66E+07	1	1	0	0	0	0	1.93	0
+LH2 Truck Terminal	2005	1.81E+07	1	1	0	0	0	0	1.88	0
+LH2 Truck Terminal	2005	1.97E+07	1	1	0	0	0	0	1.84	0
+LH2 Truck Terminal	2005	2.12E+07	1	1	0	0	0	0	1.8	0
+LH2 Truck Terminal	2005	2.27E+07	1	1	0	0	0	0	1.76	0
+LH2 Truck Terminal	2005	2.42E+07	1	1	0	0	0	0	1.73	0
+LH2 Truck Terminal	2005	2.57E+07	1	1	0	0	0	0	1.7	0
+LH2 Truck Terminal	2005	2.72E+07	1	1	0	0	0	0	1.67	0
+LH2 Truck Terminal	2005	2.87E+07	1	1	0	0	0	0	1.64	0
+LH2 Truck Terminal	2005	3.02E+07	1	1	0	0	0	0	1.62	0
+LH2 Truck Terminal	2005	3.17E+07	1	1	0	0	0	0	1.6	0
+LH2 Truck Terminal	2005	3.33E+07	1	1	0	0	0	0	1.58	0
+LH2 Truck Terminal	2005	3.48E+07	1	1	0	0	0	0	1.56	0
+LH2 Truck Terminal	2005	3.63E+07	1	1	0	0	0	0	1.54	0
 LH2 Truck Terminal	2005	37793209	1	1	0	0	0	0	1.52	0
-LH2 Truck Terminal	2005	3.93049e+07	1	1	0	0	0	0	1.5	0
-LH2 Truck Terminal	2005	4.08167e+07	1	1	0	0	0	0	1.49	0
-LH2 Truck Terminal	2005	4.23284e+07	1	1	0	0	0	0	1.47	0
-LH2 Truck Terminal	2005	4.38401e+07	1	1	0	0	0	0	1.46	0
-LH2 Truck Terminal	2005	4.53519e+07	1	1	0	0	0	0	1.44	0
-LH2 Truck Terminal	2005	4.68636e+07	1	1	0	0	0	0	1.43	0
-LH2 Truck Terminal	2005	4.83753e+07	1	1	0	0	0	0	1.42	0
-LH2 Truck Terminal	2005	4.9887e+07	1	1	0	0	0	0	1.41	0
-LH2 Truck Terminal	2005	5.13988e+07	1	1	0	0	0	0	1.39	0
-LH2 Truck Terminal	2005	5.29105e+07	1	1	0	0	0	0	1.38	0
-LH2 Truck Terminal	2005	5.44222e+07	1	1	0	0	0	0	1.37	0
-LH2 Truck Terminal	2005	5.59339e+07	1	1	0	0	0	0	1.36	0
-LH2 Truck Terminal	2005	5.74457e+07	1	1	0	0	0	0	1.35	0
-LH2 Truck Terminal	2005	5.89574e+07	1	1	0	0	0	0	1.34	0
-LH2 Truck Terminal	2005	6.04691e+07	1	1	0	0	0	0	1.33	0
-LH2 Truck Terminal	2005	6.19809e+07	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	6.34926e+07	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	6.6516e+07	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	6.80278e+07	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	6.95395e+07	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	7.10512e+07	1	1	0	0	0	0	1.27	0
-LH2 Truck Terminal	2005	7.2563e+07	1	1	0	0	0	0	1.53	0
-LH2 Truck Terminal	2005	7.40747e+07	1	1	0	0	0	0	1.52	0
+LH2 Truck Terminal	2005	3.93E+07	1	1	0	0	0	0	1.5	0
+LH2 Truck Terminal	2005	4.08E+07	1	1	0	0	0	0	1.49	0
+LH2 Truck Terminal	2005	4.23E+07	1	1	0	0	0	0	1.47	0
+LH2 Truck Terminal	2005	4.38E+07	1	1	0	0	0	0	1.46	0
+LH2 Truck Terminal	2005	4.54E+07	1	1	0	0	0	0	1.44	0
+LH2 Truck Terminal	2005	4.69E+07	1	1	0	0	0	0	1.43	0
+LH2 Truck Terminal	2005	4.84E+07	1	1	0	0	0	0	1.42	0
+LH2 Truck Terminal	2005	4.99E+07	1	1	0	0	0	0	1.41	0
+LH2 Truck Terminal	2005	5.14E+07	1	1	0	0	0	0	1.39	0
+LH2 Truck Terminal	2005	5.29E+07	1	1	0	0	0	0	1.38	0
+LH2 Truck Terminal	2005	5.44E+07	1	1	0	0	0	0	1.37	0
+LH2 Truck Terminal	2005	5.59E+07	1	1	0	0	0	0	1.36	0
+LH2 Truck Terminal	2005	5.74E+07	1	1	0	0	0	0	1.35	0
+LH2 Truck Terminal	2005	5.90E+07	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	6.05E+07	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	6.20E+07	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	6.35E+07	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	6.50E+07	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	6.65E+07	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	6.80E+07	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	6.95E+07	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	7.11E+07	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	7.26E+07	1	1	0	0	0	0	1.53	0
+LH2 Truck Terminal	2005	7.41E+07	1	1	0	0	0	0	1.52	0
 LH2 Truck Terminal	2005	75586418	1	1	0	0	0	0	1.51	0
-LH2 Truck Terminal	2005	7.70981e+07	1	1	0	0	0	0	1.5	0
-LH2 Truck Terminal	2005	7.86099e+07	1	1	0	0	0	0	1.49	0
-LH2 Truck Terminal	2005	8.16333e+07	1	1	0	0	0	0	1.48	0
-LH2 Truck Terminal	2005	8.31451e+07	1	1	0	0	0	0	1.47	0
-LH2 Truck Terminal	2005	8.46568e+07	1	1	0	0	0	0	1.46	0
-LH2 Truck Terminal	2005	8.76802e+07	1	1	0	0	0	0	1.45	0
-LH2 Truck Terminal	2005	8.9192e+07	1	1	0	0	0	0	1.44	0
-LH2 Truck Terminal	2005	9.22154e+07	1	1	0	0	0	0	1.43	0
-LH2 Truck Terminal	2005	9.37272e+07	1	1	0	0	0	0	1.42	0
-LH2 Truck Terminal	2005	9.67506e+07	1	1	0	0	0	0	1.41	0
-LH2 Truck Terminal	2005	9.97741e+07	1	1	0	0	0	0	1.4	0
-LH2 Truck Terminal	2005	1.01286e+08	1	1	0	0	0	0	1.39	0
-LH2 Truck Terminal	2005	1.04309e+08	1	1	0	0	0	0	1.38	0
-LH2 Truck Terminal	2005	1.07333e+08	1	1	0	0	0	0	1.37	0
-LH2 Truck Terminal	2005	1.10356e+08	1	1	0	0	0	0	1.36	0
+LH2 Truck Terminal	2005	7.71E+07	1	1	0	0	0	0	1.5	0
+LH2 Truck Terminal	2005	7.86E+07	1	1	0	0	0	0	1.49	0
+LH2 Truck Terminal	2005	8.01E+07	1	1	0	0	0	0	1.49	0
+LH2 Truck Terminal	2005	8.16E+07	1	1	0	0	0	0	1.48	0
+LH2 Truck Terminal	2005	8.31E+07	1	1	0	0	0	0	1.47	0
+LH2 Truck Terminal	2005	8.47E+07	1	1	0	0	0	0	1.46	0
+LH2 Truck Terminal	2005	8.62E+07	1	1	0	0	0	0	1.46	0
+LH2 Truck Terminal	2005	8.77E+07	1	1	0	0	0	0	1.45	0
+LH2 Truck Terminal	2005	8.92E+07	1	1	0	0	0	0	1.44	0
+LH2 Truck Terminal	2005	9.07E+07	1	1	0	0	0	0	1.44	0
+LH2 Truck Terminal	2005	9.22E+07	1	1	0	0	0	0	1.43	0
+LH2 Truck Terminal	2005	9.37E+07	1	1	0	0	0	0	1.42	0
+LH2 Truck Terminal	2005	9.52E+07	1	1	0	0	0	0	1.42	0
+LH2 Truck Terminal	2005	9.68E+07	1	1	0	0	0	0	1.41	0
+LH2 Truck Terminal	2005	9.83E+07	1	1	0	0	0	0	1.41	0
+LH2 Truck Terminal	2005	9.98E+07	1	1	0	0	0	0	1.4	0
+LH2 Truck Terminal	2005	1.01E+08	1	1	0	0	0	0	1.39	0
+LH2 Truck Terminal	2005	1.03E+08	1	1	0	0	0	0	1.39	0
+LH2 Truck Terminal	2005	1.04E+08	1	1	0	0	0	0	1.38	0
+LH2 Truck Terminal	2005	1.06E+08	1	1	0	0	0	0	1.38	0
+LH2 Truck Terminal	2005	1.07E+08	1	1	0	0	0	0	1.37	0
+LH2 Truck Terminal	2005	1.09E+08	1	1	0	0	0	0	1.37	0
+LH2 Truck Terminal	2005	1.10E+08	1	1	0	0	0	0	1.36	0
+LH2 Truck Terminal	2005	1.12E+08	1	1	0	0	0	0	1.36	0
 LH2 Truck Terminal	2005	113379627	1	1	0	0	0	0	1.35	0
-LH2 Truck Terminal	2005	1.16403e+08	1	1	0	0	0	0	1.34	0
-LH2 Truck Terminal	2005	1.19427e+08	1	1	0	0	0	0	1.33	0
-LH2 Truck Terminal	2005	1.2245e+08	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	1.26985e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	1.30009e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	1.33032e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	1.37567e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	1.42102e+08	1	1	0	0	0	0	1.27	0
-LH2 Truck Terminal	2005	1.45126e+08	1	1	0	0	0	0	1.41	0
-LH2 Truck Terminal	2005	1.48149e+08	1	1	0	0	0	0	1.4	0
+LH2 Truck Terminal	2005	1.15E+08	1	1	0	0	0	0	1.35	0
+LH2 Truck Terminal	2005	1.16E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	1.18E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	1.19E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	1.21E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	1.22E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	1.25E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	1.27E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	1.28E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	1.30E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	1.32E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	1.33E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	1.36E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	1.38E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	1.41E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	1.42E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	1.44E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	1.45E+08	1	1	0	0	0	0	1.41	0
+LH2 Truck Terminal	2005	1.47E+08	1	1	0	0	0	0	1.41	0
+LH2 Truck Terminal	2005	1.48E+08	1	1	0	0	0	0	1.4	0
+LH2 Truck Terminal	2005	1.50E+08	1	1	0	0	0	0	1.4	0
 LH2 Truck Terminal	2005	151172836	1	1	0	0	0	0	1.39	0
-LH2 Truck Terminal	2005	1.55708e+08	1	1	0	0	0	0	1.38	0
-LH2 Truck Terminal	2005	1.60243e+08	1	1	0	0	0	0	1.37	0
-LH2 Truck Terminal	2005	1.64778e+08	1	1	0	0	0	0	1.36	0
-LH2 Truck Terminal	2005	1.69314e+08	1	1	0	0	0	0	1.35	0
-LH2 Truck Terminal	2005	1.73849e+08	1	1	0	0	0	0	1.34	0
-LH2 Truck Terminal	2005	1.78384e+08	1	1	0	0	0	0	1.33	0
-LH2 Truck Terminal	2005	1.84431e+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	1.54E+08	1	1	0	0	0	0	1.39	0
+LH2 Truck Terminal	2005	1.56E+08	1	1	0	0	0	0	1.38	0
+LH2 Truck Terminal	2005	1.59E+08	1	1	0	0	0	0	1.38	0
+LH2 Truck Terminal	2005	1.60E+08	1	1	0	0	0	0	1.37	0
+LH2 Truck Terminal	2005	1.63E+08	1	1	0	0	0	0	1.37	0
+LH2 Truck Terminal	2005	1.65E+08	1	1	0	0	0	0	1.36	0
+LH2 Truck Terminal	2005	1.68E+08	1	1	0	0	0	0	1.36	0
+LH2 Truck Terminal	2005	1.69E+08	1	1	0	0	0	0	1.35	0
+LH2 Truck Terminal	2005	1.72E+08	1	1	0	0	0	0	1.35	0
+LH2 Truck Terminal	2005	1.74E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	1.77E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	1.78E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	1.83E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	1.84E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	1.87E+08	1	1	0	0	0	0	1.32	0
 LH2 Truck Terminal	2005	188966045	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	1.95013e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	1.99548e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	2.05595e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	2.11642e+08	1	1	0	0	0	0	1.27	0
-LH2 Truck Terminal	2005	2.16177e+08	1	1	0	0	0	0	1.37	0
-LH2 Truck Terminal	2005	2.19201e+08	1	1	0	0	0	0	1.36	0
-LH2 Truck Terminal	2005	2.25248e+08	1	1	0	0	0	0	1.35	0
-LH2 Truck Terminal	2005	2.31294e+08	1	1	0	0	0	0	1.34	0
-LH2 Truck Terminal	2005	2.38853e+08	1	1	0	0	0	0	1.33	0
-LH2 Truck Terminal	2005	2.449e+08	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	2.52459e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	2.60017e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	2.67576e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	2.75135e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	2.84205e+08	1	1	0	0	0	0	1.27	0
-LH2 Truck Terminal	2005	2.8874e+08	1	1	0	0	0	0	1.34	0
-LH2 Truck Terminal	2005	2.9781e+08	1	1	0	0	0	0	1.33	0
-LH2 Truck Terminal	2005	3.06881e+08	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	3.15951e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	3.26533e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	3.35604e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	3.46186e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	3.56768e+08	1	1	0	0	0	0	1.27	0
-LH2 Truck Terminal	2005	3.59791e+08	1	1	0	0	0	0	1.33	0
-LH2 Truck Terminal	2005	3.70373e+08	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	3.80956e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	3.93049e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	4.05143e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	4.17237e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	4.29331e+08	1	1	0	0	0	0	1.27	0
-LH2 Truck Terminal	2005	4.32354e+08	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	4.4596e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	4.61077e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	4.74683e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	4.898e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	5.03406e+08	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	5.12476e+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	1.94E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	1.95E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	1.98E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	2.00E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	2.04E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	2.06E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	2.10E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	2.12E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	2.15E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	2.16E+08	1	1	0	0	0	0	1.37	0
+LH2 Truck Terminal	2005	2.18E+08	1	1	0	0	0	0	1.37	0
+LH2 Truck Terminal	2005	2.19E+08	1	1	0	0	0	0	1.36	0
+LH2 Truck Terminal	2005	2.24E+08	1	1	0	0	0	0	1.36	0
+LH2 Truck Terminal	2005	2.25E+08	1	1	0	0	0	0	1.35	0
+LH2 Truck Terminal	2005	2.30E+08	1	1	0	0	0	0	1.35	0
+LH2 Truck Terminal	2005	2.31E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	2.37E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	2.39E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	2.43E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	2.45E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	2.51E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	2.52E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	2.59E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	2.60E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	2.66E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	2.68E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	2.74E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	2.75E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	2.83E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	2.84E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	2.87E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	2.89E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	2.96E+08	1	1	0	0	0	0	1.34	0
+LH2 Truck Terminal	2005	2.98E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	3.05E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	3.07E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	3.14E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	3.16E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	3.25E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	3.27E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	3.34E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	3.36E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	3.45E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	3.46E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	3.55E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	3.57E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	3.58E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	3.60E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	3.69E+08	1	1	0	0	0	0	1.33	0
+LH2 Truck Terminal	2005	3.70E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	3.79E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	3.81E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	3.92E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	3.93E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	4.04E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	4.05E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	415725299	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	4.17E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	4.28E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	4.29E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	4.31E+08	1	1	0	0	0	0	1.27	0
+LH2 Truck Terminal	2005	4.32E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	4.44E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	4.46E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	4.60E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	4.61E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	4.73E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	4.75E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	4.88E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	4.90E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	5.02E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	5.03E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	5.11E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	5.12E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	5.28E+08	1	1	0	0	0	0	1.31	0
 LH2 Truck Terminal	2005	529104926	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	5.45734e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	5.62363e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	5.75969e+08	1	1	0	0	0	0	1.32	0
-LH2 Truck Terminal	2005	5.80504e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	5.98644e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	6.16785e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	6.36438e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	6.48531e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	6.68184e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	6.9086e+08	1	1	0	0	0	0	1.29	0
-LH2 Truck Terminal	2005	7.12024e+08	1	1	0	0	0	0	1.28	0
-LH2 Truck Terminal	2005	7.19583e+08	1	1	0	0	0	0	1.31	0
-LH2 Truck Terminal	2005	7.40747e+08	1	1	0	0	0	0	1.3	0
-LH2 Truck Terminal	2005	7.63423e+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	5.44E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	5.46E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	5.61E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	5.62E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	5.74E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	5.76E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	5.79E+08	1	1	0	0	0	0	1.32	0
+LH2 Truck Terminal	2005	5.81E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	5.97E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	5.99E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	6.15E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	6.17E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	6.35E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	6.36E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	6.47E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	6.49E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	6.67E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	6.68E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	6.89E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	6.91E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	7.11E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	7.12E+08	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	718070971	1	1	0	0	0	0	1.28	0
+LH2 Truck Terminal	2005	7.20E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	7.39E+08	1	1	0	0	0	0	1.31	0
+LH2 Truck Terminal	2005	7.41E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	7.62E+08	1	1	0	0	0	0	1.3	0
+LH2 Truck Terminal	2005	7.63E+08	1	1	0	0	0	0	1.29	0
+LH2 Truck Terminal	2005	7.68E+08	1	1	0	0	0	0	1.29	0
 GH2 Pipeline Compressor	2005	982496	1	1	0	0	0	0	0.24	0
-GH2 Pipeline Compressor	2005	1.22721e+06	1	1	0	0	0	0	0.23	0
-GH2 Pipeline Compressor	2005	1.72028e+06	1	1	0	0	0	0	0.22	0
+GH2 Pipeline Compressor	2005	1.23E+06	1	1	0	0	0	0	0.23	0
+GH2 Pipeline Compressor	2005	1.47E+06	1	1	0	0	0	0	0.23	0
+GH2 Pipeline Compressor	2005	1.72E+06	1	1	0	0	0	0	0.22	0
+GH2 Pipeline Compressor	2005	2456239	1	1	0	0	0	0	0.22	0
 GH2 Pipeline Compressor	2005	4912478	1	1	0	0	0	0	0.14	0
 GH2 Pipeline Compressor	2005	7368717	1	1	0	0	0	0	0.12	0
 GH2 Pipeline Compressor	2005	9824956	1	1	0	0	0	0	0.11	0
+GH2 Pipeline Compressor	2005	12281195	1	1	0	0	0	0	0.11	0
 GH2 Pipeline Compressor	2005	14737434	1	1	0	0	0	0	0.1	0
+GH2 Pipeline Compressor	2005	17193673	1	1	0	0	0	0	0.1	0
 GH2 Pipeline Compressor	2005	19649912	1	1	0	0	0	0	0.09	0
+GH2 Pipeline Compressor	2005	24562390	1	1	0	0	0	0	0.09	0
 GH2 Pipeline Compressor	2005	27018629	1	1	0	0	0	0	0.08	0
+GH2 Pipeline Compressor	2005	41756063	1	1	0	0	0	0	0.08	0
 GH2 Pipeline Compressor	2005	44212302	1	1	0	0	0	0	0.07	0
+GH2 Pipeline Compressor	2005	78599648	1	1	0	0	0	0	0.07	0
 GH2 Pipeline Compressor	2005	81055887	1	1	0	0	0	0	0.06	0
+GH2 Pipeline Compressor	2005	181761686	1	1	0	0	0	0	0.06	0
 GH2 Pipeline Compressor	2005	184217925	1	1	0	0	0	0	0.05	0
+GH2 Pipeline Compressor	2005	785996480	1	1	0	0	0	0	0.05	0
 GH2 Pipeline Truck Terminal	2005	982496	1	1	0	0	0	0	0.87	0
-GH2 Pipeline Truck Terminal	2005	1.22721e+06	1	1	0	0	0	0	0.8	0
-GH2 Pipeline Truck Terminal	2005	1.47374e+06	1	1	0	0	0	0	0.75	0
-GH2 Pipeline Truck Terminal	2005	1.72028e+06	1	1	0	0	0	0	0.72	0
-GH2 Pipeline Truck Terminal	2005	1.96499e+06	1	1	0	0	0	0	0.69	0
+GH2 Pipeline Truck Terminal	2005	1.23E+06	1	1	0	0	0	0	0.8	0
+GH2 Pipeline Truck Terminal	2005	1.47E+06	1	1	0	0	0	0	0.75	0
+GH2 Pipeline Truck Terminal	2005	1.72E+06	1	1	0	0	0	0	0.72	0
+GH2 Pipeline Truck Terminal	2005	1.96E+06	1	1	0	0	0	0	0.69	0
 GH2 Pipeline Truck Terminal	2005	2209702	1	1	0	0	0	0	0.67	0
 GH2 Pipeline Truck Terminal	2005	2456239	1	1	0	0	0	0	0.65	0
 GH2 Pipeline Truck Terminal	2005	4912478	1	1	0	0	0	0	0.62	0
@@ -515,26 +735,40 @@ GH2 Pipeline Truck Terminal	2005	17193673	1	1	0	0	0	0	0.45	0
 GH2 Pipeline Truck Terminal	2005	19649912	1	1	0	0	0	0	0.44	0
 GH2 Pipeline Truck Terminal	2005	22106151	1	1	0	0	0	0	0.43	0
 GH2 Pipeline Truck Terminal	2005	24562390	1	1	0	0	0	0	0.42	0
+GH2 Pipeline Truck Terminal	2005	27018629	1	1	0	0	0	0	0.42	0
 GH2 Pipeline Truck Terminal	2005	29474868	1	1	0	0	0	0	0.41	0
 GH2 Pipeline Truck Terminal	2005	31931107	1	1	0	0	0	0	0.4	0
+GH2 Pipeline Truck Terminal	2005	36843585	1	1	0	0	0	0	0.4	0
 GH2 Pipeline Truck Terminal	2005	39299824	1	1	0	0	0	0	0.39	0
+GH2 Pipeline Truck Terminal	2005	41756063	1	1	0	0	0	0	0.39	0
 GH2 Pipeline Truck Terminal	2005	44212302	1	1	0	0	0	0	0.38	0
+GH2 Pipeline Truck Terminal	2005	51581019	1	1	0	0	0	0	0.38	0
 GH2 Pipeline Truck Terminal	2005	54037258	1	1	0	0	0	0	0.37	0
+GH2 Pipeline Truck Terminal	2005	63862214	1	1	0	0	0	0	0.37	0
 GH2 Pipeline Truck Terminal	2005	66318453	1	1	0	0	0	0	0.36	0
+GH2 Pipeline Truck Terminal	2005	78599648	1	1	0	0	0	0	0.36	0
 GH2 Pipeline Truck Terminal	2005	81055887	1	1	0	0	0	0	0.35	0
+GH2 Pipeline Truck Terminal	2005	103162038	1	1	0	0	0	0	0.35	0
 GH2 Pipeline Truck Terminal	2005	105618277	1	1	0	0	0	0	0.34	0
+GH2 Pipeline Truck Terminal	2005	135093145	1	1	0	0	0	0	0.34	0
 GH2 Pipeline Truck Terminal	2005	137549384	1	1	0	0	0	0	0.33	0
+GH2 Pipeline Truck Terminal	2005	189130403	1	1	0	0	0	0	0.33	0
 GH2 Pipeline Truck Terminal	2005	191586642	1	1	0	0	0	0	0.32	0
+GH2 Pipeline Truck Terminal	2005	216149032	1	1	0	0	0	0	0.32	0
 GH2 Pipeline Truck Terminal	2005	218605271	1	1	0	0	0	0	0.33	0
+GH2 Pipeline Truck Terminal	2005	262817573	1	1	0	0	0	0	0.33	0
 GH2 Pipeline Truck Terminal	2005	265273812	1	1	0	0	0	0	0.32	0
+GH2 Pipeline Truck Terminal	2005	329136026	1	1	0	0	0	0	0.32	0
 GH2 Pipeline Truck Terminal	2005	331592265	1	1	0	0	0	0	0.33	0
+GH2 Pipeline Truck Terminal	2005	334048504	1	1	0	0	0	0	0.33	0
 GH2 Pipeline Truck Terminal	2005	336504743	1	1	0	0	0	0	0.32	0
+GH2 Pipeline Truck Terminal	2005	785996480	1	1	0	0	0	0	0.32	0
 GH2 Pipeline	2005	982496	1	1	0	0	0	0	4.06	2.73
-GH2 Pipeline	2005	1.22812e+06	1	1	0	0	0	0	3.24	0.166
-GH2 Pipeline	2005	1.47374e+06	1	1	0	0	0	0	2.7	0.0857
-GH2 Pipeline	2005	1.71937e+06	1	1	0	0	0	0	2.32	0.0580
-GH2 Pipeline	2005	1.96499e+06	1	1	0	0	0	0	2.04	0.0439
-GH2 Pipeline	2005	2.21062e+06	1	1	0	0	0	0	1.82	0.0355
+GH2 Pipeline	2005	1.23E+06	1	1	0	0	0	0	3.24	0.166
+GH2 Pipeline	2005	1.47E+06	1	1	0	0	0	0	2.7	0.0857
+GH2 Pipeline	2005	1.72E+06	1	1	0	0	0	0	2.32	0.058
+GH2 Pipeline	2005	1.96E+06	1	1	0	0	0	0	2.04	0.0439
+GH2 Pipeline	2005	2.21E+06	1	1	0	0	0	0	1.82	0.0355
 GH2 Pipeline	2005	2456239	1	1	0	0	0	0	1.64	0.0298
 GH2 Pipeline	2005	4912478	1	1	0	0	0	0	0.85	0.0119
 GH2 Pipeline	2005	7368717	1	1	0	0	0	0	0.58	0.00772
@@ -588,7 +822,7 @@ GH2 Pipeline	2005	122811950	1	1	0	0	0	0	0.05	0.000847
 GH2 Pipeline	2005	125268189	1	1	0	0	0	0	0.05	0.000836
 GH2 Pipeline	2005	127724428	1	1	0	0	0	0	0.05	0.000826
 GH2 Pipeline	2005	130180667	1	1	0	0	0	0	0.05	0.000815
-GH2 Pipeline	2005	132636906	1	1	0	0	0	0	0.05	0.000810
+GH2 Pipeline	2005	132636906	1	1	0	0	0	0	0.05	0.00081
 GH2 Pipeline	2005	135093145	1	1	0	0	0	0	0.05	0.0008
 GH2 Pipeline	2005	137549384	1	1	0	0	0	0	0.05	0.000789
 GH2 Pipeline	2005	140005623	1	1	0	0	0	0	0.05	0.000784
@@ -602,7 +836,7 @@ GH2 Pipeline	2005	157199296	1	1	0	0	0	0	0.04	0.000736
 GH2 Pipeline	2005	159655535	1	1	0	0	0	0	0.04	0.000726
 GH2 Pipeline	2005	162111774	1	1	0	0	0	0	0.04	0.000721
 GH2 Pipeline	2005	164568013	1	1	0	0	0	0	0.04	0.000715
-GH2 Pipeline	2005	167024252	1	1	0	0	0	0	0.04	0.000710
+GH2 Pipeline	2005	167024252	1	1	0	0	0	0	0.04	0.00071
 GH2 Pipeline	2005	169480491	1	1	0	0	0	0	0.04	0.0007
 GH2 Pipeline	2005	171936730	1	1	0	0	0	0	0.04	0.000694
 GH2 Pipeline	2005	174392969	1	1	0	0	0	0	0.04	0.000689
@@ -615,73 +849,126 @@ GH2 Pipeline	2005	189130403	1	1	0	0	0	0	0.04	0.000657
 GH2 Pipeline	2005	191586642	1	1	0	0	0	0	0.04	0.000652
 GH2 Pipeline	2005	194042881	1	1	0	0	0	0	0.04	0.000647
 GH2 Pipeline	2005	196499120	1	1	0	0	0	0	0.04	0.000642
+GH2 Pipeline	2005	198955359	1	1	0	0	0	0	0.04	0.000642
 GH2 Pipeline	2005	201411598	1	1	0	0	0	0	0.04	0.000636
 GH2 Pipeline	2005	203867837	1	1	0	0	0	0	0.04	0.000631
 GH2 Pipeline	2005	206324076	1	1	0	0	0	0	0.04	0.000626
 GH2 Pipeline	2005	208780315	1	1	0	0	0	0	0.04	0.000621
+GH2 Pipeline	2005	211236554	1	1	0	0	0	0	0.04	0.000621
 GH2 Pipeline	2005	213692793	1	1	0	0	0	0	0.04	0.000615
-GH2 Pipeline	2005	216149032	1	1	0	0	0	0	0.04	0.000610
-GH2 Pipeline	2005	218605271	1	1	0	0	0	0	0.03	0.000610
+GH2 Pipeline	2005	216149032	1	1	0	0	0	0	0.04	0.00061
+GH2 Pipeline	2005	218605271	1	1	0	0	0	0	0.03	0.00061
+GH2 Pipeline	2005	221061510	1	1	0	0	0	0	0.03	0.00061
 GH2 Pipeline	2005	223517749	1	1	0	0	0	0	0.03	0.000605
 GH2 Pipeline	2005	225973988	1	1	0	0	0	0	0.03	0.0006
 GH2 Pipeline	2005	228430227	1	1	0	0	0	0	0.03	0.000594
+GH2 Pipeline	2005	230886466	1	1	0	0	0	0	0.03	0.000594
 GH2 Pipeline	2005	233342705	1	1	0	0	0	0	0.03	0.000589
 GH2 Pipeline	2005	235798944	1	1	0	0	0	0	0.03	0.000584
+GH2 Pipeline	2005	238255183	1	1	0	0	0	0	0.03	0.000584
 GH2 Pipeline	2005	240711422	1	1	0	0	0	0	0.03	0.000578
+GH2 Pipeline	2005	243167661	1	1	0	0	0	0	0.03	0.000578
 GH2 Pipeline	2005	245623900	1	1	0	0	0	0	0.03	0.000573
 GH2 Pipeline	2005	248080139	1	1	0	0	0	0	0.03	0.000568
+GH2 Pipeline	2005	250536378	1	1	0	0	0	0	0.03	0.000568
 GH2 Pipeline	2005	252992617	1	1	0	0	0	0	0.03	0.000563
+GH2 Pipeline	2005	255448856	1	1	0	0	0	0	0.03	0.000563
 GH2 Pipeline	2005	257905095	1	1	0	0	0	0	0.03	0.000557
+GH2 Pipeline	2005	260361334	1	1	0	0	0	0	0.03	0.000557
 GH2 Pipeline	2005	262817573	1	1	0	0	0	0	0.03	0.000552
+GH2 Pipeline	2005	265273812	1	1	0	0	0	0	0.03	0.000552
 GH2 Pipeline	2005	267730051	1	1	0	0	0	0	0.03	0.000547
+GH2 Pipeline	2005	270186290	1	1	0	0	0	0	0.03	0.000547
 GH2 Pipeline	2005	272642529	1	1	0	0	0	0	0.03	0.000542
+GH2 Pipeline	2005	275098768	1	1	0	0	0	0	0.03	0.000542
 GH2 Pipeline	2005	277555007	1	1	0	0	0	0	0.03	0.000536
+GH2 Pipeline	2005	280011246	1	1	0	0	0	0	0.03	0.000536
 GH2 Pipeline	2005	282467485	1	1	0	0	0	0	0.03	0.000531
+GH2 Pipeline	2005	284923724	1	1	0	0	0	0	0.03	0.000531
 GH2 Pipeline	2005	287379963	1	1	0	0	0	0	0.03	0.000526
+GH2 Pipeline	2005	289836202	1	1	0	0	0	0	0.03	0.000526
 GH2 Pipeline	2005	292292441	1	1	0	0	0	0	0.03	0.000521
+GH2 Pipeline	2005	294748680	1	1	0	0	0	0	0.03	0.000521
 GH2 Pipeline	2005	297204919	1	1	0	0	0	0	0.03	0.000515
-GH2 Pipeline	2005	304573636	1	1	0	0	0	0	0.03	0.000510
+GH2 Pipeline	2005	302117397	1	1	0	0	0	0	0.03	0.000515
+GH2 Pipeline	2005	304573636	1	1	0	0	0	0	0.03	0.00051
+GH2 Pipeline	2005	307029875	1	1	0	0	0	0	0.03	0.00051
 GH2 Pipeline	2005	309486114	1	1	0	0	0	0	0.03	0.000505
+GH2 Pipeline	2005	314398592	1	1	0	0	0	0	0.03	0.000505
 GH2 Pipeline	2005	316854831	1	1	0	0	0	0	0.03	0.0005
+GH2 Pipeline	2005	319311070	1	1	0	0	0	0	0.03	0.0005
 GH2 Pipeline	2005	321767309	1	1	0	0	0	0	0.03	0.000494
+GH2 Pipeline	2005	326679787	1	1	0	0	0	0	0.03	0.000494
 GH2 Pipeline	2005	329136026	1	1	0	0	0	0	0.03	0.000489
+GH2 Pipeline	2005	334048504	1	1	0	0	0	0	0.03	0.000489
 GH2 Pipeline	2005	336504743	1	1	0	0	0	0	0.03	0.000484
+GH2 Pipeline	2005	341417221	1	1	0	0	0	0	0.03	0.000484
 GH2 Pipeline	2005	343873460	1	1	0	0	0	0	0.03	0.000478
+GH2 Pipeline	2005	348785938	1	1	0	0	0	0	0.03	0.000478
 GH2 Pipeline	2005	351242177	1	1	0	0	0	0	0.03	0.000473
+GH2 Pipeline	2005	353698416	1	1	0	0	0	0	0.03	0.000473
 GH2 Pipeline	2005	356154655	1	1	0	0	0	0	0.02	0.000478
 GH2 Pipeline	2005	358610894	1	1	0	0	0	0	0.02	0.000473
+GH2 Pipeline	2005	363523372	1	1	0	0	0	0	0.02	0.000473
 GH2 Pipeline	2005	365979611	1	1	0	0	0	0	0.02	0.000468
+GH2 Pipeline	2005	370892089	1	1	0	0	0	0	0.02	0.000468
 GH2 Pipeline	2005	373348328	1	1	0	0	0	0	0.02	0.000463
+GH2 Pipeline	2005	380717045	1	1	0	0	0	0	0.02	0.000463
 GH2 Pipeline	2005	383173284	1	1	0	0	0	0	0.02	0.000457
+GH2 Pipeline	2005	390542001	1	1	0	0	0	0	0.02	0.000457
 GH2 Pipeline	2005	392998240	1	1	0	0	0	0	0.02	0.000452
+GH2 Pipeline	2005	397910718	1	1	0	0	0	0	0.02	0.000452
 GH2 Pipeline	2005	400366957	1	1	0	0	0	0	0.02	0.000447
+GH2 Pipeline	2005	407735674	1	1	0	0	0	0	0.02	0.000447
 GH2 Pipeline	2005	410191913	1	1	0	0	0	0	0.02	0.000442
+GH2 Pipeline	2005	420016869	1	1	0	0	0	0	0.02	0.000442
 GH2 Pipeline	2005	422473108	1	1	0	0	0	0	0.02	0.000436
+GH2 Pipeline	2005	429841825	1	1	0	0	0	0	0.02	0.000436
 GH2 Pipeline	2005	432298064	1	1	0	0	0	0	0.02	0.000431
+GH2 Pipeline	2005	439666781	1	1	0	0	0	0	0.02	0.000431
 GH2 Pipeline	2005	442123020	1	1	0	0	0	0	0.02	0.000426
+GH2 Pipeline	2005	451947976	1	1	0	0	0	0	0.02	0.000426
 GH2 Pipeline	2005	454404215	1	1	0	0	0	0	0.02	0.000421
+GH2 Pipeline	2005	464229171	1	1	0	0	0	0	0.02	0.000421
 GH2 Pipeline	2005	466685410	1	1	0	0	0	0	0.02	0.000415
-GH2 Pipeline	2005	478966605	1	1	0	0	0	0	0.02	0.000410
+GH2 Pipeline	2005	476510366	1	1	0	0	0	0	0.02	0.000415
+GH2 Pipeline	2005	478966605	1	1	0	0	0	0	0.02	0.00041
+GH2 Pipeline	2005	488791561	1	1	0	0	0	0	0.02	0.00041
 GH2 Pipeline	2005	491247800	1	1	0	0	0	0	0.02	0.000405
+GH2 Pipeline	2005	503528995	1	1	0	0	0	0	0.02	0.000405
 GH2 Pipeline	2005	505985234	1	1	0	0	0	0	0.02	0.0004
+GH2 Pipeline	2005	518266429	1	1	0	0	0	0	0.02	0.0004
 GH2 Pipeline	2005	520722668	1	1	0	0	0	0	0.02	0.000394
+GH2 Pipeline	2005	533003863	1	1	0	0	0	0	0.02	0.000394
 GH2 Pipeline	2005	535460102	1	1	0	0	0	0	0.02	0.000389
+GH2 Pipeline	2005	547741297	1	1	0	0	0	0	0.02	0.000389
 GH2 Pipeline	2005	550197536	1	1	0	0	0	0	0.02	0.000384
+GH2 Pipeline	2005	564934970	1	1	0	0	0	0	0.02	0.000384
 GH2 Pipeline	2005	567391209	1	1	0	0	0	0	0.02	0.000378
+GH2 Pipeline	2005	582128643	1	1	0	0	0	0	0.02	0.000378
 GH2 Pipeline	2005	584584882	1	1	0	0	0	0	0.02	0.000373
+GH2 Pipeline	2005	599322316	1	1	0	0	0	0	0.02	0.000373
 GH2 Pipeline	2005	601778555	1	1	0	0	0	0	0.02	0.000368
+GH2 Pipeline	2005	618972228	1	1	0	0	0	0	0.02	0.000368
 GH2 Pipeline	2005	621428467	1	1	0	0	0	0	0.02	0.000363
+GH2 Pipeline	2005	638622140	1	1	0	0	0	0	0.02	0.000363
 GH2 Pipeline	2005	641078379	1	1	0	0	0	0	0.02	0.000357
+GH2 Pipeline	2005	660728291	1	1	0	0	0	0	0.02	0.000357
 GH2 Pipeline	2005	663184530	1	1	0	0	0	0	0.02	0.000352
+GH2 Pipeline	2005	682834442	1	1	0	0	0	0	0.02	0.000352
 GH2 Pipeline	2005	685290681	1	1	0	0	0	0	0.02	0.000347
+GH2 Pipeline	2005	707396832	1	1	0	0	0	0	0.02	0.000347
 GH2 Pipeline	2005	709853071	1	1	0	0	0	0	0.02	0.000342
+GH2 Pipeline	2005	731959222	1	1	0	0	0	0	0.02	0.000342
 GH2 Pipeline	2005	734415461	1	1	0	0	0	0	0.02	0.000336
+GH2 Pipeline	2005	758977851	1	1	0	0	0	0	0.02	0.000336
 GH2 Pipeline	2005	761434090	1	1	0	0	0	0	0.02	0.000331
+GH2 Pipeline	2005	785996480	1	1	0	0	0	0	0.02	0.000331
 Pure GH2 Truck	2005	982496	1	1	0	0	0	0	1.33	0
-Pure GH2 Truck	2005	1.22721e+06	1	1	0	0	0	0	1.25	0
-Pure GH2 Truck	2005	1.47374e+06	1	1	0	0	0	0	1.2	0
-Pure GH2 Truck	2005	1.72028e+06	1	1	0	0	0	0	1.17	0
-Pure GH2 Truck	2005	1.96499e+06	1	1	0	0	0	0	1.14	0
+Pure GH2 Truck	2005	1.23E+06	1	1	0	0	0	0	1.25	0
+Pure GH2 Truck	2005	1.47E+06	1	1	0	0	0	0	1.2	0
+Pure GH2 Truck	2005	1.72E+06	1	1	0	0	0	0	1.17	0
+Pure GH2 Truck	2005	1.96E+06	1	1	0	0	0	0	1.14	0
 Pure GH2 Truck	2005	2209702	1	1	0	0	0	0	1.11	0
 Pure GH2 Truck	2005	2456239	1	1	0	0	0	0	1.09	0
 Pure GH2 Truck	2005	4912478	1	1	0	0	0	0	1	0
@@ -698,31 +985,573 @@ Pure GH2 Truck	2005	29474868	1	1	0	0	0	0	0.62	0
 Pure GH2 Truck	2005	31931107	1	1	0	0	0	0	0.61	0
 Pure GH2 Truck	2005	34387346	1	1	0	0	0	0	0.6	0
 Pure GH2 Truck	2005	36843585	1	1	0	0	0	0	0.59	0
+Pure GH2 Truck	2005	39299824	1	1	0	0	0	0	0.59	0
 Pure GH2 Truck	2005	41756063	1	1	0	0	0	0	0.58	0
 Pure GH2 Truck	2005	44212302	1	1	0	0	0	0	0.57	0
+Pure GH2 Truck	2005	46668541	1	1	0	0	0	0	0.57	0
 Pure GH2 Truck	2005	49124780	1	1	0	0	0	0	0.56	0
+Pure GH2 Truck	2005	51581019	1	1	0	0	0	0	0.56	0
 Pure GH2 Truck	2005	54037258	1	1	0	0	0	0	0.55	0
+Pure GH2 Truck	2005	56493497	1	1	0	0	0	0	0.55	0
 Pure GH2 Truck	2005	58949736	1	1	0	0	0	0	0.54	0
+Pure GH2 Truck	2005	61405975	1	1	0	0	0	0	0.54	0
 Pure GH2 Truck	2005	63862214	1	1	0	0	0	0	0.53	0
+Pure GH2 Truck	2005	68774692	1	1	0	0	0	0	0.53	0
 Pure GH2 Truck	2005	71230931	1	1	0	0	0	0	0.52	0
+Pure GH2 Truck	2005	76143409	1	1	0	0	0	0	0.52	0
 Pure GH2 Truck	2005	78599648	1	1	0	0	0	0	0.51	0
+Pure GH2 Truck	2005	85968365	1	1	0	0	0	0	0.51	0
 Pure GH2 Truck	2005	88424604	1	1	0	0	0	0	0.5	0
+Pure GH2 Truck	2005	98249560	1	1	0	0	0	0	0.5	0
 Pure GH2 Truck	2005	100705799	1	1	0	0	0	0	0.49	0
+Pure GH2 Truck	2005	110530755	1	1	0	0	0	0	0.49	0
 Pure GH2 Truck	2005	112986994	1	1	0	0	0	0	0.48	0
+Pure GH2 Truck	2005	125268189	1	1	0	0	0	0	0.48	0
 Pure GH2 Truck	2005	127724428	1	1	0	0	0	0	0.47	0
+Pure GH2 Truck	2005	144918101	1	1	0	0	0	0	0.47	0
 Pure GH2 Truck	2005	147374340	1	1	0	0	0	0	0.46	0
+Pure GH2 Truck	2005	169480491	1	1	0	0	0	0	0.46	0
 Pure GH2 Truck	2005	171936730	1	1	0	0	0	0	0.45	0
+Pure GH2 Truck	2005	198955359	1	1	0	0	0	0	0.45	0
 Pure GH2 Truck	2005	201411598	1	1	0	0	0	0	0.44	0
+Pure GH2 Truck	2005	216149032	1	1	0	0	0	0	0.44	0
 Pure GH2 Truck	2005	218605271	1	1	0	0	0	0	0.45	0
+Pure GH2 Truck	2005	240711422	1	1	0	0	0	0	0.45	0
 Pure GH2 Truck	2005	243167661	1	1	0	0	0	0	0.44	0
+Pure GH2 Truck	2005	284923724	1	1	0	0	0	0	0.44	0
 Pure GH2 Truck	2005	287379963	1	1	0	0	0	0	0.43	0
+Pure GH2 Truck	2005	407735674	1	1	0	0	0	0	0.43	0
 Pure GH2 Truck	2005	410191913	1	1	0	0	0	0	0.42	0
+Pure GH2 Truck	2005	439666781	1	1	0	0	0	0	0.42	0
 Pure GH2 Truck	2005	442123020	1	1	0	0	0	0	0.43	0
 Pure GH2 Truck	2005	444579259	1	1	0	0	0	0	0.42	0
+Pure GH2 Truck	2005	456860454	1	1	0	0	0	0	0.42	0
 Pure GH2 Truck	2005	459316693	1	1	0	0	0	0	0.43	0
+Pure GH2 Truck	2005	469141649	1	1	0	0	0	0	0.43	0
 Pure GH2 Truck	2005	471597888	1	1	0	0	0	0	0.42	0
+Pure GH2 Truck	2005	650903335	1	1	0	0	0	0	0.42	0
 Pure GH2 Truck	2005	653359574	1	1	0	0	0	0	0.41	0
+Pure GH2 Truck	2005	668097008	1	1	0	0	0	0	0.41	0
 Pure GH2 Truck	2005	670553247	1	1	0	0	0	0	0.42	0
+Pure GH2 Truck	2005	692659398	1	1	0	0	0	0	0.42	0
 Pure GH2 Truck	2005	695115637	1	1	0	0	0	0	0.41	0
+Pure GH2 Truck	2005	697571876	1	1	0	0	0	0	0.41	0
 Pure GH2 Truck	2005	700028115	1	1	0	0	0	0	0.42	0
+Pure GH2 Truck	2005	729502983	1	1	0	0	0	0	0.42	0
 Pure GH2 Truck	2005	731959222	1	1	0	0	0	0	0.41	0
+Pure GH2 Truck	2005	785996480	1	1	0	0	0	0	0.41	0
+LH2 Truck	2005	1.51E+06	1	1	0	0	0	0	0.1405	0.00065
+LH2 Truck	2005	3.02E+06	1	1	0	0	0	0	0.11065	0.000645
+LH2 Truck	2005	4.54E+06	1	1	0	0	0	0	0.1205	0.00065
+LH2 Truck	2005	6.05E+06	1	1	0	0	0	0	0.10035	0.000655
+LH2 Truck	2005	7.56E+06	1	1	0	0	0	0	0.10035	0.000655
+LH2 Truck	2005	9.07E+06	1	1	0	0	0	0	0.1005	0.00065
+LH2 Truck	2005	1.06E+07	1	1	0	0	0	0	0.10035	0.000655
+LH2 Truck	2005	1.21E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	1.36E+07	1	1	0	0	0	0	0.10035	0.000655
+LH2 Truck	2005	1.51E+07	1	1	0	0	0	0	0.1005	0.00065
+LH2 Truck	2005	1.66E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	1.81E+07	1	1	0	0	0	0	0.1005	0.00065
+LH2 Truck	2005	1.97E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	2.12E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	2.27E+07	1	1	0	0	0	0	0.1005	0.00065
+LH2 Truck	2005	2.42E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	2.87E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	3.02E+07	1	1	0	0	0	0	0.1005	0.00065
+LH2 Truck	2005	3.17E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	3.33E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	3.48E+07	1	1	0	0	0	0	0.1005	0.00065
+LH2 Truck	2005	3.63E+07	1	1	0	0	0	0	0.09035	0.000655
+LH2 Truck	2005	7.68E+08	1	1	0	0	0	0	0.09035	0.000655
+LH2 Pipeline Compressor	2005	1.51E+06	1	1	0	0	0	0	0.23	0
+LH2 Pipeline Compressor	2005	3.02E+06	1	1	0	0	0	0	0.21	0
+LH2 Pipeline Compressor	2005	4.54E+06	1	1	0	0	0	0	0.15	0
+LH2 Pipeline Compressor	2005	6.05E+06	1	1	0	0	0	0	0.13	0
+LH2 Pipeline Compressor	2005	7.56E+06	1	1	0	0	0	0	0.12	0
+LH2 Pipeline Compressor	2005	9.07E+06	1	1	0	0	0	0	0.12	0
+LH2 Pipeline Compressor	2005	1.06E+07	1	1	0	0	0	0	0.11	0
+LH2 Pipeline Compressor	2005	1.21E+07	1	1	0	0	0	0	0.11	0
+LH2 Pipeline Compressor	2005	1.36E+07	1	1	0	0	0	0	0.1	0
+LH2 Pipeline Compressor	2005	1.66E+07	1	1	0	0	0	0	0.1	0
+LH2 Pipeline Compressor	2005	1.81E+07	1	1	0	0	0	0	0.09	0
+LH2 Pipeline Compressor	2005	2.57E+07	1	1	0	0	0	0	0.09	0
+LH2 Pipeline Compressor	2005	2.72E+07	1	1	0	0	0	0	0.08	0
+LH2 Pipeline Compressor	2005	4.23E+07	1	1	0	0	0	0	0.08	0
+LH2 Pipeline Compressor	2005	4.38E+07	1	1	0	0	0	0	0.07	0
+LH2 Pipeline Compressor	2005	8.01E+07	1	1	0	0	0	0	0.07	0
+LH2 Pipeline Compressor	2005	8.16E+07	1	1	0	0	0	0	0.06	0
+LH2 Pipeline Compressor	2005	1.83E+08	1	1	0	0	0	0	0.06	0
+LH2 Pipeline Compressor	2005	1.84E+08	1	1	0	0	0	0	0.05	0
+LH2 Pipeline Compressor	2005	7.68E+08	1	1	0	0	0	0	0.05	0
+LH2 Pipeline Truck Terminal	2005	1.51E+06	1	1	0	0	0	0	4.25	0
+LH2 Pipeline Truck Terminal	2005	3.02E+06	1	1	0	0	0	0	3.32	0
+LH2 Pipeline Truck Terminal	2005	4.54E+06	1	1	0	0	0	0	2.9	0
+LH2 Pipeline Truck Terminal	2005	6.05E+06	1	1	0	0	0	0	2.64	0
+LH2 Pipeline Truck Terminal	2005	7.56E+06	1	1	0	0	0	0	2.46	0
+LH2 Pipeline Truck Terminal	2005	9.07E+06	1	1	0	0	0	0	2.32	0
+LH2 Pipeline Truck Terminal	2005	1.06E+07	1	1	0	0	0	0	2.21	0
+LH2 Pipeline Truck Terminal	2005	1.21E+07	1	1	0	0	0	0	2.13	0
+LH2 Pipeline Truck Terminal	2005	1.36E+07	1	1	0	0	0	0	2.05	0
+LH2 Pipeline Truck Terminal	2005	1.51E+07	1	1	0	0	0	0	1.99	0
+LH2 Pipeline Truck Terminal	2005	1.66E+07	1	1	0	0	0	0	1.93	0
+LH2 Pipeline Truck Terminal	2005	1.81E+07	1	1	0	0	0	0	1.88	0
+LH2 Pipeline Truck Terminal	2005	1.97E+07	1	1	0	0	0	0	1.84	0
+LH2 Pipeline Truck Terminal	2005	2.12E+07	1	1	0	0	0	0	1.8	0
+LH2 Pipeline Truck Terminal	2005	2.27E+07	1	1	0	0	0	0	1.76	0
+LH2 Pipeline Truck Terminal	2005	2.42E+07	1	1	0	0	0	0	1.73	0
+LH2 Pipeline Truck Terminal	2005	2.57E+07	1	1	0	0	0	0	1.7	0
+LH2 Pipeline Truck Terminal	2005	2.72E+07	1	1	0	0	0	0	1.67	0
+LH2 Pipeline Truck Terminal	2005	2.87E+07	1	1	0	0	0	0	1.65	0
+LH2 Pipeline Truck Terminal	2005	3.02E+07	1	1	0	0	0	0	1.62	0
+LH2 Pipeline Truck Terminal	2005	3.17E+07	1	1	0	0	0	0	1.6	0
+LH2 Pipeline Truck Terminal	2005	3.33E+07	1	1	0	0	0	0	1.58	0
+LH2 Pipeline Truck Terminal	2005	3.48E+07	1	1	0	0	0	0	1.56	0
+LH2 Pipeline Truck Terminal	2005	3.63E+07	1	1	0	0	0	0	1.54	0
+LH2 Pipeline Truck Terminal	2005	37793209	1	1	0	0	0	0	1.52	0
+LH2 Pipeline Truck Terminal	2005	3.93E+07	1	1	0	0	0	0	1.51	0
+LH2 Pipeline Truck Terminal	2005	4.08E+07	1	1	0	0	0	0	1.49	0
+LH2 Pipeline Truck Terminal	2005	4.23E+07	1	1	0	0	0	0	1.47	0
+LH2 Pipeline Truck Terminal	2005	4.38E+07	1	1	0	0	0	0	1.46	0
+LH2 Pipeline Truck Terminal	2005	4.54E+07	1	1	0	0	0	0	1.45	0
+LH2 Pipeline Truck Terminal	2005	4.69E+07	1	1	0	0	0	0	1.43	0
+LH2 Pipeline Truck Terminal	2005	4.84E+07	1	1	0	0	0	0	1.42	0
+LH2 Pipeline Truck Terminal	2005	4.99E+07	1	1	0	0	0	0	1.41	0
+LH2 Pipeline Truck Terminal	2005	5.14E+07	1	1	0	0	0	0	1.4	0
+LH2 Pipeline Truck Terminal	2005	5.29E+07	1	1	0	0	0	0	1.38	0
+LH2 Pipeline Truck Terminal	2005	5.44E+07	1	1	0	0	0	0	1.37	0
+LH2 Pipeline Truck Terminal	2005	5.59E+07	1	1	0	0	0	0	1.36	0
+LH2 Pipeline Truck Terminal	2005	5.74E+07	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	5.90E+07	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	6.05E+07	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	6.20E+07	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	6.35E+07	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	6.50E+07	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	6.65E+07	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	6.80E+07	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	6.95E+07	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	7.11E+07	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	7.26E+07	1	1	0	0	0	0	1.53	0
+LH2 Pipeline Truck Terminal	2005	7.41E+07	1	1	0	0	0	0	1.52	0
+LH2 Pipeline Truck Terminal	2005	75586418	1	1	0	0	0	0	1.51	0
+LH2 Pipeline Truck Terminal	2005	7.71E+07	1	1	0	0	0	0	1.5	0
+LH2 Pipeline Truck Terminal	2005	7.86E+07	1	1	0	0	0	0	1.5	0
+LH2 Pipeline Truck Terminal	2005	8.01E+07	1	1	0	0	0	0	1.49	0
+LH2 Pipeline Truck Terminal	2005	8.16E+07	1	1	0	0	0	0	1.48	0
+LH2 Pipeline Truck Terminal	2005	8.31E+07	1	1	0	0	0	0	1.47	0
+LH2 Pipeline Truck Terminal	2005	8.47E+07	1	1	0	0	0	0	1.47	0
+LH2 Pipeline Truck Terminal	2005	8.62E+07	1	1	0	0	0	0	1.46	0
+LH2 Pipeline Truck Terminal	2005	8.77E+07	1	1	0	0	0	0	1.45	0
+LH2 Pipeline Truck Terminal	2005	8.92E+07	1	1	0	0	0	0	1.45	0
+LH2 Pipeline Truck Terminal	2005	9.07E+07	1	1	0	0	0	0	1.44	0
+LH2 Pipeline Truck Terminal	2005	9.22E+07	1	1	0	0	0	0	1.43	0
+LH2 Pipeline Truck Terminal	2005	9.37E+07	1	1	0	0	0	0	1.43	0
+LH2 Pipeline Truck Terminal	2005	9.52E+07	1	1	0	0	0	0	1.42	0
+LH2 Pipeline Truck Terminal	2005	9.68E+07	1	1	0	0	0	0	1.41	0
+LH2 Pipeline Truck Terminal	2005	9.83E+07	1	1	0	0	0	0	1.41	0
+LH2 Pipeline Truck Terminal	2005	9.98E+07	1	1	0	0	0	0	1.4	0
+LH2 Pipeline Truck Terminal	2005	1.01E+08	1	1	0	0	0	0	1.4	0
+LH2 Pipeline Truck Terminal	2005	1.03E+08	1	1	0	0	0	0	1.39	0
+LH2 Pipeline Truck Terminal	2005	1.04E+08	1	1	0	0	0	0	1.38	0
+LH2 Pipeline Truck Terminal	2005	1.06E+08	1	1	0	0	0	0	1.38	0
+LH2 Pipeline Truck Terminal	2005	1.07E+08	1	1	0	0	0	0	1.37	0
+LH2 Pipeline Truck Terminal	2005	1.09E+08	1	1	0	0	0	0	1.37	0
+LH2 Pipeline Truck Terminal	2005	1.10E+08	1	1	0	0	0	0	1.36	0
+LH2 Pipeline Truck Terminal	2005	1.12E+08	1	1	0	0	0	0	1.36	0
+LH2 Pipeline Truck Terminal	2005	113379627	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	1.15E+08	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	1.16E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	1.18E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	1.19E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	1.22E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	1.24E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	1.25E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	1.27E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	1.28E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	1.30E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	1.33E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	1.35E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	1.38E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	1.39E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	1.42E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	1.44E+08	1	1	0	0	0	0	1.27	0
+LH2 Pipeline Truck Terminal	2005	1.45E+08	1	1	0	0	0	0	1.41	0
+LH2 Pipeline Truck Terminal	2005	1.47E+08	1	1	0	0	0	0	1.41	0
+LH2 Pipeline Truck Terminal	2005	1.48E+08	1	1	0	0	0	0	1.4	0
+LH2 Pipeline Truck Terminal	2005	151172836	1	1	0	0	0	0	1.4	0
+LH2 Pipeline Truck Terminal	2005	1.53E+08	1	1	0	0	0	0	1.39	0
+LH2 Pipeline Truck Terminal	2005	1.56E+08	1	1	0	0	0	0	1.39	0
+LH2 Pipeline Truck Terminal	2005	1.57E+08	1	1	0	0	0	0	1.38	0
+LH2 Pipeline Truck Terminal	2005	1.59E+08	1	1	0	0	0	0	1.38	0
+LH2 Pipeline Truck Terminal	2005	1.60E+08	1	1	0	0	0	0	1.37	0
+LH2 Pipeline Truck Terminal	2005	1.63E+08	1	1	0	0	0	0	1.37	0
+LH2 Pipeline Truck Terminal	2005	1.65E+08	1	1	0	0	0	0	1.36	0
+LH2 Pipeline Truck Terminal	2005	1.68E+08	1	1	0	0	0	0	1.36	0
+LH2 Pipeline Truck Terminal	2005	1.69E+08	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	1.74E+08	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	1.75E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	1.78E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	1.80E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	1.83E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	1.84E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	188966045	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	1.90E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	1.94E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	1.95E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	2.00E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	2.01E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	2.07E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	2.09E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	2.13E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	2.15E+08	1	1	0	0	0	0	1.27	0
+LH2 Pipeline Truck Terminal	2005	2.16E+08	1	1	0	0	0	0	1.37	0
+LH2 Pipeline Truck Terminal	2005	2.19E+08	1	1	0	0	0	0	1.37	0
+LH2 Pipeline Truck Terminal	2005	2.21E+08	1	1	0	0	0	0	1.36	0
+LH2 Pipeline Truck Terminal	2005	2.25E+08	1	1	0	0	0	0	1.36	0
+LH2 Pipeline Truck Terminal	2005	226759254	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	2.31E+08	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	2.33E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	2.39E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	2.40E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	2.45E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	2.46E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	2.52E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	2.54E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	2.60E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	2.62E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	2.68E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	2.69E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	2.77E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	2.78E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	2.84E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	2.86E+08	1	1	0	0	0	0	1.27	0
+LH2 Pipeline Truck Terminal	2005	2.87E+08	1	1	0	0	0	0	1.27	0
+LH2 Pipeline Truck Terminal	2005	2.89E+08	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	2.90E+08	1	1	0	0	0	0	1.35	0
+LH2 Pipeline Truck Terminal	2005	2.92E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	2.99E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	3.01E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	3.07E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	3.08E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	3.16E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	3.17E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	3.27E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	3.28E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	3.36E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	3.37E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	3.48E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	3.49E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	3.58E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	3.60E+08	1	1	0	0	0	0	1.34	0
+LH2 Pipeline Truck Terminal	2005	3.61E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	3.70E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	3.72E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	3.82E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	3.84E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	3.93E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	3.95E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	4.05E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	4.07E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	4.19E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	4.20E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	4.31E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	4.32E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	4.35E+08	1	1	0	0	0	0	1.33	0
+LH2 Pipeline Truck Terminal	2005	4.37E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	4.47E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	4.49E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	4.61E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	4.63E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	4.75E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	4.76E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	491311717	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	4.93E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	5.02E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	5.03E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	5.14E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	5.15E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	5.31E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	5.32E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	5.46E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	5.47E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	5.65E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	566898135	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	5.74E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	5.76E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	5.82E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	5.84E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	6.00E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	6.02E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	6.20E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	6.21E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	6.39E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	6.41E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	6.47E+08	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	6.49E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	6.50E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	6.52E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	6.71E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	6.73E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	6.94E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	6.95E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	7.17E+08	1	1	0	0	0	0	1.29	0
+LH2 Pipeline Truck Terminal	2005	718070971	1	1	0	0	0	0	1.28	0
+LH2 Pipeline Truck Terminal	2005	7.20E+08	1	1	0	0	0	0	1.32	0
+LH2 Pipeline Truck Terminal	2005	7.21E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	7.42E+08	1	1	0	0	0	0	1.31	0
+LH2 Pipeline Truck Terminal	2005	7.44E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline Truck Terminal	2005	7.68E+08	1	1	0	0	0	0	1.3	0
+LH2 Pipeline	2005	1.51E+06	1	1	0	0	0	0	2.64	0.075865
+LH2 Pipeline	2005	3.02E+06	1	1	0	0	0	0	1.34	0.020815
+LH2 Pipeline	2005	4.54E+06	1	1	0	0	0	0	0.91	0.01243
+LH2 Pipeline	2005	6.05E+06	1	1	0	0	0	0	0.7	0.009015
+LH2 Pipeline	2005	7.56E+06	1	1	0	0	0	0	0.57	0.00715
+LH2 Pipeline	2005	9.07E+06	1	1	0	0	0	0	0.48	0.005975
+LH2 Pipeline	2005	1.06E+07	1	1	0	0	0	0	0.42	0.005155
+LH2 Pipeline	2005	1.21E+07	1	1	0	0	0	0	0.37	0.00456
+LH2 Pipeline	2005	1.36E+07	1	1	0	0	0	0	0.33	0.0041
+LH2 Pipeline	2005	1.51E+07	1	1	0	0	0	0	0.3	0.003735
+LH2 Pipeline	2005	1.66E+07	1	1	0	0	0	0	0.28	0.00344
+LH2 Pipeline	2005	1.81E+07	1	1	0	0	0	0	0.26	0.00319
+LH2 Pipeline	2005	1.97E+07	1	1	0	0	0	0	0.24	0.002985
+LH2 Pipeline	2005	2.12E+07	1	1	0	0	0	0	0.22	0.00281
+LH2 Pipeline	2005	2.27E+07	1	1	0	0	0	0	0.21	0.002655
+LH2 Pipeline	2005	2.42E+07	1	1	0	0	0	0	0.2	0.00252
+LH2 Pipeline	2005	2.57E+07	1	1	0	0	0	0	0.19	0.0024
+LH2 Pipeline	2005	2.72E+07	1	1	0	0	0	0	0.18	0.00229
+LH2 Pipeline	2005	2.87E+07	1	1	0	0	0	0	0.17	0.0022
+LH2 Pipeline	2005	3.02E+07	1	1	0	0	0	0	0.16	0.002115
+LH2 Pipeline	2005	3.17E+07	1	1	0	0	0	0	0.16	0.00203
+LH2 Pipeline	2005	3.33E+07	1	1	0	0	0	0	0.15	0.00196
+LH2 Pipeline	2005	3.48E+07	1	1	0	0	0	0	0.15	0.001895
+LH2 Pipeline	2005	3.63E+07	1	1	0	0	0	0	0.14	0.001835
+LH2 Pipeline	2005	37793209	1	1	0	0	0	0	0.14	0.00178
+LH2 Pipeline	2005	3.93E+07	1	1	0	0	0	0	0.13	0.00173
+LH2 Pipeline	2005	4.08E+07	1	1	0	0	0	0	0.13	0.00168
+LH2 Pipeline	2005	4.23E+07	1	1	0	0	0	0	0.12	0.00164
+LH2 Pipeline	2005	4.38E+07	1	1	0	0	0	0	0.12	0.001595
+LH2 Pipeline	2005	4.54E+07	1	1	0	0	0	0	0.12	0.001555
+LH2 Pipeline	2005	4.69E+07	1	1	0	0	0	0	0.11	0.001525
+LH2 Pipeline	2005	4.84E+07	1	1	0	0	0	0	0.11	0.001485
+LH2 Pipeline	2005	4.99E+07	1	1	0	0	0	0	0.11	0.001455
+LH2 Pipeline	2005	5.14E+07	1	1	0	0	0	0	0.11	0.00142
+LH2 Pipeline	2005	5.29E+07	1	1	0	0	0	0	0.1	0.001395
+LH2 Pipeline	2005	5.44E+07	1	1	0	0	0	0	0.1	0.00137
+LH2 Pipeline	2005	5.59E+07	1	1	0	0	0	0	0.1	0.00134
+LH2 Pipeline	2005	5.74E+07	1	1	0	0	0	0	0.1	0.001315
+LH2 Pipeline	2005	5.90E+07	1	1	0	0	0	0	0.09	0.001295
+LH2 Pipeline	2005	6.05E+07	1	1	0	0	0	0	0.09	0.00127
+LH2 Pipeline	2005	6.20E+07	1	1	0	0	0	0	0.09	0.00125
+LH2 Pipeline	2005	6.35E+07	1	1	0	0	0	0	0.09	0.00123
+LH2 Pipeline	2005	6.50E+07	1	1	0	0	0	0	0.09	0.00121
+LH2 Pipeline	2005	6.65E+07	1	1	0	0	0	0	0.09	0.00119
+LH2 Pipeline	2005	6.80E+07	1	1	0	0	0	0	0.08	0.001175
+LH2 Pipeline	2005	6.95E+07	1	1	0	0	0	0	0.08	0.001155
+LH2 Pipeline	2005	7.11E+07	1	1	0	0	0	0	0.08	0.00114
+LH2 Pipeline	2005	7.26E+07	1	1	0	0	0	0	0.08	0.001125
+LH2 Pipeline	2005	7.41E+07	1	1	0	0	0	0	0.08	0.001105
+LH2 Pipeline	2005	75586418	1	1	0	0	0	0	0.08	0.00109
+LH2 Pipeline	2005	7.71E+07	1	1	0	0	0	0	0.08	0.001075
+LH2 Pipeline	2005	7.86E+07	1	1	0	0	0	0	0.07	0.00107
+LH2 Pipeline	2005	8.01E+07	1	1	0	0	0	0	0.07	0.001055
+LH2 Pipeline	2005	8.16E+07	1	1	0	0	0	0	0.07	0.00104
+LH2 Pipeline	2005	8.31E+07	1	1	0	0	0	0	0.07	0.00103
+LH2 Pipeline	2005	8.47E+07	1	1	0	0	0	0	0.07	0.001015
+LH2 Pipeline	2005	8.62E+07	1	1	0	0	0	0	0.07	0.001005
+LH2 Pipeline	2005	8.77E+07	1	1	0	0	0	0	0.07	0.00099
+LH2 Pipeline	2005	8.92E+07	1	1	0	0	0	0	0.07	0.00098
+LH2 Pipeline	2005	9.07E+07	1	1	0	0	0	0	0.07	0.00097
+LH2 Pipeline	2005	9.22E+07	1	1	0	0	0	0	0.07	0.00096
+LH2 Pipeline	2005	9.37E+07	1	1	0	0	0	0	0.07	0.00095
+LH2 Pipeline	2005	9.52E+07	1	1	0	0	0	0	0.06	0.000945
+LH2 Pipeline	2005	9.68E+07	1	1	0	0	0	0	0.06	0.000935
+LH2 Pipeline	2005	9.83E+07	1	1	0	0	0	0	0.06	0.000925
+LH2 Pipeline	2005	9.98E+07	1	1	0	0	0	0	0.06	0.000915
+LH2 Pipeline	2005	1.01E+08	1	1	0	0	0	0	0.06	0.000905
+LH2 Pipeline	2005	1.03E+08	1	1	0	0	0	0	0.06	0.0009
+LH2 Pipeline	2005	1.04E+08	1	1	0	0	0	0	0.06	0.00089
+LH2 Pipeline	2005	1.06E+08	1	1	0	0	0	0	0.06	0.00088
+LH2 Pipeline	2005	1.07E+08	1	1	0	0	0	0	0.06	0.000875
+LH2 Pipeline	2005	1.09E+08	1	1	0	0	0	0	0.06	0.000865
+LH2 Pipeline	2005	1.10E+08	1	1	0	0	0	0	0.06	0.000855
+LH2 Pipeline	2005	1.12E+08	1	1	0	0	0	0	0.06	0.00085
+LH2 Pipeline	2005	113379627	1	1	0	0	0	0	0.06	0.000845
+LH2 Pipeline	2005	1.15E+08	1	1	0	0	0	0	0.06	0.000835
+LH2 Pipeline	2005	1.16E+08	1	1	0	0	0	0	0.06	0.00083
+LH2 Pipeline	2005	1.18E+08	1	1	0	0	0	0	0.05	0.000825
+LH2 Pipeline	2005	1.19E+08	1	1	0	0	0	0	0.05	0.00082
+LH2 Pipeline	2005	1.21E+08	1	1	0	0	0	0	0.05	0.000815
+LH2 Pipeline	2005	1.22E+08	1	1	0	0	0	0	0.05	0.000805
+LH2 Pipeline	2005	1.24E+08	1	1	0	0	0	0	0.05	0.0008
+LH2 Pipeline	2005	1.25E+08	1	1	0	0	0	0	0.05	0.000795
+LH2 Pipeline	2005	1.27E+08	1	1	0	0	0	0	0.05	0.00079
+LH2 Pipeline	2005	1.28E+08	1	1	0	0	0	0	0.05	0.000785
+LH2 Pipeline	2005	1.30E+08	1	1	0	0	0	0	0.05	0.00078
+LH2 Pipeline	2005	1.32E+08	1	1	0	0	0	0	0.05	0.00077
+LH2 Pipeline	2005	1.33E+08	1	1	0	0	0	0	0.05	0.000765
+LH2 Pipeline	2005	1.35E+08	1	1	0	0	0	0	0.05	0.00076
+LH2 Pipeline	2005	1.36E+08	1	1	0	0	0	0	0.05	0.000755
+LH2 Pipeline	2005	1.38E+08	1	1	0	0	0	0	0.05	0.00075
+LH2 Pipeline	2005	1.39E+08	1	1	0	0	0	0	0.05	0.000745
+LH2 Pipeline	2005	1.41E+08	1	1	0	0	0	0	0.05	0.00074
+LH2 Pipeline	2005	1.42E+08	1	1	0	0	0	0	0.05	0.000735
+LH2 Pipeline	2005	1.44E+08	1	1	0	0	0	0	0.05	0.00073
+LH2 Pipeline	2005	1.45E+08	1	1	0	0	0	0	0.05	0.000725
+LH2 Pipeline	2005	1.47E+08	1	1	0	0	0	0	0.05	0.00072
+LH2 Pipeline	2005	1.48E+08	1	1	0	0	0	0	0.05	0.00072
+LH2 Pipeline	2005	1.50E+08	1	1	0	0	0	0	0.05	0.000715
+LH2 Pipeline	2005	151172836	1	1	0	0	0	0	0.05	0.00071
+LH2 Pipeline	2005	1.53E+08	1	1	0	0	0	0	0.04	0.00071
+LH2 Pipeline	2005	1.54E+08	1	1	0	0	0	0	0.04	0.000705
+LH2 Pipeline	2005	1.56E+08	1	1	0	0	0	0	0.04	0.0007
+LH2 Pipeline	2005	1.57E+08	1	1	0	0	0	0	0.04	0.0007
+LH2 Pipeline	2005	1.59E+08	1	1	0	0	0	0	0.04	0.000695
+LH2 Pipeline	2005	1.60E+08	1	1	0	0	0	0	0.04	0.00069
+LH2 Pipeline	2005	1.62E+08	1	1	0	0	0	0	0.04	0.000685
+LH2 Pipeline	2005	1.63E+08	1	1	0	0	0	0	0.04	0.00068
+LH2 Pipeline	2005	1.65E+08	1	1	0	0	0	0	0.04	0.00068
+LH2 Pipeline	2005	1.66E+08	1	1	0	0	0	0	0.04	0.000675
+LH2 Pipeline	2005	1.68E+08	1	1	0	0	0	0	0.04	0.00067
+LH2 Pipeline	2005	1.69E+08	1	1	0	0	0	0	0.04	0.00067
+LH2 Pipeline	2005	1.71E+08	1	1	0	0	0	0	0.04	0.000665
+LH2 Pipeline	2005	1.72E+08	1	1	0	0	0	0	0.04	0.00066
+LH2 Pipeline	2005	1.74E+08	1	1	0	0	0	0	0.04	0.000655
+LH2 Pipeline	2005	1.75E+08	1	1	0	0	0	0	0.04	0.000655
+LH2 Pipeline	2005	1.77E+08	1	1	0	0	0	0	0.04	0.00065
+LH2 Pipeline	2005	1.78E+08	1	1	0	0	0	0	0.04	0.000645
+LH2 Pipeline	2005	1.80E+08	1	1	0	0	0	0	0.04	0.000645
+LH2 Pipeline	2005	1.81E+08	1	1	0	0	0	0	0.04	0.00064
+LH2 Pipeline	2005	1.83E+08	1	1	0	0	0	0	0.04	0.00064
+LH2 Pipeline	2005	1.84E+08	1	1	0	0	0	0	0.04	0.000635
+LH2 Pipeline	2005	1.86E+08	1	1	0	0	0	0	0.04	0.00063
+LH2 Pipeline	2005	1.87E+08	1	1	0	0	0	0	0.04	0.00063
+LH2 Pipeline	2005	188966045	1	1	0	0	0	0	0.04	0.000625
+LH2 Pipeline	2005	1.90E+08	1	1	0	0	0	0	0.04	0.000625
+LH2 Pipeline	2005	1.92E+08	1	1	0	0	0	0	0.04	0.00062
+LH2 Pipeline	2005	1.94E+08	1	1	0	0	0	0	0.04	0.00062
+LH2 Pipeline	2005	1.95E+08	1	1	0	0	0	0	0.04	0.000615
+LH2 Pipeline	2005	1.97E+08	1	1	0	0	0	0	0.04	0.00061
+LH2 Pipeline	2005	1.98E+08	1	1	0	0	0	0	0.04	0.00061
+LH2 Pipeline	2005	2.00E+08	1	1	0	0	0	0	0.04	0.000605
+LH2 Pipeline	2005	2.01E+08	1	1	0	0	0	0	0.04	0.000605
+LH2 Pipeline	2005	2.03E+08	1	1	0	0	0	0	0.04	0.0006
+LH2 Pipeline	2005	2.04E+08	1	1	0	0	0	0	0.04	0.0006
+LH2 Pipeline	2005	2.06E+08	1	1	0	0	0	0	0.04	0.000595
+LH2 Pipeline	2005	2.07E+08	1	1	0	0	0	0	0.04	0.000595
+LH2 Pipeline	2005	2.09E+08	1	1	0	0	0	0	0.04	0.00059
+LH2 Pipeline	2005	2.10E+08	1	1	0	0	0	0	0.04	0.00059
+LH2 Pipeline	2005	2.12E+08	1	1	0	0	0	0	0.04	0.000585
+LH2 Pipeline	2005	2.13E+08	1	1	0	0	0	0	0.04	0.000585
+LH2 Pipeline	2005	2.15E+08	1	1	0	0	0	0	0.04	0.00058
+LH2 Pipeline	2005	2.16E+08	1	1	0	0	0	0	0.04	0.00058
+LH2 Pipeline	2005	2.18E+08	1	1	0	0	0	0	0.03	0.000585
+LH2 Pipeline	2005	2.19E+08	1	1	0	0	0	0	0.03	0.00058
+LH2 Pipeline	2005	2.21E+08	1	1	0	0	0	0	0.03	0.00058
+LH2 Pipeline	2005	2.22E+08	1	1	0	0	0	0	0.03	0.000575
+LH2 Pipeline	2005	2.24E+08	1	1	0	0	0	0	0.03	0.000575
+LH2 Pipeline	2005	2.25E+08	1	1	0	0	0	0	0.03	0.00057
+LH2 Pipeline	2005	226759254	1	1	0	0	0	0	0.03	0.00057
+LH2 Pipeline	2005	2.28E+08	1	1	0	0	0	0	0.03	0.000565
+LH2 Pipeline	2005	2.31E+08	1	1	0	0	0	0	0.03	0.000565
+LH2 Pipeline	2005	2.33E+08	1	1	0	0	0	0	0.03	0.00056
+LH2 Pipeline	2005	2.34E+08	1	1	0	0	0	0	0.03	0.00056
+LH2 Pipeline	2005	2.36E+08	1	1	0	0	0	0	0.03	0.000555
+LH2 Pipeline	2005	2.39E+08	1	1	0	0	0	0	0.03	0.000555
+LH2 Pipeline	2005	2.40E+08	1	1	0	0	0	0	0.03	0.00055
+LH2 Pipeline	2005	2.43E+08	1	1	0	0	0	0	0.03	0.00055
+LH2 Pipeline	2005	2.45E+08	1	1	0	0	0	0	0.03	0.000545
+LH2 Pipeline	2005	2.46E+08	1	1	0	0	0	0	0.03	0.000545
+LH2 Pipeline	2005	2.48E+08	1	1	0	0	0	0	0.03	0.00054
+LH2 Pipeline	2005	2.51E+08	1	1	0	0	0	0	0.03	0.00054
+LH2 Pipeline	2005	2.52E+08	1	1	0	0	0	0	0.03	0.000535
+LH2 Pipeline	2005	2.55E+08	1	1	0	0	0	0	0.03	0.000535
+LH2 Pipeline	2005	2.57E+08	1	1	0	0	0	0	0.03	0.00053
+LH2 Pipeline	2005	2.60E+08	1	1	0	0	0	0	0.03	0.00053
+LH2 Pipeline	2005	2.62E+08	1	1	0	0	0	0	0.03	0.000525
+LH2 Pipeline	2005	264552463	1	1	0	0	0	0	0.03	0.000525
+LH2 Pipeline	2005	2.66E+08	1	1	0	0	0	0	0.03	0.00052
+LH2 Pipeline	2005	2.69E+08	1	1	0	0	0	0	0.03	0.00052
+LH2 Pipeline	2005	2.71E+08	1	1	0	0	0	0	0.03	0.000515
+LH2 Pipeline	2005	2.75E+08	1	1	0	0	0	0	0.03	0.000515
+LH2 Pipeline	2005	2.77E+08	1	1	0	0	0	0	0.03	0.00051
+LH2 Pipeline	2005	2.80E+08	1	1	0	0	0	0	0.03	0.00051
+LH2 Pipeline	2005	2.81E+08	1	1	0	0	0	0	0.03	0.000505
+LH2 Pipeline	2005	2.84E+08	1	1	0	0	0	0	0.03	0.000505
+LH2 Pipeline	2005	2.86E+08	1	1	0	0	0	0	0.03	0.0005
+LH2 Pipeline	2005	2.90E+08	1	1	0	0	0	0	0.03	0.0005
+LH2 Pipeline	2005	2.92E+08	1	1	0	0	0	0	0.03	0.000495
+LH2 Pipeline	2005	2.96E+08	1	1	0	0	0	0	0.03	0.000495
+LH2 Pipeline	2005	2.98E+08	1	1	0	0	0	0	0.03	0.00049
+LH2 Pipeline	2005	302345672	1	1	0	0	0	0	0.03	0.00049
+LH2 Pipeline	2005	3.04E+08	1	1	0	0	0	0	0.03	0.000485
+LH2 Pipeline	2005	3.08E+08	1	1	0	0	0	0	0.03	0.000485
+LH2 Pipeline	2005	3.10E+08	1	1	0	0	0	0	0.03	0.00048
+LH2 Pipeline	2005	3.14E+08	1	1	0	0	0	0	0.03	0.00048
+LH2 Pipeline	2005	3.16E+08	1	1	0	0	0	0	0.03	0.000475
+LH2 Pipeline	2005	3.20E+08	1	1	0	0	0	0	0.03	0.000475
+LH2 Pipeline	2005	3.22E+08	1	1	0	0	0	0	0.03	0.00047
+LH2 Pipeline	2005	3.27E+08	1	1	0	0	0	0	0.03	0.00047
+LH2 Pipeline	2005	3.28E+08	1	1	0	0	0	0	0.03	0.000465
+LH2 Pipeline	2005	3.34E+08	1	1	0	0	0	0	0.03	0.000465
+LH2 Pipeline	2005	3.36E+08	1	1	0	0	0	0	0.03	0.00046
+LH2 Pipeline	2005	3.42E+08	1	1	0	0	0	0	0.03	0.00046
+LH2 Pipeline	2005	3.43E+08	1	1	0	0	0	0	0.03	0.000455
+LH2 Pipeline	2005	3.49E+08	1	1	0	0	0	0	0.03	0.000455
+LH2 Pipeline	2005	3.51E+08	1	1	0	0	0	0	0.03	0.00045
+LH2 Pipeline	2005	3.55E+08	1	1	0	0	0	0	0.03	0.00045
+LH2 Pipeline	2005	3.57E+08	1	1	0	0	0	0	0.02	0.000455
+LH2 Pipeline	2005	3.58E+08	1	1	0	0	0	0	0.02	0.00045
+LH2 Pipeline	2005	3.64E+08	1	1	0	0	0	0	0.02	0.00045
+LH2 Pipeline	2005	3.66E+08	1	1	0	0	0	0	0.02	0.000445
+LH2 Pipeline	2005	3.72E+08	1	1	0	0	0	0	0.02	0.000445
+LH2 Pipeline	2005	3.73E+08	1	1	0	0	0	0	0.02	0.00044
+LH2 Pipeline	2005	3.81E+08	1	1	0	0	0	0	0.02	0.00044
+LH2 Pipeline	2005	3.82E+08	1	1	0	0	0	0	0.02	0.000435
+LH2 Pipeline	2005	3.90E+08	1	1	0	0	0	0	0.02	0.000435
+LH2 Pipeline	2005	3.92E+08	1	1	0	0	0	0	0.02	0.00043
+LH2 Pipeline	2005	3.99E+08	1	1	0	0	0	0	0.02	0.00043
+LH2 Pipeline	2005	4.01E+08	1	1	0	0	0	0	0.02	0.000425
+LH2 Pipeline	2005	4.10E+08	1	1	0	0	0	0	0.02	0.000425
+LH2 Pipeline	2005	4.11E+08	1	1	0	0	0	0	0.02	0.00042
+LH2 Pipeline	2005	4.19E+08	1	1	0	0	0	0	0.02	0.00042
+LH2 Pipeline	2005	4.20E+08	1	1	0	0	0	0	0.02	0.000415
+LH2 Pipeline	2005	4.29E+08	1	1	0	0	0	0	0.02	0.000415
+LH2 Pipeline	2005	4.31E+08	1	1	0	0	0	0	0.02	0.00041
+LH2 Pipeline	2005	4.41E+08	1	1	0	0	0	0	0.02	0.00041
+LH2 Pipeline	2005	4.43E+08	1	1	0	0	0	0	0.02	0.000405
+LH2 Pipeline	2005	4.52E+08	1	1	0	0	0	0	0.02	0.000405
+LH2 Pipeline	2005	453518508	1	1	0	0	0	0	0.02	0.0004
+LH2 Pipeline	2005	4.64E+08	1	1	0	0	0	0	0.02	0.0004
+LH2 Pipeline	2005	4.66E+08	1	1	0	0	0	0	0.02	0.000395
+LH2 Pipeline	2005	4.76E+08	1	1	0	0	0	0	0.02	0.000395
+LH2 Pipeline	2005	4.78E+08	1	1	0	0	0	0	0.02	0.00039
+LH2 Pipeline	2005	4.90E+08	1	1	0	0	0	0	0.02	0.00039
+LH2 Pipeline	2005	491311717	1	1	0	0	0	0	0.02	0.000385
+LH2 Pipeline	2005	5.03E+08	1	1	0	0	0	0	0.02	0.000385
+LH2 Pipeline	2005	5.05E+08	1	1	0	0	0	0	0.02	0.00038
+LH2 Pipeline	2005	5.17E+08	1	1	0	0	0	0	0.02	0.00038
+LH2 Pipeline	2005	5.19E+08	1	1	0	0	0	0	0.02	0.000375
+LH2 Pipeline	2005	5.32E+08	1	1	0	0	0	0	0.02	0.000375
+LH2 Pipeline	2005	5.34E+08	1	1	0	0	0	0	0.02	0.00037
+LH2 Pipeline	2005	5.49E+08	1	1	0	0	0	0	0.02	0.00037
+LH2 Pipeline	2005	5.50E+08	1	1	0	0	0	0	0.02	0.000365
+LH2 Pipeline	2005	5.65E+08	1	1	0	0	0	0	0.02	0.000365
+LH2 Pipeline	2005	566898135	1	1	0	0	0	0	0.02	0.00036
+LH2 Pipeline	2005	5.82E+08	1	1	0	0	0	0	0.02	0.00036
+LH2 Pipeline	2005	5.84E+08	1	1	0	0	0	0	0.02	0.000355
+LH2 Pipeline	2005	6.00E+08	1	1	0	0	0	0	0.02	0.000355
+LH2 Pipeline	2005	6.02E+08	1	1	0	0	0	0	0.02	0.00035
+LH2 Pipeline	2005	6.20E+08	1	1	0	0	0	0	0.02	0.00035
+LH2 Pipeline	2005	6.21E+08	1	1	0	0	0	0	0.02	0.000345
+LH2 Pipeline	2005	6.39E+08	1	1	0	0	0	0	0.02	0.000345
+LH2 Pipeline	2005	6.41E+08	1	1	0	0	0	0	0.02	0.00034
+LH2 Pipeline	2005	6.61E+08	1	1	0	0	0	0	0.02	0.00034
+LH2 Pipeline	2005	6.62E+08	1	1	0	0	0	0	0.02	0.000335
+LH2 Pipeline	2005	6.83E+08	1	1	0	0	0	0	0.02	0.000335
+LH2 Pipeline	2005	6.85E+08	1	1	0	0	0	0	0.02	0.00033
+LH2 Pipeline	2005	7.07E+08	1	1	0	0	0	0	0.02	0.00033
+LH2 Pipeline	2005	7.09E+08	1	1	0	0	0	0	0.02	0.000325
+LH2 Pipeline	2005	7.33E+08	1	1	0	0	0	0	0.02	0.000325
+LH2 Pipeline	2005	7.35E+08	1	1	0	0	0	0	0.02	0.00032
+LH2 Pipeline	2005	7.59E+08	1	1	0	0	0	0	0.02	0.00032
+LH2 Pipeline	2005	7.60E+08	1	1	0	0	0	0	0.02	0.000315
+LH2 Pipeline	2005	7.68E+08	1	1	0	0	0	0	0.02	0.000315
