@@ -1,25 +1,25 @@
-Pathway	Technology	Delivery	Tranmission
-LH2 Rail	LH2 Train Terminal	False	False
-LH2 Rail	LH2 Train	False	True
-LH2 Rail	LH2 Train Truck Terminal	False	False
-LH2 Rail	LH2 Truck	True	False
-LH2 Rail	LH2 Station	False	False
-LH2 Truck	LH2 Truck Terminal	False	False
-LH2 Truck	LH2 Truck	True	True
-LH2 Truck	LH2 Station	False	False
-LH2 Pipeline	LH2 Pipeline Compressor	False	False
-LH2 Pipeline	LH2 Pipeline	False	True
-LH2 Pipeline	LH2 Pipeline Truck Terminal	False	False
-LH2 Pipeline	LH2 Truck	True	False
-LH2 Pipeline	LH2 Station	False	False
-GH2 Truck	GH2 Truck Terminal	False	False
-GH2 Truck	GH2 Truck	True	True
-GH2 Truck	GH2 Station	False	False
-GH2 Pipeline	GH2 Pipeline Compressor	False	False
-GH2 Pipeline	GH2 Pipeline	False	True
-GH2 Pipeline	GH2 Pipeline Truck Terminal	False	False
-GH2 Pipeline	GH2 Truck	True	False
-GH2 Pipeline	GH2 Station	False	False
-Pure GH2 Truck	Pure GH2 Truck Terminal	False	False
-Pure GH2 Truck	GH2 Truck	True	True
-Pure GH2 Truck	GH2 Station	False	False
+Pathway	Stage	Technology	Transmission?	Delivery?
+LH2 Rail	1	LH2 Train Terminal	False	False
+LH2 Rail	2	LH2 Train	True	False
+LH2 Rail	3	LH2 Train Truck Terminal	False	False
+LH2 Rail	4	LH2 Truck	False	True
+LH2 Rail	5	LH2 Station	False	False
+LH2 Truck	1	LH2 Truck Terminal	False	False
+LH2 Truck	2	LH2 Truck	True	True
+LH2 Truck	3	LH2 Station	False	False
+LH2 Pipeline	1	LH2 Pipeline Compressor	False	False
+LH2 Pipeline	2	LH2 Pipeline	True	False
+LH2 Pipeline	3	LH2 Pipeline Truck Terminal	False	False
+LH2 Pipeline	4	LH2 Truck	False	True
+LH2 Pipeline	5	LH2 Station	False	False
+GH2 Truck	1	GH2 Truck Terminal	False	False
+GH2 Truck	2	GH2 Truck	True	True
+GH2 Truck	3	GH2 Station	False	False
+GH2 Pipeline	1	GH2 Pipeline Compressor	False	False
+GH2 Pipeline	2	GH2 Pipeline	True	False
+GH2 Pipeline	3	GH2 Pipeline Truck Terminal	False	False
+GH2 Pipeline	4	GH2 Truck	False	True
+GH2 Pipeline	5	GH2 Station	False	False
+Pure GH2 Truck	1	Pure GH2 Truck Terminal	False	False
+Pure GH2 Truck	2	GH2 Truck	True	True
+Pure GH2 Truck	3	GH2 Station	False	False

@@ -35,8 +35,8 @@ import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
-import SERA.Material.Prices (readPrices)
-import SERA.Process (ProcessLibraryFiles, readProcessLibrary)
+import SERA.Material.Prices (materials, readPrices)
+import SERA.Process (ProcessLibraryFiles, deliveries, pathways, productions, readProcessLibrary)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
 import SERA.Scenario.Grants (allocateGrants)
 import SERA.Scenario.HydrogenSizing (CapitalCostParameters, SitePreparationParameters, sizeStations)
@@ -49,6 +49,7 @@ data ConfigProduction =
   {
     priceFiles          :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
+  , pathwayFiles        :: [FilePath]
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -63,7 +64,17 @@ productionMain :: (IsString e, MonadError e m, MonadIO m)
                        -> m ()                 -- ^ Action to compute the station sizes.
 productionMain ConfigProduction{..} =
   do
-    x <- readPrices priceFiles
-    liftIO $ print x
-    y <- readProcessLibrary processLibraryFiles
-    liftIO $ print y
+    priceCube <- readPrices priceFiles
+    processLibrary <- readProcessLibrary processLibraryFiles pathwayFiles
+    liftIO
+      $ do
+        let
+          list label content =
+            do
+              putStrLn ""
+              putStrLn $ label ++ ":"
+              mapM_ (putStrLn . ("  " ++) . show) content
+        list "Material"   $ materials   priceCube
+        list "Production" $ productions processLibrary
+        list "Delivery"   $ deliveries  processLibrary
+        list "Pathway"    $ pathways    processLibrary

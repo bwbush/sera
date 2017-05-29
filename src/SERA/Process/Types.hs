@@ -32,6 +32,10 @@ $(makeField       "VariableCostStretch" "Variable Operating Cost [$/km/kg]" ''Do
 $(makeField       "Yield"               "Yield [kg/kg]"                     ''Double)
 $(makeField       "OnSite"              "On Site?"                          ''Bool  )
 $(makeField       "Lifetime"            "Lifetime [yr]"                     ''Age   )
+$(makeStringField "Pathway"             "Pathway"                                   )
+$(makeField       "Stage"               "Stage"                             ''Int   )
+$(makeField       "Transmission"        "Transmission?"                     ''Bool  )
+$(makeField       "Delivery"            "Delivery?"                         ''Bool  )
 
 
 type ProcessKey = '[FTechnology, FYear, FCapacity]
@@ -55,6 +59,9 @@ type ProcessInputCube = ConsumptionCube ProcessKey
 type ProcessOutputCube = ProductionCube ProcessKey
 
 
+type PathwayCube = '[FPathway, FTechnology] *↝  '[FStage, FTransmission, FDelivery]
+
+
 data ProcessLibrary =
   ProcessLibrary
   {
@@ -62,6 +69,7 @@ data ProcessLibrary =
   , processCostCube   :: ProcessCostCube
   , processInputCube  :: ProcessInputCube
   , processOutputCube :: ProcessOutputCube
+  , pathwayCube       :: PathwayCube
   }
     deriving (Eq, Ord, Show)
 
@@ -69,7 +77,7 @@ data ProcessLibrary =
 data Component =
   Component
   {
-    component    :: Technology
+    component    :: Either Technology Pathway
   , year         :: Year
   , capacity     :: Double
   , distance     :: Double

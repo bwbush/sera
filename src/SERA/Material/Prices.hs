@@ -21,6 +21,8 @@
 module SERA.Material.Prices (
 -- * Input/output
   readPrices
+-- * Access
+, materials
 -- * Manipulation
 , rezonePrices
 ) where
@@ -29,15 +31,23 @@ module SERA.Material.Prices (
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Daft.Vinyl.FieldCube ((⋈), κ, ω)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
-import Data.Set (Set)
+import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Set (Set, toList)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
-import SERA.Material.Types (PriceCube, FZone, ZoneCube)
+import SERA.Material.Types (Material, FMaterial, fMaterial, PriceCube, FZone, ZoneCube)
 import SERA.Types (FRegion, FYear)
 
 
 readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FYear, FZone])
 readPrices = (mconcat <$>) . mapM readFieldCubeFile
+
+
+materials :: PriceCube a -> [Material]
+materials priceCube =
+  fmap (fMaterial <:)
+    . toList
+    $ (ω priceCube :: Set (FieldRec '[FMaterial]))
 
 
 rezonePrices :: PriceCube '[FYear, FZone]
