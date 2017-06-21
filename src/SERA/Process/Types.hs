@@ -18,36 +18,41 @@ import SERA.Types.TH (makeField, makeStringField)
 import SERA.Vehicle.Types (Age)
 
 
+data Production =
+    OnSite
+  | Central
+  | No
+    deriving (Bounded, Enum, Eq, Ord, Read, Show)
+
+
+isProduction :: Production -> Bool
+isProduction No = False
+isProduction _  = True
+
+
 -- TO DO: eliminate distance and add linear distance scaling, also add capacity scaling exponent.
-$(makeStringField "Technology"          "Technology"                                )
-$(makeField       "Distance"            "Distance [km]"                     ''Double)
-$(makeField       "Capacity"            "Capacity [kg/yr]"                  ''Double)
-$(makeField       "Scaling"             "Scaling Exponent"                  ''Double)
-$(makeField       "CapitalCost"         "Capital Cost [$]"                  ''Double)
-$(makeField       "CapitalCostStretch"  "Capital Cost [$/km]"               ''Double)
-$(makeField       "FixedCost"           "Fixed Operating Cost [$/yr]"       ''Double)
-$(makeField       "FixedCostStretch"    "Fixed Operating Cost [$/km/yr]"    ''Double)
-$(makeField       "VariableCost"        "Variable Operating Cost [$/kg]"    ''Double)
-$(makeField       "VariableCostStretch" "Variable Operating Cost [$/km/kg]" ''Double)
-$(makeField       "Yield"               "Yield [kg/kg]"                     ''Double)
-$(makeField       "OnSite"              "On Site?"                          ''Bool  )
-$(makeField       "Lifetime"            "Lifetime [yr]"                     ''Age   )
-$(makeStringField "Pathway"             "Pathway"                                   )
-$(makeField       "Stage"               "Stage"                             ''Int   )
-$(makeField       "Transmission"        "Transmission?"                     ''Bool  )
-$(makeField       "Delivery"            "Delivery?"                         ''Bool  )
+$(makeStringField "Technology"          "Technology"                                    )
+$(makeField       "Distance"            "Distance [km]"                     ''Double    )
+$(makeField       "Capacity"            "Capacity [kg/yr]"                  ''Double    )
+$(makeField       "Production"          "Production?"                       ''Production)
+$(makeField       "Lifetime"            "Lifetime [yr]"                     ''Age       )
+$(makeField       "Scaling"             "Scaling Exponent"                  ''Double    )
+$(makeField       "CapitalCost"         "Capital Cost [$]"                  ''Double    )
+$(makeField       "CapitalCostStretch"  "Capital Cost [$/km]"               ''Double    )
+$(makeField       "FixedCost"           "Fixed Operating Cost [$/yr]"       ''Double    )
+$(makeField       "FixedCostStretch"    "Fixed Operating Cost [$/km/yr]"    ''Double    )
+$(makeField       "VariableCost"        "Variable Operating Cost [$/kg]"    ''Double    )
+$(makeField       "VariableCostStretch" "Variable Operating Cost [$/km/kg]" ''Double    )
+$(makeStringField "Pathway"             "Pathway"                                       )
+$(makeField       "Stage"               "Stage"                             ''Int       )
+$(makeField       "Transmission"        "Transmission?"                     ''Bool      )
+$(makeField       "Delivery"            "Delivery?"                         ''Bool      )
 
 
 type ProcessKey = '[FTechnology, FYear, FCapacity]
 
 
-type ProcessProperties = '[FOnSite, FLifetime]
-
-
-type ProcessCube = ProcessKey *↝ ProcessProperties
-
-
-type ProcessCost = '[FYield, FScaling, FCapitalCost, FCapitalCostStretch, FFixedCost, FFixedCostStretch, FVariableCost, FVariableCostStretch]
+type ProcessCost = '[FProduction, FLifetime, FScaling, FCapitalCost, FCapitalCostStretch, FFixedCost, FFixedCostStretch, FVariableCost, FVariableCostStretch]
 
 
 type ProcessCostCube = ProcessKey *↝ ProcessCost
@@ -65,8 +70,7 @@ type PathwayCube = '[FPathway, FTechnology] *↝  '[FStage, FTransmission, FDeli
 data ProcessLibrary =
   ProcessLibrary
   {
-    processCube       :: ProcessCube
-  , processCostCube   :: ProcessCostCube
+    processCostCube   :: ProcessCostCube
   , processInputCube  :: ProcessInputCube
   , processOutputCube :: ProcessOutputCube
   , pathwayCube       :: PathwayCube
@@ -81,9 +85,8 @@ data Component =
   , year         :: Year
   , capacity     :: Double
   , distance     :: Double
-  , onSite       :: Bool
+  , production   :: Production
   , lifetime     :: Age
-  , yield        :: Double
   , capitalCost  :: Double
   , fixedCost    :: Double
   , variableCost :: Double

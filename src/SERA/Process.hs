@@ -38,10 +38,9 @@ import SERA.Types (Year, fYear)
 data ProcessLibraryFiles =
   ProcessLibraryFiles
   {
-    propertiesFile :: Maybe FilePath
-  , costsFile      :: FilePath
-  , inputsFile     :: Maybe FilePath
-  , outputsFile    :: Maybe FilePath
+    costsFile   :: FilePath
+  , inputsFile  :: Maybe FilePath
+  , outputsFile :: Maybe FilePath
 
   }
     deriving (Eq, Generic, Ord, Read, Show)
@@ -54,11 +53,10 @@ instance ToJSON ProcessLibraryFiles
 readProcessLibrary :: (IsString e, MonadError e m, MonadIO m) => [ProcessLibraryFiles] -> [FilePath] -> m ProcessLibrary
 readProcessLibrary processLibraryFiles pathwayFiles =
   do 
-    processCube       <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . propertiesFile) processLibraryFiles
-    processCostCube   <- mconcat <$> mapM (                      readFieldCubeFile . costsFile     ) processLibraryFiles
-    processInputCube  <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . inputsFile    ) processLibraryFiles
-    processOutputCube <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . outputsFile   ) processLibraryFiles
-    pathwayCube       <- mconcat <$> mapM                        readFieldCubeFile                   pathwayFiles
+    processCostCube   <- mconcat <$> mapM (                      readFieldCubeFile . costsFile  ) processLibraryFiles
+    processInputCube  <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . inputsFile ) processLibraryFiles
+    processOutputCube <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . outputsFile) processLibraryFiles
+    pathwayCube       <- mconcat <$> mapM                        readFieldCubeFile                pathwayFiles
     return ProcessLibrary{..}
 
 
@@ -66,14 +64,14 @@ productions :: ProcessLibrary -> [Technology]
 productions ProcessLibrary{..} =
   fmap (fTechnology <:)
     . toList
-    $ (ω processCube :: Set (FieldRec '[FTechnology]))
+    $ (ω $ σ (const $ isProduction . (fProduction <:)) processCostCube :: Set (FieldRec '[FTechnology]))
 
 
 deliveries :: ProcessLibrary -> [Technology]
 deliveries ProcessLibrary{..} =
   fmap (fTechnology <:)
     . toList
-    $ (ω processCostCube \\ ω processCube :: Set (FieldRec '[FTechnology]))
+    $ (ω $ σ (const $ not . isProduction . (fProduction <:)) processCostCube :: Set (FieldRec '[FTechnology]))
 
 
 processes :: ProcessLibrary -> [Technology]
@@ -104,14 +102,12 @@ sizeComponent ProcessLibrary{..} process year capacity distance =
     (specification, costs) <- selectKnownMaximum $ σ candidate processCostCube
     let
       component = Left process
-      properties = fromMaybe (fOnSite =: False <+> fLifetime =: maxBound) $ processCube `evaluate` specification
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
           * (capacity / fCapacity <: specification) ** (fScaling <: costs)
       extract = κ (singleton specification) (const head) . σ (const . (specification ==) . τ)
-      onSite = fOnSite <: properties
-      lifetime = fLifetime <: properties
-      yield = fYield <: costs
+      production = fProduction <: costs
+      lifetime = fLifetime <: costs
       capitalCost = scaleCost fCapitalCost fCapitalCostStretch 
       fixedCost = scaleCost fFixedCost fFixedCostStretch
       variableCost = scaleCost fVariableCost fVariableCostStretch
