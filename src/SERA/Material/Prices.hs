@@ -19,10 +19,8 @@
 
 
 module SERA.Material.Prices (
--- * Input/output
-  readPrices
 -- * Access
-, materials
+  materials
 -- * Manipulation
 , rezonePrices
 ) where
@@ -37,10 +35,6 @@ import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (Material, FMaterial, fMaterial, PriceCube, FZone, ZoneCube)
 import SERA.Types (FRegion, FYear)
-
-
-readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FYear, FZone])
-readPrices = (mconcat <$>) . mapM readFieldCubeFile
 
 
 materials :: PriceCube a -> [Material]

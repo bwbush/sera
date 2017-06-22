@@ -35,7 +35,8 @@ import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
-import SERA.Material.Prices (materials, readPrices)
+import SERA.Material.IO (readIntensities, readPrices)
+import SERA.Material.Prices (materials)
 import SERA.Process (ProcessLibraryFiles, deliveries, pathways, productions, readProcessLibrary)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
 import SERA.Scenario.Grants (allocateGrants)
@@ -48,6 +49,7 @@ data ConfigProduction =
   ConfigProduction
   {
     priceFiles          :: [FilePath]
+  , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
   , pathwayFiles        :: [FilePath]
   }
@@ -65,6 +67,7 @@ productionMain :: (IsString e, MonadError e m, MonadIO m)
 productionMain ConfigProduction{..} =
   do
     priceCube <- readPrices priceFiles
+    intensityCube <- readIntensities intensityFiles
     processLibrary <- readProcessLibrary processLibraryFiles pathwayFiles
     liftIO
       $ do
