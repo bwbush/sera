@@ -14,7 +14,9 @@ module SERA.Material.Types (
 , FMaterial
 , FUpstreamMaterial
 , FConsumptionRate
+, FConsumptionRateStretch
 , FProductionRate
+, FProductionRateStretch
 , FPrice
 , FZone
 , FTotalConsumption
@@ -24,7 +26,9 @@ module SERA.Material.Types (
 , fMaterial
 , fUpstreamMaterial
 , fConsumptionRate
+, fConsumptionRateStretch
 , fProductionRate
+, fProductionRateStretch
 , fPrice
 , fZone
 , fTotalConsumption
@@ -44,21 +48,23 @@ import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
-$(makeStringField "Material"         "Material"                          )
-$(makeStringField "UpstreamMaterial" "Upstream Material"                 )
-$(makeField       "ConsumptionRate"  "Consumption [unit/kg]"     ''Double)
-$(makeField       "ProductionRate"   "Production [unit/kg]"      ''Double)
-$(makeField       "Price"            "Price [$/unit]"            ''Double)
-$(makeStringField "Zone"             "Zone"                              )
-$(makeField       "TotalConsumption" "Consumption [unit]"        ''Double)
-$(makeField       "TotalProduction"  "Production [unit]"         ''Double)
-$(makeField       "Intensity"        "Intensity [upstream/unit]" ''Double)
+$(makeStringField "Material"                "Material"                          )
+$(makeStringField "UpstreamMaterial"        "Upstream Material"                 )
+$(makeField       "ConsumptionRate"         "Consumption [unit/kg]"     ''Double)
+$(makeField       "ConsumptionRateStretch"  "Consumption [unit/km/kg]"  ''Double)
+$(makeField       "ProductionRate"          "Production [unit/kg]"      ''Double)
+$(makeField       "ProductionRateStretch"   "Production [unit/km/kg]"   ''Double)
+$(makeField       "Price"                   "Price [$/unit]"            ''Double)
+$(makeStringField "Zone"                    "Zone"                              )
+$(makeField       "TotalConsumption"        "Consumption [unit]"        ''Double)
+$(makeField       "TotalProduction"         "Production [unit]"         ''Double)
+$(makeField       "Intensity"               "Intensity [upstream/unit]" ''Double)
 
 
-type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate]
+type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate, FConsumptionRateStretch]
 
 
-type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate]
+type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate, FProductionRateStretch]
 
 
 type PriceCube key = (FMaterial ': key) *↝ '[FPrice]

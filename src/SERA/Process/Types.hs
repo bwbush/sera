@@ -19,7 +19,7 @@ import SERA.Vehicle.Types (Age)
 
 
 data Production =
-    OnSite
+    Onsite
   | Central
   | No
     deriving (Bounded, Enum, Eq, Ord, Read, Show)
