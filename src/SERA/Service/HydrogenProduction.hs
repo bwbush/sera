@@ -52,6 +52,7 @@ data ConfigProduction =
   , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
   , pathwayFiles        :: [FilePath]
+  , zoneFiles           :: [FilePath]
   }
     deriving (Eq, Generic, Ord, Read, Show)
 

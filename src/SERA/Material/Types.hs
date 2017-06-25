@@ -9,7 +9,6 @@
 module SERA.Material.Types (
 -- * Data types
   Material
-, Zone
 -- * Field types
 , FMaterial
 , FUpstreamMaterial
@@ -18,7 +17,6 @@ module SERA.Material.Types (
 , FProductionRate
 , FProductionRateStretch
 , FPrice
-, FZone
 , FTotalConsumption
 , FTotalProduction
 , FIntensity
@@ -30,7 +28,6 @@ module SERA.Material.Types (
 , fProductionRate
 , fProductionRateStretch
 , fPrice
-, fZone
 , fTotalConsumption
 , fTotalProduction
 , fIntensity
@@ -38,13 +35,12 @@ module SERA.Material.Types (
 , ConsumptionCube
 , ProductionCube
 , PriceCube
-, ZoneCube
 , IntensityCube
 ) where
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
-import SERA.Types (FYear)
+import SERA.Types (FFraction, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
@@ -55,7 +51,6 @@ $(makeField       "ConsumptionRateStretch"  "Consumption [unit/km/kg]"  ''Double
 $(makeField       "ProductionRate"          "Production [unit/kg]"      ''Double)
 $(makeField       "ProductionRateStretch"   "Production [unit/km/kg]"   ''Double)
 $(makeField       "Price"                   "Price [$/unit]"            ''Double)
-$(makeStringField "Zone"                    "Zone"                              )
 $(makeField       "TotalConsumption"        "Consumption [unit]"        ''Double)
 $(makeField       "TotalProduction"         "Production [unit]"         ''Double)
 $(makeField       "Intensity"               "Intensity [upstream/unit]" ''Double)
@@ -70,7 +65,4 @@ type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate, FProduction
 type PriceCube key = (FMaterial ': key) *↝ '[FPrice]
 
 
-type ZoneCube key = (FZone ': key) *↝ '[]
-
-
-type IntensityCube = '[FMaterial, FUpstreamMaterial, FZone, FYear] *↝ '[FIntensity]
+type IntensityCube key = (FMaterial ': FUpstreamMaterial ': FYear ': key) *↝ '[FIntensity]

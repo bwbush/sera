@@ -1,5 +1,5 @@
 name: sera
-version: 3.0.0.11
+version: 3.0.0.12
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -78,6 +78,8 @@ library
                     SERA.Material.IO
                     SERA.Material.Types
                     SERA.Material.Prices
+                    SERA.Network.IO
+                    SERA.Network.Types
                     SERA.Process
                     SERA.Process.Types
                     SERA.Refueling.FCVSE.Cost

@@ -41,6 +41,9 @@ module SERA.Types (
 , UrbanName(..)
 , FUrbanName
 , fUrbanName
+-- * Fractions
+, FFraction
+, fFraction
 -- * Configuration
 , quotedStringTypes
 ) where
@@ -91,3 +94,6 @@ $(makeStringField "UrbanCode" "Census Urban Area Code")
 -- | Data type for urban area names.
 -- | Field type for urban area names.
 $(makeStringField "UrbanName" "Census Urban Area Name")
+
+
+$(makeField "Fraction" "Fraction" ''Double)

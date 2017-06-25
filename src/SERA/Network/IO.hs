@@ -18,9 +18,8 @@
 {-# LANGUAGE TypeOperators              #-}
 
 
-module SERA.Material.IO (
-  readPrices
-, readIntensities
+module SERA.Network.IO (
+  readZones
 ) where
 
 
@@ -31,14 +30,9 @@ import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Set (Set, toList)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
-import SERA.Material.Types (Material, FMaterial, fMaterial, IntensityCube, PriceCube)
-import SERA.Network.Types (FZone)
+import SERA.Network.Types (FLocation, FZone, ZoneCube)
 import SERA.Types (FRegion, FYear)
 
 
-readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FYear, FZone])
-readPrices = (mconcat <$>) . mapM readFieldCubeFile
-
-
-readIntensities :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (IntensityCube '[FZone])
-readIntensities = (mconcat <$>) . mapM readFieldCubeFile
+readZones :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (ZoneCube '[FLocation])
+readZones = (mconcat <$>) . mapM readFieldCubeFile

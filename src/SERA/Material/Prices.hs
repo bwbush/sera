@@ -32,9 +32,10 @@ import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Set (Set, toList)
 import Data.String (IsString)
-import Data.Vinyl.Derived (FieldRec)
-import SERA.Material.Types (Material, FMaterial, fMaterial, PriceCube, FZone, ZoneCube)
-import SERA.Types (FRegion, FYear)
+import Data.Vinyl.Derived (FieldRec, (=:))
+import SERA.Material.Types (Material, FMaterial, fMaterial, fPrice, PriceCube)
+import SERA.Network.Types (FZone, ZoneCube)
+import SERA.Types (fFraction, FRegion, FYear)
 
 
 materials :: PriceCube a -> [Material]
@@ -48,5 +49,7 @@ rezonePrices :: PriceCube '[FYear, FZone]
              -> ZoneCube '[FRegion]
              -> PriceCube '[FYear, FRegion]
 rezonePrices prices zones = -- FIXME: Generalize this to `key` instead of `FRegion`.
-  κ (ω zones :: Set (FieldRec '[FZone])) (const head)
+  κ (ω zones :: Set (FieldRec '[FZone])) combine
     $ prices ⋈ zones
+    where
+      combine _ fps = fPrice =: sum [fFraction <: fp * fPrice <: fp | fp <- fps] -- FIXME: Generalize.
