@@ -47,6 +47,8 @@ $(makeStringField "Pathway"             "Pathway"                               
 $(makeField       "Stage"               "Stage"                             ''Int       )
 $(makeField       "Transmission"        "Transmission?"                     ''Bool      )
 $(makeField       "Delivery"            "Delivery?"                         ''Bool      )
+$(makeField       "Cost"                "Cost [$/kg]"                       ''Double    )
+$(makeField       "Yield"               "Yield [upstream/kg]"               ''Double    )
 
 
 type ProcessKey = '[FTechnology, FYear, FCapacity]
