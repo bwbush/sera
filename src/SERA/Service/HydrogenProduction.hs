@@ -38,7 +38,7 @@ import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices (materials)
-import SERA.Network.IO (readNetwork)
+import SERA.Network.IO (readDemands, readNetwork)
 import SERA.Network.Types (Network(..))
 import SERA.Process (ProcessLibraryFiles, deliveries, pathways, productions, readProcessLibrary)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
@@ -60,6 +60,7 @@ data ConfigProduction =
   , existingFiles       :: [FilePath]
   , territoryFiles      :: [FilePath]
   , zoneFiles           :: [FilePath]
+  , demandFiles         :: [FilePath]
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -78,6 +79,7 @@ productionMain ConfigProduction{..} =
     intensityCube <- readIntensities intensityFiles
     processLibrary <- readProcessLibrary processLibraryFiles pathwayFiles
     network <- readNetwork nodeFiles linkFiles existingFiles territoryFiles zoneFiles
+    demandCube <- readDemands demandFiles
     liftIO
       $ do
         let
@@ -91,7 +93,7 @@ productionMain ConfigProduction{..} =
               putStrLn ""
               putStrLn $ label ++ ": " ++ show (knownSize content) ++ " keys"
         list  "Material"    $ materials     priceCube
-        count "Intensities" $               intensityCube
+        count "Intensities"                 intensityCube
         list  "Production"  $ productions   processLibrary
         list  "Delivery"    $ deliveries    processLibrary
         list  "Pathway"     $ pathways      processLibrary
@@ -100,4 +102,5 @@ productionMain ConfigProduction{..} =
         count "Existings"   $ existingCube  network
         count "Territories" $ territoryCube network
         count "Zones"       $ zoneCube      network
+        count "Demands"                     demandCube
         putStrLn ""

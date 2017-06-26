@@ -38,6 +38,7 @@ module SERA.Network.Types (
 , ExistingCube
 , TerritoryCube
 , ZoneCube
+, DemandCube
 ) where
 
 
@@ -47,18 +48,19 @@ import SERA.Types (FFraction, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
-$(makeStringField "Location"  "Network ID"          )
-$(makeStringField "Node"      "Node ID"             )
-$(makeStringField "Link"      "Link ID"             )
-$(makeStringField "From"      "From Node ID"        )
-$(makeStringField "To"        "To Node ID"          )
-$(makeField       "X"         "X"           ''Double)
-$(makeField       "Y"         "Y"           ''Double)
-$(makeField       "Length"    "Length [km]" ''Double)
-$(makeField       "Sale"      "Cost [$]"    ''Double)
-$(makeField       "Rent"      "Cost [$/yr]" ''Double)
-$(makeStringField "Territory" "Territory"           )
-$(makeStringField "Zone"      "Zone"                )
+$(makeStringField "Location"    "Network ID"               )
+$(makeStringField "Node"        "Node ID"                  )
+$(makeStringField "Link"        "Link ID"                  )
+$(makeStringField "From"        "From Node ID"             )
+$(makeStringField "To"          "To Node ID"               )
+$(makeField       "X"           "X"                ''Double)
+$(makeField       "Y"           "Y"                ''Double)
+$(makeField       "Length"      "Length [km]"      ''Double)
+$(makeField       "Sale"        "Cost [$]"         ''Double)
+$(makeField       "Rent"        "Cost [$/yr]"      ''Double)
+$(makeStringField "Territory"   "Territory"                )
+$(makeStringField "Zone"        "Zone"                     )
+$(makeField       "Consumption" "Consumption [kg]" ''Double)
 
 
 data Network =
@@ -86,3 +88,6 @@ type TerritoryCube = '[FTerritory, FLocation] *↝ '[FFraction]
 
 
 type ZoneCube key = (FZone ': key) *↝ '[FFraction]
+
+
+type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
