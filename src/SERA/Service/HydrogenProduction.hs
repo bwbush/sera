@@ -45,13 +45,20 @@ import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
 import SERA.Scenario.Grants (allocateGrants)
 import SERA.Scenario.HydrogenSizing (CapitalCostParameters, SitePreparationParameters, sizeStations)
 import SERA.Service ()
+import SERA.Types (Year)
 
 
 -- | Configuration for hydrogen station sizing.
 data ConfigProduction =
   ConfigProduction
   {
-    priceFiles          :: [FilePath]
+    firstYear           :: Year
+  , lastYear            :: Year
+  , timeWindow          :: Year
+  , discountRate        :: Double
+  , escalationRate      :: Double
+  , interpolate         :: Bool
+  , priceFiles          :: [FilePath]
   , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
   , pathwayFiles        :: [FilePath]
@@ -92,6 +99,13 @@ productionMain ConfigProduction{..} =
             do
               putStrLn ""
               putStrLn $ label ++ ": " ++ show (knownSize content) ++ " keys"
+        putStrLn ""
+        putStrLn $ "First Year:            " ++ show firstYear
+        putStrLn $ "Last Year:             " ++ show lastYear
+        putStrLn $ "Time Window:           " ++ show timeWindow
+        putStrLn $ "Discount Rate [/yr]:   " ++ show discountRate
+        putStrLn $ "Escalation Rate [/yr]: " ++ show escalationRate
+        putStrLn $ "Interpolate?           " ++ show interpolate
         list  "Material"    $ materials     priceCube
         count "Intensities"                 intensityCube
         list  "Production"  $ productions   processLibrary
