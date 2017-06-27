@@ -21,6 +21,10 @@ module SERA.Network.Types (
 , FY
 , FSale
 , FRent
+, FFrom
+, FTo
+, FLength
+, FTerritory
 -- * Field accessors
 , fLocation
 , fNode
@@ -38,7 +42,6 @@ module SERA.Network.Types (
 , ExistingCube
 , TerritoryCube
 , ZoneCube
-, DemandCube
 ) where
 
 
@@ -60,7 +63,6 @@ $(makeField       "Sale"        "Cost [$]"         ''Double)
 $(makeField       "Rent"        "Cost [$/yr]"      ''Double)
 $(makeStringField "Territory"   "Territory"                )
 $(makeStringField "Zone"        "Zone"                     )
-$(makeField       "Consumption" "Consumption [kg]" ''Double)
 
 
 data Network =
@@ -88,6 +90,3 @@ type TerritoryCube = '[FTerritory, FLocation] *↝ '[FFraction]
 
 
 type ZoneCube key = (FZone ': key) *↝ '[FFraction]
-
-
-type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]

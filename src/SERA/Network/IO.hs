@@ -26,7 +26,6 @@ module SERA.Network.IO (
 , readExistings
 , readTerritories
 , readZones
-, readDemands
 ) where
 
 
@@ -37,7 +36,7 @@ import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Set (Set, toList)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
-import SERA.Network.Types (DemandCube, FLocation, FZone, ExistingCube, LinkCube, Network(..), NodeCube, TerritoryCube, ZoneCube)
+import SERA.Network.Types (FLocation, FZone, ExistingCube, LinkCube, Network(..), NodeCube, TerritoryCube, ZoneCube)
 import SERA.Types (FRegion, FYear)
 
 
@@ -70,7 +69,3 @@ readTerritories = (mconcat <$>) . mapM readFieldCubeFile
 
 readZones :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (ZoneCube '[FLocation])
 readZones = (mconcat <$>) . mapM readFieldCubeFile
-
-
-readDemands :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m DemandCube
-readDemands = (mconcat <$>) . mapM readFieldCubeFile

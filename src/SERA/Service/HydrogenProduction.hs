@@ -36,9 +36,10 @@ import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
+import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices (materials)
-import SERA.Network.IO (readDemands, readNetwork)
+import SERA.Network.IO (readNetwork)
 import SERA.Network.Types (Network(..))
 import SERA.Process (ProcessLibraryFiles, deliveries, pathways, productions, readProcessLibrary)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
@@ -68,6 +69,7 @@ data ConfigProduction =
   , territoryFiles      :: [FilePath]
   , zoneFiles           :: [FilePath]
   , demandFiles         :: [FilePath]
+  , infrastructureFiles :: InfrastructureFiles
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -99,6 +101,7 @@ productionMain ConfigProduction{..} =
             do
               putStrLn ""
               putStrLn $ label ++ ": " ++ show (knownSize content) ++ " keys"
+          InfrastructureFiles{..} = infrastructureFiles
         putStrLn ""
         putStrLn $ "First Year:            " ++ show firstYear
         putStrLn $ "Last Year:             " ++ show lastYear
@@ -117,4 +120,10 @@ productionMain ConfigProduction{..} =
         count "Territories" $ territoryCube network
         count "Zones"       $ zoneCube      network
         count "Demands"                     demandCube
+        putStrLn ""
+        putStrLn $ "Construction: " ++ constructionFile
+        putStrLn $ "Flow:         " ++ flowFile
+        putStrLn $ "Cash:         " ++ cashFile
+        putStrLn $ "Impact:       " ++ impactFile
+        putStrLn $ "Sale:         " ++ saleFile
         putStrLn ""
