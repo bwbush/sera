@@ -7,9 +7,7 @@
 
 
 module SERA.Process (
-  ProcessLibraryFiles(..)
-, readProcessLibrary
-, productions
+  productions
 , deliveries
 , processes
 , pathways
@@ -33,31 +31,6 @@ import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
 import SERA.Process.Types -- FIXME
 import SERA.Types (Year, fYear)
-
-
-data ProcessLibraryFiles =
-  ProcessLibraryFiles
-  {
-    costsFile   :: FilePath
-  , inputsFile  :: Maybe FilePath
-  , outputsFile :: Maybe FilePath
-
-  }
-    deriving (Eq, Generic, Ord, Read, Show)
-
-instance FromJSON ProcessLibraryFiles
-
-instance ToJSON ProcessLibraryFiles
-
-
-readProcessLibrary :: (IsString e, MonadError e m, MonadIO m) => [ProcessLibraryFiles] -> [FilePath] -> m ProcessLibrary
-readProcessLibrary processLibraryFiles pathwayFiles =
-  do 
-    processCostCube   <- mconcat <$> mapM (                      readFieldCubeFile . costsFile  ) processLibraryFiles
-    processInputCube  <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . inputsFile ) processLibraryFiles
-    processOutputCube <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . outputsFile) processLibraryFiles
-    pathwayCube       <- mconcat <$> mapM                        readFieldCubeFile                pathwayFiles
-    return ProcessLibrary{..}
 
 
 productions :: ProcessLibrary -> [Technology]

@@ -16,11 +16,18 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE RecordWildCards   #-}
 
 
 module SERA.Network.IO (
-  readNetwork
+  NetworkFiles(..)
+, readNetwork
 , readNodes
 , readLinks
 , readExistings
@@ -30,18 +37,36 @@ module SERA.Network.IO (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
+import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Vinyl.FieldCube ((⋈), κ, ω)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Set (Set, toList)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
+import GHC.Generics (Generic)
 import SERA.Network.Types (FLocation, FZone, ExistingCube, LinkCube, Network(..), NodeCube, TerritoryCube, ZoneCube)
 import SERA.Types (FRegion, FYear)
 
 
-readNetwork :: (IsString e, MonadError e m, MonadIO m) => [FilePath] -> [FilePath] -> [FilePath] -> [FilePath] -> [FilePath] ->  m Network
-readNetwork nodeFiles linkFiles existingFiles territoryFiles zoneFiles =
+data NetworkFiles =
+  NetworkFiles
+  {
+    nodeFiles      :: [FilePath]
+  , linkFiles      :: [FilePath]
+  , existingFiles  :: [FilePath]
+  , territoryFiles :: [FilePath]
+  , zoneFiles      :: [FilePath]
+  }
+    deriving (Eq, Generic, Ord, Read, Show)
+
+instance FromJSON NetworkFiles
+
+instance ToJSON NetworkFiles
+
+
+readNetwork :: (IsString e, MonadError e m, MonadIO m) => NetworkFiles ->  m Network
+readNetwork NetworkFiles{..} =
   do
     nodeCube <- readNodes nodeFiles
     linkCube <- readLinks linkFiles

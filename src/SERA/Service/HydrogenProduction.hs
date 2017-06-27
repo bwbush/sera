@@ -39,9 +39,10 @@ import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices (materials)
-import SERA.Network.IO (readNetwork)
+import SERA.Network.IO (NetworkFiles(..), readNetwork)
 import SERA.Network.Types (Network(..))
-import SERA.Process (ProcessLibraryFiles, deliveries, pathways, productions, readProcessLibrary)
+import SERA.Process (deliveries, pathways, productions)
+import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
 import SERA.Scenario.Grants (allocateGrants)
 import SERA.Scenario.HydrogenSizing (CapitalCostParameters, SitePreparationParameters, sizeStations)
@@ -63,11 +64,7 @@ data ConfigProduction =
   , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
   , pathwayFiles        :: [FilePath]
-  , nodeFiles           :: [FilePath]
-  , linkFiles           :: [FilePath]
-  , existingFiles       :: [FilePath]
-  , territoryFiles      :: [FilePath]
-  , zoneFiles           :: [FilePath]
+  , networkFiles        :: NetworkFiles
   , demandFiles         :: [FilePath]
   , infrastructureFiles :: InfrastructureFiles
   }
@@ -87,7 +84,7 @@ productionMain ConfigProduction{..} =
     priceCube <- readPrices priceFiles
     intensityCube <- readIntensities intensityFiles
     processLibrary <- readProcessLibrary processLibraryFiles pathwayFiles
-    network <- readNetwork nodeFiles linkFiles existingFiles territoryFiles zoneFiles
+    network <- readNetwork networkFiles
     demandCube <- readDemands demandFiles
     liftIO
       $ do
