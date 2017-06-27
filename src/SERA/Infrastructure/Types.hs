@@ -35,7 +35,7 @@ $(makeField       "TotalCost"      "Cost [kg]"         ''Double)
 $(makeField       "Sales"          "Sales [kg]"        ''Double)
 $(makeField       "NetPrice"       "Price [$/kg]"      ''Double)
 $(makeField       "Emission"       "Emission [unit]"   ''Double)
-$(makeField       "CostCategory"   "Category"          ''Double)
+$(makeField       "CostCategory"   "Cost Category"     ''Double)
 
 
 type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
