@@ -26,32 +26,33 @@ import SERA.Process.Types -- FIXME
 import SERA.Types (Year, fYear)
 
 
-productions :: ProcessLibrary -> [Technology]
-productions ProcessLibrary{..} =
+type Technologies = Set (FieldRec '[FTechnology])
+
+
+filterTechnologiesByProduction :: (Production -> Bool) -> ProcessLibrary -> [Technology]
+filterTechnologiesByProduction f ProcessLibrary{..} =
   fmap (fTechnology <:)
     . toList
-    $ (ω $ σ (const $ isProduction . (fProduction <:)) processCostCube :: Set (FieldRec '[FTechnology]))
+    $ (ω $ σ (const $ f . (fProduction <:)) processCostCube :: Technologies)
+
+
+productions :: ProcessLibrary -> [Technology]
+productions = filterTechnologiesByProduction isProduction
 
 
 deliveries :: ProcessLibrary -> [Technology]
-deliveries ProcessLibrary{..} =
-  fmap (fTechnology <:)
-    . toList
-    $ (ω $ σ (const $ not . isProduction . (fProduction <:)) processCostCube :: Set (FieldRec '[FTechnology]))
+deliveries = filterTechnologiesByProduction $ not . isProduction
 
 
 processes :: ProcessLibrary -> [Technology]
-processes ProcessLibrary{..} =
-  fmap (fTechnology <:)
-    . toList
-    $ (ω processCostCube :: Set (FieldRec '[FTechnology]))
+processes = filterTechnologiesByProduction $ const True
+
+
+type Pathways = Set (FieldRec '[FPathway])
 
 
 pathways :: ProcessLibrary -> [Pathway]
-pathways ProcessLibrary{..} =
-  fmap (fPathway <:)
-    . toList
-    $ (ω pathwayCube :: Set (FieldRec '[FPathway]))
+pathways ProcessLibrary{..} = fmap (fPathway <:) . toList $ (ω pathwayCube :: Pathways)
 
 
 type ProcessSizer = Technology -> Year -> Double -> Double -> Maybe Component
