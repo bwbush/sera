@@ -1,9 +1,8 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards  #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
 
 
 module SERA.Process (
@@ -18,17 +17,11 @@ module SERA.Process (
 ) where
 
 
-import Control.Monad.Except (MonadError, MonadIO)
-import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.DataCube (evaluate, selectKnownMaximum)
+import Data.Daft.DataCube (selectKnownMaximum)
 import Data.Daft.Vinyl.FieldCube (κ, σ, τ, ω)
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
-import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
-import Data.Maybe (fromMaybe)
-import Data.Set (Set, (\\), singleton, toList)
-import Data.String (IsString)
+import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Set (Set, singleton, toList)
 import Data.Vinyl.Derived (FieldRec)
-import GHC.Generics (Generic)
 import SERA.Process.Types -- FIXME
 import SERA.Types (Year, fYear)
 

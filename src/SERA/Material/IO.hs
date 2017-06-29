@@ -13,9 +13,9 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeOperators    #-}
 
 
 module SERA.Material.IO (
@@ -25,15 +25,11 @@ module SERA.Material.IO (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
-import Data.Daft.Vinyl.FieldCube ((⋈), κ, ω)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
-import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Set (Set, toList)
 import Data.String (IsString)
-import Data.Vinyl.Derived (FieldRec)
-import SERA.Material.Types (Material, FMaterial, fMaterial, IntensityCube, PriceCube)
+import SERA.Material.Types (IntensityCube, PriceCube)
 import SERA.Network.Types (FZone)
-import SERA.Types (FRegion, FYear)
+import SERA.Types (FYear)
 
 
 readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FYear, FZone])

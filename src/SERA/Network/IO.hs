@@ -14,15 +14,11 @@
 
 
 {-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards  #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE RecordWildCards   #-}
 
 
 module SERA.Network.IO (
@@ -38,15 +34,10 @@ module SERA.Network.IO (
 
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Vinyl.FieldCube ((⋈), κ, ω)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
-import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Set (Set, toList)
 import Data.String (IsString)
-import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
-import SERA.Network.Types (FLocation, FZone, ExistingCube, LinkCube, Network(..), NodeCube, TerritoryCube, ZoneCube)
-import SERA.Types (FRegion, FYear)
+import SERA.Network.Types (ExistingCube, LinkCube, FLocation, Network(..), NodeCube, TerritoryCube, ZoneCube)
 
 
 data NetworkFiles =

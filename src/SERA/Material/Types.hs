@@ -40,7 +40,7 @@ module SERA.Material.Types (
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
-import SERA.Types (FFraction, FYear)
+import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 

@@ -13,11 +13,11 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TupleSections              #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
+{-# LANGUAGE TypeOperators   #-}
 
 
 module SERA.Service.HydrogenProduction (
@@ -31,11 +31,8 @@ module SERA.Service.HydrogenProduction (
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (knownSize)
-import Data.Daft.Source (DataSource(..))
 import Data.String (IsString)
-import Data.Void (Void)
 import GHC.Generics (Generic)
-import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices (materials)
@@ -43,9 +40,6 @@ import SERA.Network.IO (NetworkFiles(..), readNetwork)
 import SERA.Network.Types (Network(..))
 import SERA.Process (deliveries, pathways, productions)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
-import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters)
-import SERA.Scenario.Grants (allocateGrants)
-import SERA.Scenario.HydrogenSizing (CapitalCostParameters, SitePreparationParameters, sizeStations)
 import SERA.Service ()
 import SERA.Types (Year)
 

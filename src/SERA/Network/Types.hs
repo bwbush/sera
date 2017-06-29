@@ -34,6 +34,10 @@ module SERA.Network.Types (
 , fY
 , fSale
 , fRent
+, fFrom
+, fTo
+, fLength
+, fTerritory
 -- * Types
 , Network(..)
 -- * Data cubes

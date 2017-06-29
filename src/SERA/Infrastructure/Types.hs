@@ -14,8 +14,8 @@ where
 import Data.Daft.Vinyl.FieldCube (type (*↝))
 import SERA.Material.Types (Material, FMaterial)
 import SERA.Network.Types (FFrom, FLength, FLocation, FTerritory, FTo)
-import SERA.Process.Types (FCapacity, FCapitalCost, FCost, FDelivery, FFixedCost, FProduction, FTechnology, FTransmission, FVariableCost, FYield)
-import SERA.Types (FFraction, FYear)
+import SERA.Process.Types (FCapacity, FCapitalCost, FCost, FFixedCost, FProduction, FTechnology, FVariableCost)
+import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
