@@ -38,8 +38,9 @@ import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices (materials)
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
 import SERA.Network.Types (Network(..))
-import SERA.Process (deliveries, pathways, productions)
+import SERA.Process (deliveries, pathways, productions, sizeComponent)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
+import SERA.Process.Types (Technology(..))
 import SERA.Service ()
 import SERA.Types (Year)
 
@@ -118,3 +119,10 @@ productionMain ConfigProduction{..} =
         putStrLn $ "Impact:       " ++ impactFile
         putStrLn $ "Sale:         " ++ saleFile
         putStrLn ""
+        print
+          $ sizeComponent
+            processLibrary
+            (Technology "Central Natural Gas Reforming")
+            2030
+            2000000000
+            0

@@ -81,18 +81,31 @@ data ProcessLibrary =
 
 
 data Component =
-  Component
-  {
-    component    :: Either Technology Pathway
-  , year         :: Year
-  , capacity     :: Double
-  , distance     :: Double
-  , production   :: Production
-  , lifetime     :: Age
-  , capitalCost  :: Double
-  , fixedCost    :: Double
-  , variableCost :: Double
-  , inputs       :: ConsumptionCube '[] -- FIXME: Memoize this.
-  , outputs      :: ProductionCube '[]  -- FIXME: Memoize this.
-  }
+    TechnologyComponent
+    {
+      tech         :: Technology
+    , year         :: Year
+    , capacity     :: Double
+    , production   :: Production
+    , lifetime     :: Age
+    , capitalCost  :: Double
+    , fixedCost    :: Double
+    , variableCost :: Double
+    , inputs       :: ConsumptionCube '[] -- FIXME: Memoize this.
+    , outputs      :: ProductionCube '[]  -- FIXME: Memoize this.
+    }
+  | PathwayComponent
+    {
+      path         :: Pathway
+    , year         :: Year
+    , capacity     :: Double
+    , distance     :: Double
+    , production   :: Production
+    , lifetime     :: Age
+    , capitalCost  :: Double
+    , fixedCost    :: Double
+    , variableCost :: Double
+    , inputs       :: ConsumptionCube '[] -- FIXME: Memoize this.
+    , outputs      :: ProductionCube '[]  -- FIXME: Memoize this.
+    }
     deriving (Eq, Ord, Show)

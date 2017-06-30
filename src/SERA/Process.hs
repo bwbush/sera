@@ -59,16 +59,15 @@ type ProcessSizer = Technology -> Year -> Double -> Double -> Maybe Component
 
 
 sizeComponent :: ProcessLibrary -> ProcessSizer
-sizeComponent ProcessLibrary{..} process year capacity distance = 
+sizeComponent ProcessLibrary{..} tech year capacity distance = 
   do -- FIXME: Add interpolation
     let
       candidate key _ =
-           process  == fTechnology <: key -- Technologies must match exactly,
-        && year     <= fYear       <: key -- must be available in the given year, and
-        && capacity <= fCapacity   <: key -- must be large enough.
+           tech     == fTechnology <: key -- Technologies must match exactly,
+        && year     >= fYear       <: key -- must be available in the given year, and
+        && capacity >= fCapacity   <: key -- must be large enough.
     (specification, costs) <- selectKnownMaximum $ σ candidate processCostCube
     let
-      component = Left process
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
           * (capacity / fCapacity <: specification) ** (fScaling <: costs)
@@ -80,7 +79,7 @@ sizeComponent ProcessLibrary{..} process year capacity distance =
       variableCost = scaleCost fVariableCost fVariableCostStretch
       inputs = extract processInputCube
       outputs = extract processOutputCube
-    return Component{..}
+    return TechnologyComponent{..}
 
 
 type PathwaySizer = Pathway -> Year -> Double -> Double -> Double -> Maybe Component
