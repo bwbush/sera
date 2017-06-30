@@ -13,19 +13,19 @@ where
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
 import SERA.Material.Types (ConsumptionCube, ProductionCube)
-import SERA.Types (Year, FYear)
+import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 import SERA.Vehicle.Types (Age)
 
 
-data Production =
+data Productive =
     Onsite
   | Central
   | No
     deriving (Bounded, Enum, Eq, Ord, Read, Show)
 
 
-isProduction :: Production -> Bool
+isProduction :: Productive -> Bool
 isProduction No = False
 isProduction _  = True
 
@@ -34,7 +34,7 @@ isProduction _  = True
 $(makeStringField "Technology"          "Technology"                                    )
 $(makeField       "Distance"            "Distance [km]"                     ''Double    )
 $(makeField       "Capacity"            "Capacity [kg/yr]"                  ''Double    )
-$(makeField       "Production"          "Production?"                       ''Production)
+$(makeField       "Productive"          "Production?"                       ''Productive)
 $(makeField       "Lifetime"            "Lifetime [yr]"                     ''Age       )
 $(makeField       "Scaling"             "Scaling Exponent"                  ''Double    )
 $(makeField       "CapitalCost"         "Capital Cost [$]"                  ''Double    )
@@ -54,7 +54,7 @@ $(makeField       "Yield"               "Yield [upstream/kg]"               ''Do
 type ProcessKey = '[FTechnology, FYear, FCapacity]
 
 
-type ProcessCost = '[FProduction, FLifetime, FScaling, FCapitalCost, FCapitalCostStretch, FFixedCost, FFixedCostStretch, FVariableCost, FVariableCostStretch]
+type ProcessCost = '[FProductive, FLifetime, FScaling, FCapitalCost, FCapitalCostStretch, FFixedCost, FFixedCostStretch, FVariableCost, FVariableCostStretch]
 
 
 type ProcessCostCube = ProcessKey *↝ ProcessCost
@@ -77,35 +77,4 @@ data ProcessLibrary =
   , processOutputCube :: ProcessOutputCube
   , pathwayCube       :: PathwayCube
   }
-    deriving (Eq, Ord, Show)
-
-
-data Component =
-    TechnologyComponent
-    {
-      tech         :: Technology
-    , year         :: Year
-    , capacity     :: Double
-    , production   :: Production
-    , lifetime     :: Age
-    , capitalCost  :: Double
-    , fixedCost    :: Double
-    , variableCost :: Double
-    , inputs       :: ConsumptionCube '[] -- FIXME: Memoize this.
-    , outputs      :: ProductionCube '[]  -- FIXME: Memoize this.
-    }
-  | PathwayComponent
-    {
-      path         :: Pathway
-    , year         :: Year
-    , capacity     :: Double
-    , distance     :: Double
-    , production   :: Production
-    , lifetime     :: Age
-    , capitalCost  :: Double
-    , fixedCost    :: Double
-    , variableCost :: Double
-    , inputs       :: ConsumptionCube '[] -- FIXME: Memoize this.
-    , outputs      :: ProductionCube '[]  -- FIXME: Memoize this.
-    }
     deriving (Eq, Ord, Show)

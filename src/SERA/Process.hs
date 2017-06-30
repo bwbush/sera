@@ -10,42 +10,36 @@ module SERA.Process (
 , deliveries
 , processes
 , pathways
-, ProcessSizer
-, PathwaySizer
-, sizeComponent
-, sizePathway
 ) where
 
 
-import Data.Daft.DataCube (selectKnownMaximum)
-import Data.Daft.Vinyl.FieldCube (κ, σ, τ, ω)
+import Data.Daft.Vinyl.FieldCube (σ, ω)
 import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Set (Set, singleton, toList)
+import Data.Set (Set, toList)
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Process.Types -- FIXME
-import SERA.Types (Year, fYear)
 
 
 type Technologies = Set (FieldRec '[FTechnology])
 
 
-filterTechnologiesByProduction :: (Production -> Bool) -> ProcessLibrary -> [Technology]
-filterTechnologiesByProduction f ProcessLibrary{..} =
+filterTechnologiesByProductive :: (Productive -> Bool) -> ProcessLibrary -> [Technology]
+filterTechnologiesByProductive f ProcessLibrary{..} =
   fmap (fTechnology <:)
     . toList
-    $ (ω $ σ (const $ f . (fProduction <:)) processCostCube :: Technologies)
+    $ (ω $ σ (const $ f . (fProductive <:)) processCostCube :: Technologies)
 
 
 productions :: ProcessLibrary -> [Technology]
-productions = filterTechnologiesByProduction isProduction
+productions = filterTechnologiesByProductive isProduction
 
 
 deliveries :: ProcessLibrary -> [Technology]
-deliveries = filterTechnologiesByProduction $ not . isProduction
+deliveries = filterTechnologiesByProductive $ not . isProduction
 
 
 processes :: ProcessLibrary -> [Technology]
-processes = filterTechnologiesByProduction $ const True
+processes = filterTechnologiesByProductive $ const True
 
 
 type Pathways = Set (FieldRec '[FPathway])
@@ -53,42 +47,3 @@ type Pathways = Set (FieldRec '[FPathway])
 
 pathways :: ProcessLibrary -> [Pathway]
 pathways ProcessLibrary{..} = fmap (fPathway <:) . toList $ (ω pathwayCube :: Pathways)
-
-
-type ProcessSizer = Technology -> Year -> Double -> Double -> Maybe Component
-
-
-sizeComponent :: ProcessLibrary -> ProcessSizer
-sizeComponent ProcessLibrary{..} tech year capacity distance = 
-  do -- FIXME: Add interpolation
-    let
-      candidate key _ =
-           tech     == fTechnology <: key -- Technologies must match exactly,
-        && year     >= fYear       <: key -- must be available in the given year, and
-        && capacity >= fCapacity   <: key -- must be large enough.
-    (specification, costs) <- selectKnownMaximum $ σ candidate processCostCube
-    let
-      scaleCost cost stretch =
-        (cost <: costs + distance * stretch <: costs)
-          * (capacity / fCapacity <: specification) ** (fScaling <: costs)
-      extract = κ (singleton specification) (const head) . σ (const . (specification ==) . τ)
-      production = fProduction <: costs
-      lifetime = fLifetime <: costs
-      capitalCost = scaleCost fCapitalCost fCapitalCostStretch 
-      fixedCost = scaleCost fFixedCost fFixedCostStretch
-      variableCost = scaleCost fVariableCost fVariableCostStretch
-      inputs = extract processInputCube
-      outputs = extract processOutputCube
-    return TechnologyComponent{..}
-
-
-type PathwaySizer = Pathway -> Year -> Double -> Double -> Double -> Maybe Component
-
-
-sizePathway :: ProcessLibrary -> PathwaySizer
-sizePathway ProcessLibrary{..} pathway year capacity transmissionDistance deliveryDistance =
-  do
-    let
-      candidate key _ = pathway == fPathway <: key
-      processes' = σ candidate pathwayCube
-    undefined

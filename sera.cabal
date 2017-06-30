@@ -1,5 +1,5 @@
 name: sera
-version: 3.0.0.21
+version: 3.0.0.22
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -84,6 +84,7 @@ library
                     SERA.Network.Types
                     SERA.Process
                     SERA.Process.IO
+                    SERA.Process.Reification.Technology
                     SERA.Process.Types
                     SERA.Refueling.FCVSE.Cost
                     SERA.Refueling.FCVSE.Cost.NREL56412

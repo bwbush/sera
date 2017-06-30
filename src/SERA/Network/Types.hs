@@ -50,7 +50,7 @@ module SERA.Network.Types (
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
-import SERA.Process.Types (FCapacity, FCost, FDelivery, FProduction, FTransmission, FYield)
+import SERA.Process.Types (FCapacity, FCost, FDelivery, FProductive, FTransmission, FYield)
 import SERA.Types (FFraction, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
@@ -81,7 +81,7 @@ data Network =
     deriving (Eq, Ord, Show)
 
 
-type NodeCube = '[FLocation] *↝ '[FX, FY, FProduction, FSale, FRent]
+type NodeCube = '[FLocation] *↝ '[FX, FY, FProductive, FSale, FRent]
 
 
 type LinkCube = '[FLocation] *↝ '[FFrom, FTo, FLength, FSale, FRent, FTransmission, FDelivery]

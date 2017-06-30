@@ -12,9 +12,10 @@ where
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (Material, FMaterial)
 import SERA.Network.Types (FFrom, FLength, FLocation, FTerritory, FTo)
-import SERA.Process.Types (FCapacity, FCapitalCost, FCost, FFixedCost, FProduction, FTechnology, FVariableCost)
+import SERA.Process.Types (FCapacity, FCapitalCost, FCost, FFixedCost, FLifetime, FProductive, FTechnology, FVariableCost)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
@@ -26,16 +27,25 @@ data CostCategory =
   | MaterialCategory Material
     deriving (Eq, Ord, Read, Show)
 
+
+data ImpactCategory =
+    Consumption
+  | Production
+  | Upstream
+    deriving (Eq, Ord, Read, Show)
+
  
-$(makeStringField "Infrastructure" "Infrastructure ID"         )
-$(makeField       "Flow"           "Flow [kg]"         ''Double)
-$(makeField       "Loss"           "Loss [kg]"         ''Double)
-$(makeField       "Consumption"    "Consumption [kg]"  ''Double)
-$(makeField       "TotalCost"      "Cost [kg]"         ''Double)
-$(makeField       "Sales"          "Sales [kg]"        ''Double)
-$(makeField       "NetPrice"       "Price [$/kg]"      ''Double)
-$(makeField       "Emission"       "Emission [unit]"   ''Double)
-$(makeField       "CostCategory"   "Cost Category"     ''Double)
+$(makeStringField "Infrastructure" "Infrastructure ID"                 )
+$(makeField       "Production"     "Production [kg]"   ''Double        )
+$(makeField       "Flow"           "Flow [kg]"         ''Double        )
+$(makeField       "Loss"           "Loss [kg]"         ''Double        )
+$(makeField       "Consumption"    "Consumption [kg]"  ''Double        )
+$(makeField       "TotalCost"      "Cost [kg]"         ''Double        )
+$(makeField       "Sales"          "Sales [kg]"        ''Double        )
+$(makeField       "NetPrice"       "Price [$/kg]"      ''Double        )
+$(makeField       "Quantity"       "Quantity [unit]"   ''Double        )
+$(makeField       "CostCategory"   "Cost Component"    ''CostCategory  )
+$(makeField       "ImpactCategory" "Disposition"       ''ImpactCategory)
 
 
 type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
@@ -44,13 +54,13 @@ type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
 type ConstructionCube = '[FInfrastructure] *↝ '[FFrom, FTo, FTechnology, FYear, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FConsumption, FCost]
+type FlowCube = '[FInfrastructure, FYear] *↝ '[FProductive, FFlow, FLoss, FConsumption, FCost]
 
 
 type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FCost]
 
 
-type ImpactCube = '[FInfrastructure, FYear, FMaterial] *↝ '[FEmission, FCost]
+type ImpactCube = '[FInfrastructure, FYear, FMaterial] *↝ '[FImpactCategory, FQuantity, FCost]
 
 
 type SaleCube = '[FTerritory, FYear] *↝ '[FConsumption, FCost, FSales, FNetPrice]
@@ -66,3 +76,15 @@ data InfrastructureCubes =
   , saleCube         :: SaleCube
   }
     deriving (Eq, Ord, Show)
+
+
+type Construction = FieldRec '[FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
+
+
+type Flow = FieldRec '[FProduction, FFlow, FLoss, FConsumption, FCost]
+
+
+type Cash = FieldRec '[FCostCategory, FCost]
+
+
+type Impact = FieldRec '[FMaterial, FImpactCategory, FQuantity, FCost]
