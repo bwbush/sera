@@ -31,19 +31,23 @@ module SERA.Service.HydrogenProduction (
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (knownSize)
-import Data.Daft.Vinyl.FieldRec ((=:))
+import Data.Daft.Vinyl.FieldRec ((=:), (<+>))
+import Data.Daft.Vinyl.FieldRec.IO (showFieldRecs)
+import Data.List.Util.Listable (toTabbeds)
 import Data.String (IsString)
 import GHC.Generics (Generic)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
+import SERA.Infrastructure.Types (Infrastructure(..), fInfrastructure)
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material (makePricer)
 import SERA.Material.Prices (materials)
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
-import SERA.Network.Types (Network(..), Zone(..), fZone)
+import SERA.Network.Types (fFrom, Location(..), Network(..), fTo, Zone(..), fZone)
 import SERA.Process (deliveries, pathways, productions)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
+import SERA.Process.Reification.Pathway (transmissionReifier)
 import SERA.Process.Reification.Technology (technologyReifier)
-import SERA.Process.Types (Technology(..))
+import SERA.Process.Types (Pathway(..), Technology(..))
 import SERA.Service ()
 import SERA.Types (Year)
 
@@ -123,13 +127,36 @@ productionMain ConfigProduction{..} =
         putStrLn $ "Sale:         " ++ saleFile
         putStrLn ""
         let
-          Just (c, f) =
+          specifics = fInfrastructure =: Infrastructure "Test" <+> fFrom =: Location "Source" <+> fTo =: Location "Sink"
+          reifyTechnology =
             technologyReifier
               processLibrary
               (makePricer priceCube $ fZone =: Zone "Mountain")
+          Just (c, f) =
+            reifyTechnology
+              specifics
               (Technology "Central Natural Gas Reforming")
               2030
               2000000000
               0
-        print c
-        print $ f 2030 100
+          (fl, ca, im) = f 2030 100
+          reifyTransmission =
+            transmissionReifier
+              processLibrary
+              reifyTechnology
+          Just (c', f') =
+            reifyTransmission
+              specifics
+              (Pathway "LH2 Rail")
+              2030
+              2000000000
+              500
+          (fl', ca', im') = f' 2030 100
+        putStrLn . toTabbeds $ showFieldRecs [c]
+        putStrLn . toTabbeds $ showFieldRecs [fl]
+        putStrLn . toTabbeds $ showFieldRecs ca
+        putStrLn . toTabbeds $ showFieldRecs im
+        putStrLn . toTabbeds $ showFieldRecs c'
+        putStrLn . toTabbeds $ showFieldRecs fl'
+        putStrLn . toTabbeds $ showFieldRecs ca'
+        putStrLn . toTabbeds $ showFieldRecs im'

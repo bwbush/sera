@@ -45,8 +45,10 @@ $(makeField       "VariableCost"        "Variable Operating Cost [$/kg]"    ''Do
 $(makeField       "VariableCostStretch" "Variable Operating Cost [$/km/kg]" ''Double    )
 $(makeStringField "Pathway"             "Pathway"                                       )
 $(makeField       "Stage"               "Stage"                             ''Int       )
+$(makeField       "Extended"            "Extended?"                         ''Bool      )
 $(makeField       "Transmission"        "Transmission?"                     ''Bool      )
 $(makeField       "Delivery"            "Delivery?"                         ''Bool      )
+$(makeStringField "Format"              "Format"                                        )
 $(makeField       "Cost"                "Cost [$/kg]"                       ''Double    )
 $(makeField       "Yield"               "Yield [upstream/kg]"               ''Double    )
 
@@ -66,7 +68,7 @@ type ProcessInputCube = ConsumptionCube ProcessKey
 type ProcessOutputCube = ProductionCube ProcessKey
 
 
-type PathwayCube = '[FPathway, FTechnology] *↝  '[FStage, FTransmission, FDelivery]
+type PathwayCube = '[FPathway, FStage] *↝  '[FTechnology, FYield, FExtended, FTransmission, FDelivery, FFormat]
 
 
 data ProcessLibrary =

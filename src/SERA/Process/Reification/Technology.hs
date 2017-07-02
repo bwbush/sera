@@ -14,6 +14,7 @@ import Data.Daft.DataCube (selectKnownMaximum)
 import Data.Daft.Vinyl.FieldCube (κ, σ, τ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Set (singleton)
+import Data.Vinyl.Derived (FieldRec)
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Material.Types -- FIXME
 import SERA.Network.Types -- FIXME
@@ -24,11 +25,11 @@ import SERA.Types (Year, fYear)
 type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
 
 
-type TechnologyReifier = Technology -> Year -> Double -> Double -> Maybe (Construction, TechnologyOperation)
+type TechnologyReifier = FieldRec '[FInfrastructure, FFrom, FTo] -> Technology -> Year -> Double -> Double -> Maybe (Construction, TechnologyOperation)
 
 
 technologyReifier :: ProcessLibrary -> Pricer -> TechnologyReifier
-technologyReifier ProcessLibrary{..} pricer tech built capacity distance = 
+technologyReifier ProcessLibrary{..} pricer specifics tech built capacity distance = 
   do -- FIXME: Add interpolation
     let
       candidate key _ =
@@ -42,7 +43,8 @@ technologyReifier ProcessLibrary{..} pricer tech built capacity distance =
           * (capacity / fCapacity <: specification) ** (fScaling <: costs)
       extract = κ (singleton specification) (const head) . σ (const . (specification ==) . τ)
       construction =
-            fTechnology   =: tech
+            specifics
+        <+> fTechnology   =: tech
         <+> fProductive   =: fProductive <: costs
         <+> fYear         =: built
         <+> fLifetime     =: fLifetime <: costs
@@ -58,12 +60,14 @@ technologyReifier ProcessLibrary{..} pricer tech built capacity distance =
         construction
       , \year output ->
         let
+          specifics' = fInfrastructure =: fInfrastructure <: specifics <+> fYear =: year
           capital = if built == year then fCapitalCost <: construction else 0
           fixed = fFixedCost <: construction
           variable = output * fVariableCost <: construction
           impacts =
             [
-                  fMaterial       =: fMaterial <: rec
+                  specifics'
+              <+> fMaterial       =: fMaterial <: rec
               <+> fImpactCategory =: Consumption
               <+> fQuantity       =: output * rate
               <+> fSale           =: output * rate * pricer (fMaterial <: rec) year
@@ -73,7 +77,8 @@ technologyReifier ProcessLibrary{..} pricer tech built capacity distance =
             ]
             ++
             [
-                  fMaterial       =: fMaterial <: rec
+                  specifics'
+              <+> fMaterial       =: fMaterial <: rec
               <+> fImpactCategory =: Production
               <+> fQuantity       =: output * rate
               <+> fSale           =: output * rate * pricer (fMaterial <: rec) year
@@ -81,20 +86,15 @@ technologyReifier ProcessLibrary{..} pricer tech built capacity distance =
               rec <- toKnownRecords outputs
             , let rate = fProductionRate <: rec + distance * fProductionRateStretch <: rec
             ]
-        in
-          (
-                fProduction =: (if isProduction (fProductive <: costs) then output else 0       )
-            <+> fFlow       =: (if isProduction (fProductive <: costs) then 0        else output)
-            <+> fLoss       =: 0
-            <+> fSale       =: 0
-          , [
-              fCostCategory =: Capital  <+> fSale =: capital
-            , fCostCategory =: Fixed    <+> fSale =: fixed
-            , fCostCategory =: Variable <+> fSale =: variable
+          cash =
+            [
+              specifics' <+> fCostCategory =: Capital  <+> fSale =: capital
+            , specifics' <+> fCostCategory =: Fixed    <+> fSale =: fixed
+            , specifics' <+> fCostCategory =: Variable <+> fSale =: variable
             ]
             ++
             [
-              fCostCategory =: cc (fMaterial <: rec) <+> fSale =: fSale <: rec
+              specifics' <+> fCostCategory =: cc (fMaterial <: rec) <+> fSale =: fSale <: rec
             |
               rec <- impacts
             , let cc = case fImpactCategory <: rec of
@@ -102,6 +102,14 @@ technologyReifier ProcessLibrary{..} pricer tech built capacity distance =
                          Production  -> Producing
                          Upstream    -> Producing
             ]
+        in
+          (
+                specifics'
+            <+> fProduction =: (if isProduction (fProductive <: costs) then output else 0       )
+            <+> fFlow       =: (if isProduction (fProductive <: costs) then 0        else output)
+            <+> fLoss       =: 0
+            <+> fSale       =: (sum $ (fSale <:) <$> cash)
+          , cash
           , impacts
           )
       )

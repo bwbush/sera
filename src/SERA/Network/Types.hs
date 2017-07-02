@@ -9,13 +9,9 @@
 module SERA.Network.Types (
 -- * Data types
   Location(..)
-, Node(..)
-, Link(..)
 , Zone(..)
 -- * Field types
 , FLocation
-, FNode
-, FLink
 , FZone
 , FX
 , FY
@@ -27,8 +23,6 @@ module SERA.Network.Types (
 , FTerritory
 -- * Field accessors
 , fLocation
-, fNode
-, fLink
 , fZone
 , fX
 , fY
@@ -55,18 +49,16 @@ import SERA.Types (FFraction, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
-$(makeStringField "Location"    "Network ID"               )
-$(makeStringField "Node"        "Node ID"                  )
-$(makeStringField "Link"        "Link ID"                  )
-$(makeStringField "From"        "From Node ID"             )
-$(makeStringField "To"          "To Node ID"               )
-$(makeField       "X"           "X"                ''Double)
-$(makeField       "Y"           "Y"                ''Double)
-$(makeField       "Length"      "Length [km]"      ''Double)
-$(makeField       "Sale"        "Cost [$]"         ''Double)
-$(makeField       "Rent"        "Cost [$/yr]"      ''Double)
-$(makeStringField "Territory"   "Territory"                )
-$(makeStringField "Zone"        "Zone"                     )
+$(makeStringField "Location"    "Network ID"                 )
+$(makeField       "From"        "From Node ID"     ''Location)
+$(makeField       "To"          "To Node ID"       ''Location)
+$(makeField       "X"           "X"                ''Double  )
+$(makeField       "Y"           "Y"                ''Double  )
+$(makeField       "Length"      "Length [km]"      ''Double  )
+$(makeField       "Sale"        "Cost [$]"         ''Double  )
+$(makeField       "Rent"        "Cost [$/yr]"      ''Double  )
+$(makeStringField "Territory"   "Territory"                  )
+$(makeStringField "Zone"        "Zone"                       )
 
 
 data Network =

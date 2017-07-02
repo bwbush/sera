@@ -55,7 +55,7 @@ type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
 type ConstructionCube = '[FInfrastructure] *↝ '[FFrom, FTo, FTechnology, FYear, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type FlowCube = '[FInfrastructure, FYear] *↝ '[FProductive, FFlow, FLoss, FConsumption, FCost]
+type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FConsumption, FCost]
 
 
 type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FCost]
@@ -79,13 +79,13 @@ data InfrastructureCubes =
     deriving (Eq, Ord, Show)
 
 
-type Construction = FieldRec '[FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
+type Construction = FieldRec '[FInfrastructure, FFrom, FTo, FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type Flow = FieldRec '[FProduction, FFlow, FLoss, FSale]
+type Flow = FieldRec '[FInfrastructure, FYear, FProduction, FFlow, FLoss, FSale]
 
 
-type Cash = FieldRec '[FCostCategory, FSale]
+type Cash = FieldRec '[FInfrastructure, FYear, FCostCategory, FSale]
 
 
-type Impact = FieldRec '[FMaterial, FImpactCategory, FQuantity, FSale]
+type Impact = FieldRec '[FInfrastructure, FYear, FMaterial, FImpactCategory, FQuantity, FSale]
