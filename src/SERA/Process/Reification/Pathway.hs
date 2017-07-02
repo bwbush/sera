@@ -10,6 +10,7 @@ module SERA.Process.Reification.Pathway
 where
 
 
+import Control.Arrow (first)
 import Data.Daft.Vinyl.FieldCube (σ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Tuple.Util (fst3, snd3, trd3)
@@ -29,30 +30,40 @@ type PathwayReifier = FieldRec '[FInfrastructure, FFrom, FTo] -> Pathway -> Year
 
 
 transmissionReifier :: ProcessLibrary -> TechnologyReifier -> PathwayReifier
-transmissionReifier ProcessLibrary{..} reifyTechnology specifics path built capacity distance = 
+transmissionReifier =
+  pathwayReifier
+    $ const
+
+
+deliveryReifier :: ProcessLibrary -> TechnologyReifier -> PathwayReifier
+deliveryReifier =
+  pathwayReifier
+    $ \transmission delivery -> not transmission && delivery
+
+
+pathwayReifier :: (Bool -> Bool -> Bool) -> ProcessLibrary -> TechnologyReifier -> PathwayReifier
+pathwayReifier candidate ProcessLibrary{..} reifyTechnology specifics path built capacity distance = 
   do
     let
-      candidate key val = path == fPathway <: key && fTransmission <: val
+      candidate' key val = path == fPathway <: key && candidate (fTransmission <: val) (fDelivery <: val)
       specify rec =
-            fInfrastructure =: (Infrastructure . ((show (fStage <: rec) ++) . (':' :)) . infrastructure $ fInfrastructure <: specifics)
+            fInfrastructure =: (Infrastructure . ((++ show (fStage <: rec)) . (++ " #")) . infrastructure $ fInfrastructure <: specifics)
         <+> fFrom           =: fFrom <: specifics
         <+> fTo             =: (if fExtended <: rec then fTo <: specifics else fFrom <: specifics)
     constructions <-
       sequence
         [
-          reifyTechnology (specify rec) (fTechnology <: rec) built capacity distance
+          first (
+            if fExtended <: rec
+              then id
+              else rput (Field 0 :: ElField FLength)
+          ) <$> reifyTechnology (specify rec) (fTechnology <: rec) built capacity distance
         |
-          rec <- toKnownRecords $ σ candidate pathwayCube
+          rec <- toKnownRecords $ σ candidate' pathwayCube
         ]
     return
       (
-        [
-          if fFrom <: rec == fTo <: rec
-            then rput (Field 0 :: ElField FLength) rec
-            else rec
-        |
-          rec <- fst <$> constructions
-        ]
+        fst <$> constructions
       , \year flow ->
         let
           results =

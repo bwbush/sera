@@ -45,7 +45,7 @@ import SERA.Network.IO (NetworkFiles(..), readNetwork)
 import SERA.Network.Types (fFrom, Location(..), Network(..), fTo, Zone(..), fZone)
 import SERA.Process (deliveries, pathways, productions)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
-import SERA.Process.Reification.Pathway (transmissionReifier)
+import SERA.Process.Reification.Pathway (deliveryReifier, transmissionReifier)
 import SERA.Process.Reification.Technology (technologyReifier)
 import SERA.Process.Types (Pathway(..), Technology(..))
 import SERA.Service ()
@@ -152,6 +152,18 @@ productionMain ConfigProduction{..} =
               2000000000
               500
           (fl', ca', im') = f' 2030 100
+          reifyDelivery =
+            deliveryReifier
+              processLibrary
+              reifyTechnology
+          Just (c'', f'') =
+            reifyDelivery
+              specifics
+              (Pathway "LH2 Rail")
+              2030
+              2000000000
+              50
+          (fl'', ca'', im'') = f'' 2030 100
         putStrLn . toTabbeds $ showFieldRecs [c]
         putStrLn . toTabbeds $ showFieldRecs [fl]
         putStrLn . toTabbeds $ showFieldRecs ca
@@ -160,3 +172,7 @@ productionMain ConfigProduction{..} =
         putStrLn . toTabbeds $ showFieldRecs fl'
         putStrLn . toTabbeds $ showFieldRecs ca'
         putStrLn . toTabbeds $ showFieldRecs im'
+        putStrLn . toTabbeds $ showFieldRecs c''
+        putStrLn . toTabbeds $ showFieldRecs fl''
+        putStrLn . toTabbeds $ showFieldRecs ca''
+        putStrLn . toTabbeds $ showFieldRecs im''
