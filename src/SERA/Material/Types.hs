@@ -9,6 +9,7 @@
 module SERA.Material.Types (
 -- * Data types
   Material
+, Pricer
 -- * Field types
 , FMaterial
 , FUpstreamMaterial
@@ -40,7 +41,7 @@ module SERA.Material.Types (
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
-import SERA.Types (FYear)
+import SERA.Types (Year, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
@@ -62,7 +63,10 @@ type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate, FConsumpt
 type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate, FProductionRateStretch]
 
 
-type PriceCube key = (FMaterial ': key) *↝ '[FPrice]
+type PriceCube key = (FMaterial ': FYear ': key) *↝ '[FPrice]
 
 
 type IntensityCube key = (FMaterial ': FUpstreamMaterial ': FYear ': key) *↝ '[FIntensity]
+
+
+type Pricer = Material -> Year -> Double

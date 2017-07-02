@@ -8,10 +8,10 @@
 
 module SERA.Network.Types (
 -- * Data types
-  Location
-, Node
-, Link
-, Zone
+  Location(..)
+, Node(..)
+, Link(..)
+, Zone(..)
 -- * Field types
 , FLocation
 , FNode

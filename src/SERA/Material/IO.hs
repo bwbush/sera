@@ -29,10 +29,9 @@ import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
 import Data.String (IsString)
 import SERA.Material.Types (IntensityCube, PriceCube)
 import SERA.Network.Types (FZone)
-import SERA.Types (FYear)
 
 
-readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FYear, FZone])
+readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FZone])
 readPrices = (mconcat <$>) . mapM readFieldCubeFile
 
 

@@ -31,13 +31,15 @@ module SERA.Service.HydrogenProduction (
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (knownSize)
+import Data.Daft.Vinyl.FieldRec ((=:))
 import Data.String (IsString)
 import GHC.Generics (Generic)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
 import SERA.Material.IO (readIntensities, readPrices)
+import SERA.Material (makePricer)
 import SERA.Material.Prices (materials)
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
-import SERA.Network.Types (Network(..))
+import SERA.Network.Types (Network(..), Zone(..), fZone)
 import SERA.Process (deliveries, pathways, productions)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Process.Reification.Technology (technologyReifier)
@@ -120,11 +122,14 @@ productionMain ConfigProduction{..} =
         putStrLn $ "Impact:       " ++ impactFile
         putStrLn $ "Sale:         " ++ saleFile
         putStrLn ""
-        print
-          $ technologyReifier
-            processLibrary
-            undefined
-            (Technology "Central Natural Gas Reforming")
-            2030
-            2000000000
-            0
+        let
+          Just (c, f) =
+            technologyReifier
+              processLibrary
+              (makePricer priceCube $ fZone =: Zone "Mountain")
+              (Technology "Central Natural Gas Reforming")
+              2030
+              2000000000
+              0
+        print c
+        print $ f 2030 100

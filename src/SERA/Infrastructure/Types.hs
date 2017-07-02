@@ -14,7 +14,7 @@ where
 import Data.Daft.Vinyl.FieldCube (type (*↝))
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (Material, FMaterial)
-import SERA.Network.Types (FFrom, FLength, FLocation, FTerritory, FTo)
+import SERA.Network.Types (FFrom, FLength, FLocation, FSale, FTerritory, FTo)
 import SERA.Process.Types (FCapacity, FCapitalCost, FCost, FFixedCost, FLifetime, FProductive, FTechnology, FVariableCost)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
@@ -23,8 +23,9 @@ import SERA.Types.TH (makeField, makeStringField)
 data CostCategory =
     Capital
   | Fixed
-  | Operating
-  | MaterialCategory Material
+  | Variable
+  | Consuming Material
+  | Producing Material
     deriving (Eq, Ord, Read, Show)
 
 
@@ -81,10 +82,10 @@ data InfrastructureCubes =
 type Construction = FieldRec '[FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type Flow = FieldRec '[FProduction, FFlow, FLoss, FConsumption, FCost]
+type Flow = FieldRec '[FProduction, FFlow, FLoss, FSale]
 
 
-type Cash = FieldRec '[FCostCategory, FCost]
+type Cash = FieldRec '[FCostCategory, FSale]
 
 
-type Impact = FieldRec '[FMaterial, FImpactCategory, FQuantity, FCost]
+type Impact = FieldRec '[FMaterial, FImpactCategory, FQuantity, FSale]
