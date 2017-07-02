@@ -46,10 +46,12 @@ pathwayReifier candidate ProcessLibrary{..} reifyTechnology specifics path built
   do
     let
       candidate' key val = path == fPathway <: key && candidate (fTransmission <: val) (fDelivery <: val)
+      stages = toKnownRecords $ σ candidate' pathwayCube
+      extendedStage = fStage <: head (filter (\r -> fExtended <: r) stages)
       specify rec =
             fInfrastructure =: (Infrastructure . ((++ show (fStage <: rec)) . (++ " #")) . infrastructure $ fInfrastructure <: specifics)
-        <+> fFrom           =: fFrom <: specifics
-        <+> fTo             =: (if fExtended <: rec then fTo <: specifics else fFrom <: specifics)
+        <+> fFrom           =: (if fStage <: rec <= extendedStage then fFrom <: specifics else fTo   <: specifics)
+        <+> fTo             =: (if fStage <: rec >= extendedStage then fTo   <: specifics else fFrom <: specifics)
     constructions <-
       sequence
         [
@@ -59,7 +61,7 @@ pathwayReifier candidate ProcessLibrary{..} reifyTechnology specifics path built
               else rput (Field 0 :: ElField FLength)
           ) <$> reifyTechnology (specify rec) (fTechnology <: rec) built capacity distance
         |
-          rec <- toKnownRecords $ σ candidate' pathwayCube
+          rec <- stages
         ]
     return
       (
