@@ -42,12 +42,12 @@ import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material (makePricer)
 import SERA.Material.Prices (materials)
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
-import SERA.Network.Types (fFrom, Location(..), fLocation, Network(..), fTo, Zone(..), fZone)
+import SERA.Network.Types -- FIXME (fFrom, Location(..), fLocation, Network(..), fTo, Zone(..), fZone)
 import SERA.Process (deliveries, pathways, productions)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Process.Reification.Pathway (deliveryReifier, transmissionReifier)
 import SERA.Process.Reification.Technology (technologyReifier)
-import SERA.Process.Types (Pathway(..), Technology(..))
+import SERA.Process.Types -- FIXME (Pathway(..), Technology(..))
 import SERA.Service ()
 import SERA.Types (Year)
 
@@ -147,10 +147,18 @@ productionMain ConfigProduction{..} =
               processLibrary
               reifyTechnology
           specifics' =
-                fInfrastructure =: Infrastructure "The Infrastructure"
-            <+> fLocation       =: Location "The Link"
-            <+> fFrom           =: Location "The Source"
-            <+> fTo             =: Location "The Sink"
+            (
+              Infrastructure "The Infrastructure"
+            , GenericPath
+              {
+                sourceId = Location "The Source"
+              , linkIds  = [
+                             (Location "First Link", 200)
+                           , (Location "Second Link", 300)
+                           ]
+              , sinkId   = Location "The Sink"
+              }
+            ) 
           Just (c', f') =
             reifyTransmission
               specifics'

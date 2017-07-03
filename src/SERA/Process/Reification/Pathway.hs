@@ -14,7 +14,7 @@ import Control.Arrow (first)
 import Data.Daft.Vinyl.FieldCube (σ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Tuple.Util (fst3, snd3, trd3)
-import Data.Vinyl.Derived (ElField(..), FieldRec)
+import Data.Vinyl.Derived (ElField(..))
 import Data.Vinyl.Lens (rput)
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Network.Types -- FIXME
@@ -26,7 +26,7 @@ import SERA.Types (Year)
 type PathwayOperation = Year -> Double -> ([Flow], [Cash], [Impact])
 
 
-type PathwayReifier = FieldRec '[FInfrastructure, FLocation, FFrom, FTo] -> Pathway -> Year -> Double -> Double -> Maybe ([Construction], PathwayOperation)
+type PathwayReifier = (Infrastructure, Path) -> Pathway -> Year -> Double -> Double -> Maybe ([Construction], PathwayOperation)
 
 
 transmissionReifier :: ProcessLibrary -> TechnologyReifier -> PathwayReifier
@@ -42,32 +42,39 @@ deliveryReifier =
 
 
 pathwayReifier :: (Bool -> Bool -> Bool) -> ProcessLibrary -> TechnologyReifier -> PathwayReifier
-pathwayReifier candidate ProcessLibrary{..} reifyTechnology specifics path built capacity distance = 
+pathwayReifier candidate ProcessLibrary{..} reifyTechnology (label, GenericPath{..}) path built capacity distance = 
   do
     let
       candidate' key val = path == fPathway <: key && candidate (fTransmission <: val) (fDelivery <: val)
       stages = toKnownRecords $ σ candidate' pathwayCube
       extendedStage = fStage <: head (filter (\r -> fExtended <: r) stages)
-      specify rec =
-            fInfrastructure =: (Infrastructure . ((++ show (fStage <: rec)) . (++ " #")) . infrastructure $ fInfrastructure <: specifics)
-        <+> fLocation       =: (
-                                 if fStage <: rec == extendedStage
-                                   then fLocation <: specifics
-                                   else if fStage <: rec < extendedStage
-                                     then fFrom <: specifics
-                                     else fTo   <: specifics
-                               )
+      relabel rec i = fInfrastructure =: (Infrastructure . ((++ show (i :: Int)) . (++ ".") . (++ show (fStage <: rec)) . (++ " #")) $ infrastructure label)
     constructions <-
       sequence
-        [
-          first (
-            if fExtended <: rec
-              then id
-              else rput (Field 0 :: ElField FLength)
-          ) <$> reifyTechnology (specify rec) (fTechnology <: rec) built capacity distance
-        |
-          rec <- stages
-        ]
+        $ [
+            first (rput (Field 0 :: ElField FLength))
+              <$> reifyTechnology (relabel rec 0 <+> fLocation =: sourceId) (fTechnology <: rec) built capacity distance
+          |
+            rec <- stages
+          , fStage <: rec < extendedStage
+          ]
+          ++
+          [
+            first (rput (Field d :: ElField FLength))
+              <$> reifyTechnology (relabel rec i <+> fLocation =: l) (fTechnology <: rec) built capacity d
+          |
+            rec <- stages
+          , fStage <: rec == extendedStage
+          , (i, (l, d)) <- zip [1..] linkIds
+          ]
+          ++
+          [
+            first (rput (Field 0 :: ElField FLength))
+              <$> reifyTechnology (relabel rec 0 <+> fLocation =: sinkId) (fTechnology <: rec) built capacity distance
+          |
+            rec <- stages
+          , fStage <: rec > extendedStage
+          ]
     return
       (
         fst <$> constructions

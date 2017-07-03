@@ -10,6 +10,9 @@ module SERA.Network.Types (
 -- * Data types
   Location(..)
 , Zone(..)
+, Path(..)
+, Node
+, Link
 -- * Field types
 , FLocation
 , FZone
@@ -44,6 +47,7 @@ module SERA.Network.Types (
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Vinyl.Derived (FieldRec)
 import SERA.Process.Types (FCapacity, FCost, FDelivery, FProductive, FTransmission, FYield)
 import SERA.Types (FFraction, FYear)
 import SERA.Types.TH (makeField, makeStringField)
@@ -86,3 +90,39 @@ type TerritoryCube = '[FTerritory, FLocation] *↝ '[FFraction]
 
 
 type ZoneCube key = (FZone ': key) *↝ '[FFraction]
+
+
+type Node = FieldRec '[FLocation, FX, FY, FProductive, FSale, FRent]
+
+
+type Link = FieldRec '[FLocation, FFrom, FTo, FLength, FSale, FRent, FTransmission, FDelivery]
+
+
+data Path =
+    TransmissionPath -- FIXME: Enforce semantics.
+    {
+      sourceId        :: Location
+    , transmissionIds :: [(Location, Double)]
+    , gateId          :: Location
+    }
+  | DeliveryPath -- FIXME: Enforce semantics.
+    {
+      gateId          :: Location
+    , deliveryIds     :: [(Location, Double)]
+    , sinkId          :: Location
+    }
+  | FullPath -- FIXME: Enforce semantics.
+    {
+      sourceId        :: Location
+    , transmissionIds :: [(Location, Double)]
+    , gateId          :: Location
+    , deliveryIds     :: [(Location, Double)]
+    , sinkId          :: Location
+    }
+  | GenericPath -- FIXME: Enforce semantics.
+    {
+      sourceId        :: Location
+    , linkIds         :: [(Location, Double)]
+    , sinkId          :: Location
+    }
+    deriving (Eq, Ord, Read, Show)
