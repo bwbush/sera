@@ -42,7 +42,7 @@ import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material (makePricer)
 import SERA.Material.Prices (materials)
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
-import SERA.Network.Types (fFrom, Location(..), Network(..), fTo, Zone(..), fZone)
+import SERA.Network.Types (fFrom, Location(..), fLocation, Network(..), fTo, Zone(..), fZone)
 import SERA.Process (deliveries, pathways, productions)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Process.Reification.Pathway (deliveryReifier, transmissionReifier)
@@ -127,7 +127,9 @@ productionMain ConfigProduction{..} =
         putStrLn $ "Sale:         " ++ saleFile
         putStrLn ""
         let
-          specifics = fInfrastructure =: Infrastructure "Test" <+> fFrom =: Location "Source" <+> fTo =: Location "Sink"
+          specifics =
+                fInfrastructure =: Infrastructure "The Infrastructure"
+            <+> fLocation       =: Location "The Link"
           reifyTechnology =
             technologyReifier
               processLibrary
@@ -144,9 +146,14 @@ productionMain ConfigProduction{..} =
             transmissionReifier
               processLibrary
               reifyTechnology
+          specifics' =
+                fInfrastructure =: Infrastructure "The Infrastructure"
+            <+> fLocation       =: Location "The Link"
+            <+> fFrom           =: Location "The Source"
+            <+> fTo             =: Location "The Sink"
           Just (c', f') =
             reifyTransmission
-              specifics
+              specifics'
               (Pathway "LH2 Rail")
               2030
               2000000000
@@ -158,7 +165,7 @@ productionMain ConfigProduction{..} =
               reifyTechnology
           Just (c'', f'') =
             reifyDelivery
-              specifics
+              specifics'
               (Pathway "LH2 Rail")
               2030
               2000000000

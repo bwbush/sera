@@ -26,7 +26,7 @@ import SERA.Types (Year)
 type PathwayOperation = Year -> Double -> ([Flow], [Cash], [Impact])
 
 
-type PathwayReifier = FieldRec '[FInfrastructure, FFrom, FTo] -> Pathway -> Year -> Double -> Double -> Maybe ([Construction], PathwayOperation)
+type PathwayReifier = FieldRec '[FInfrastructure, FLocation, FFrom, FTo] -> Pathway -> Year -> Double -> Double -> Maybe ([Construction], PathwayOperation)
 
 
 transmissionReifier :: ProcessLibrary -> TechnologyReifier -> PathwayReifier
@@ -50,8 +50,13 @@ pathwayReifier candidate ProcessLibrary{..} reifyTechnology specifics path built
       extendedStage = fStage <: head (filter (\r -> fExtended <: r) stages)
       specify rec =
             fInfrastructure =: (Infrastructure . ((++ show (fStage <: rec)) . (++ " #")) . infrastructure $ fInfrastructure <: specifics)
-        <+> fFrom           =: (if fStage <: rec <= extendedStage then fFrom <: specifics else fTo   <: specifics)
-        <+> fTo             =: (if fStage <: rec >= extendedStage then fTo   <: specifics else fFrom <: specifics)
+        <+> fLocation       =: (
+                                 if fStage <: rec == extendedStage
+                                   then fLocation <: specifics
+                                   else if fStage <: rec < extendedStage
+                                     then fFrom <: specifics
+                                     else fTo   <: specifics
+                               )
     constructions <-
       sequence
         [

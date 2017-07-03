@@ -25,7 +25,7 @@ import SERA.Types (Year, fYear)
 type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
 
 
-type TechnologyReifier = FieldRec '[FInfrastructure, FFrom, FTo] -> Technology -> Year -> Double -> Double -> Maybe (Construction, TechnologyOperation)
+type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Technology -> Year -> Double -> Double -> Maybe (Construction, TechnologyOperation)
 
 
 technologyReifier :: ProcessLibrary -> Pricer -> TechnologyReifier
