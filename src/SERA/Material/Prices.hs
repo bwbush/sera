@@ -15,14 +15,13 @@
 
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Material.Prices (
--- * Access
-  materials
 -- * Manipulation
-, rezonePrices
+  rezonePrices
 ) where
 
 
@@ -33,13 +32,6 @@ import Data.Vinyl.Derived (FieldRec, (=:))
 import SERA.Material.Types (Material, FMaterial, fMaterial, fPrice, PriceCube)
 import SERA.Network.Types (FZone, ZoneCube)
 import SERA.Types (fFraction, FRegion, FYear)
-
-
-materials :: PriceCube a -> [Material]
-materials priceCube =
-  fmap (fMaterial <:)
-    . toList
-    $ (ω priceCube :: Set (FieldRec '[FMaterial]))
 
 
 rezonePrices :: PriceCube '[FYear, FZone]

@@ -31,22 +31,15 @@ module SERA.Service.HydrogenProduction (
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (knownSize)
-import Data.Daft.Vinyl.FieldRec ((=:), (<+>))
-import Data.Daft.Vinyl.FieldRec.IO (showFieldRecs)
-import Data.List.Util.Listable (toTabbeds)
 import Data.String (IsString)
 import GHC.Generics (Generic)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
-import SERA.Infrastructure.Types (Infrastructure(..), fInfrastructure)
 import SERA.Material.IO (readIntensities, readPrices)
-import SERA.Material (makePricer)
-import SERA.Material.Prices (materials)
+import SERA.Material (materials, upstreamMaterials)
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
 import SERA.Network.Types -- FIXME (fFrom, Location(..), fLocation, Network(..), fTo, Zone(..), fZone)
 import SERA.Process (deliveries, pathways, productions)
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
-import SERA.Process.Reification.Pathway (deliveryReifier, transmissionReifier)
-import SERA.Process.Reification.Technology (technologyReifier)
 import SERA.Process.Types -- FIXME (Pathway(..), Technology(..))
 import SERA.Service ()
 import SERA.Types (Year)
@@ -82,112 +75,85 @@ productionMain :: (IsString e, MonadError e m, MonadIO m)
                        => ConfigProduction -- ^ Configuration data.
                        -> m ()                 -- ^ Action to compute the station sizes.
 productionMain ConfigProduction{..} =
+
   do
+    let
+      count label content =
+        liftIO
+          . putStrLn
+          $ " . . . " ++ show (knownSize content) ++ (if null label then "" else ' ' : label) ++ " records."
+      list label content =
+        liftIO
+          $ do
+            putStrLn $ label ++ ":"
+            mapM_ (putStrLn . ("  " ++) . show) content
+
+    liftIO $ putStrLn ""
+    liftIO . putStrLn $ "Reading price files " ++ show priceFiles ++ " . . ."
     priceCube <- readPrices priceFiles
+    count "price" priceCube
+    list "Materials" $ materials priceCube
+
+    liftIO $ putStrLn ""
+    liftIO . putStrLn $ "Reading upstream emission intensities " ++ show intensityFiles ++ " . . ."
     intensityCube <- readIntensities intensityFiles
-    processLibrary <- readProcessLibrary processLibraryFiles pathwayFiles
-    network <- readNetwork networkFiles
+    count "intensity" intensityCube
+    list "Materials" $ materials intensityCube
+    list "Upstream materials" $ upstreamMaterials intensityCube
+
+    liftIO $ putStrLn ""
+    liftIO . putStrLn $ "Reading process components and pathways . . ."
+    processLibrary@ProcessLibrary{..} <- readProcessLibrary processLibraryFiles pathwayFiles
+    count "cost"    processCostCube
+    count "input"   processInputCube
+    count "output"  processOutputCube
+    count "pathway" pathwayCube
+    list  "Production"  $ productions   processLibrary
+    list  "Delivery"    $ deliveries    processLibrary
+    list  "Pathway"     $ pathways      processLibrary
+
+    liftIO $ putStrLn ""
+    liftIO . putStrLn $ "Reading network . . ."
+    Network{..} <- readNetwork networkFiles
+    count "node"      nodeCube
+    count "link"      linkCube
+    count "existing"  existingCube
+    count "territory" territoryCube
+    count "zone"      zoneCube
+
+    liftIO $ putStrLn ""
+    liftIO . putStrLn $ "Reading demands " ++ show demandFiles ++ " . . ."
     demandCube <- readDemands demandFiles
+    count "demand" demandCube
+
     liftIO
       $ do
-        let
-          list label content =
-            do
-              putStrLn ""
-              putStrLn $ label ++ ":"
-              mapM_ (putStrLn . ("  " ++) . show) content
-          count label content =
-            do
-              putStrLn ""
-              putStrLn $ label ++ ": " ++ show (knownSize content) ++ " keys"
-          InfrastructureFiles{..} = infrastructureFiles
         putStrLn ""
-        putStrLn $ "First Year:            " ++ show firstYear
-        putStrLn $ "Last Year:             " ++ show lastYear
-        putStrLn $ "Time Window:           " ++ show timeWindow
-        putStrLn $ "Discount Rate [/yr]:   " ++ show discountRate
-        putStrLn $ "Escalation Rate [/yr]: " ++ show escalationRate
-        putStrLn $ "Interpolate?           " ++ show interpolate
-        list  "Material"    $ materials     priceCube
-        count "Intensities"                 intensityCube
-        list  "Production"  $ productions   processLibrary
-        list  "Delivery"    $ deliveries    processLibrary
-        list  "Pathway"     $ pathways      processLibrary
-        count "Nodes"       $ nodeCube      network
-        count "Links"       $ linkCube      network
-        count "Existings"   $ existingCube  network
-        count "Territories" $ territoryCube network
-        count "Zones"       $ zoneCube      network
-        count "Demands"                     demandCube
-        putStrLn ""
-        putStrLn $ "Construction: " ++ constructionFile
-        putStrLn $ "Flow:         " ++ flowFile
-        putStrLn $ "Cash:         " ++ cashFile
-        putStrLn $ "Impact:       " ++ impactFile
-        putStrLn $ "Sale:         " ++ saleFile
-        putStrLn ""
-        let
-          specifics =
-                fInfrastructure =: Infrastructure "The Infrastructure"
-            <+> fLocation       =: Location "The Link"
-          reifyTechnology =
-            technologyReifier
-              processLibrary
-              (makePricer priceCube $ fZone =: Zone "Mountain")
-          Just (c, f) =
-            reifyTechnology
-              specifics
-              (Technology "Central Natural Gas Reforming")
-              2030
-              2000000000
-              0
-          (fl, ca, im) = f 2030 100
-          reifyTransmission =
-            transmissionReifier
-              processLibrary
-              reifyTechnology
-          specifics' =
-            (
-              Infrastructure "The Infrastructure"
-            , GenericPath
-              {
-                sourceId = Location "The Source"
-              , linkIds  = [
-                             (Location "First Link", 200)
-                           , (Location "Second Link", 300)
-                           ]
-              , sinkId   = Location "The Sink"
-              }
-            ) 
-          Just (c', f') =
-            reifyTransmission
-              specifics'
-              (Pathway "LH2 Rail")
-              2030
-              2000000000
-              500
-          (fl', ca', im') = f' 2030 100
-          reifyDelivery =
-            deliveryReifier
-              processLibrary
-              reifyTechnology
-          Just (c'', f'') =
-            reifyDelivery
-              specifics'
-              (Pathway "LH2 Rail")
-              2030
-              2000000000
-              50
-          (fl'', ca'', im'') = f'' 2030 100
-        putStrLn . toTabbeds $ showFieldRecs [c]
-        putStrLn . toTabbeds $ showFieldRecs [fl]
-        putStrLn . toTabbeds $ showFieldRecs ca
-        putStrLn . toTabbeds $ showFieldRecs im
-        putStrLn . toTabbeds $ showFieldRecs c'
-        putStrLn . toTabbeds $ showFieldRecs fl'
-        putStrLn . toTabbeds $ showFieldRecs ca'
-        putStrLn . toTabbeds $ showFieldRecs im'
-        putStrLn . toTabbeds $ showFieldRecs c''
-        putStrLn . toTabbeds $ showFieldRecs fl''
-        putStrLn . toTabbeds $ showFieldRecs ca''
-        putStrLn . toTabbeds $ showFieldRecs im''
+        putStrLn "Optimization parameters:"
+        putStrLn $ "  First Year:            " ++ show firstYear
+        putStrLn $ "  Last Year:             " ++ show lastYear
+        putStrLn $ "  Time Window:           " ++ show timeWindow
+        putStrLn $ "  Discount Rate [/yr]:   " ++ show discountRate
+        putStrLn $ "  Escalation Rate [/yr]: " ++ show escalationRate
+        putStrLn $ "  Interpolate?           " ++ show interpolate
+
+    let
+      InfrastructureFiles{..} = infrastructureFiles
+
+    sequence_
+      [
+        do
+          liftIO $ putStrLn ""
+          liftIO $ putStrLn ""
+          liftIO . putStrLn $ "***** Year " ++ show year ++ " *****"
+          liftIO $ putStrLn ""
+          liftIO $ putStrLn "Satisfying new demands locally . . ."
+          liftIO $ putStrLn ""
+          liftIO $ putStrLn "Searching for synergies between demand centers . . ."
+          liftIO $ putStrLn ""
+          liftIO $ putStrLn "Searching for component upgrades . . ."
+      |
+        year <- [firstYear, (firstYear+timeWindow) .. lastYear] :: [Year]
+      ]
+
+    liftIO $ putStrLn ""
