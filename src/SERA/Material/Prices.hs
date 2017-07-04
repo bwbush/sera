@@ -27,9 +27,9 @@ module SERA.Material.Prices (
 
 import Data.Daft.Vinyl.FieldCube ((⋈), κ, ω)
 import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Set (Set, toList)
+import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, (=:))
-import SERA.Material.Types (Material, FMaterial, fMaterial, fPrice, PriceCube)
+import SERA.Material.Types (fPrice, PriceCube)
 import SERA.Network.Types (FZone, ZoneCube)
 import SERA.Types (fFraction, FRegion, FYear)
 

@@ -35,12 +35,11 @@ import Data.String (IsString)
 import GHC.Generics (Generic)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
 import SERA.Material.IO (readIntensities, readPrices)
-import SERA.Material (materials, upstreamMaterials)
+import SERA.Material.Types -- FIXME
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
-import SERA.Network.Types -- FIXME (fFrom, Location(..), fLocation, Network(..), fTo, Zone(..), fZone)
-import SERA.Process (deliveries, pathways, productions)
+import SERA.Network.Types -- FIXME
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
-import SERA.Process.Types -- FIXME (Pathway(..), Technology(..))
+import SERA.Process.Types -- FIXME
 import SERA.Service ()
 import SERA.Types (Year)
 
@@ -108,9 +107,9 @@ productionMain ConfigProduction{..} =
     count "input"   processInputCube
     count "output"  processOutputCube
     count "pathway" pathwayCube
-    list  "Production"  $ productions   processLibrary
-    list  "Delivery"    $ deliveries    processLibrary
-    list  "Pathway"     $ pathways      processLibrary
+    list  "Production"  $ productions processLibrary
+    list  "Delivery"    $ deliveries  processLibrary
+    list  "Pathway"     $ pathways    processLibrary
 
     liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading network . . ."
@@ -145,7 +144,7 @@ productionMain ConfigProduction{..} =
         do
           liftIO $ putStrLn ""
           liftIO $ putStrLn ""
-          liftIO . putStrLn $ "***** Year " ++ show year ++ " *****"
+          liftIO . putStrLn $ "***** Years " ++ show year ++ "-" ++ show (year + timeWindow - 1) ++ " *****"
           liftIO $ putStrLn ""
           liftIO $ putStrLn "Satisfying new demands locally . . ."
           liftIO $ putStrLn ""
@@ -153,7 +152,7 @@ productionMain ConfigProduction{..} =
           liftIO $ putStrLn ""
           liftIO $ putStrLn "Searching for component upgrades . . ."
       |
-        year <- [firstYear, (firstYear+timeWindow) .. lastYear] :: [Year]
+        year <- take 1 [firstYear, (firstYear+timeWindow) .. lastYear] :: [Year]
       ]
 
     liftIO $ putStrLn ""

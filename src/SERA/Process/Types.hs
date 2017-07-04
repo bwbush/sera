@@ -2,7 +2,10 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
 
@@ -11,11 +14,16 @@ module SERA.Process.Types
 where
 
 
-import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Daft.Vinyl.FieldCube (type (*↝), σ, υ, ω)
+import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Set (Set)
+import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (ConsumptionCube, ProductionCube)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 import SERA.Vehicle.Types (Age)
+
+import qualified Data.Set as S (map)
 
 
 data Productive =
@@ -80,3 +88,28 @@ data ProcessLibrary =
   , pathwayCube       :: PathwayCube
   }
     deriving (Eq, Ord, Show)
+
+
+type Technologies = Set (FieldRec '[FTechnology])
+
+
+filterTechnologiesByProductive :: (Productive -> Bool) -> ProcessLibrary -> Set Technology
+filterTechnologiesByProductive f ProcessLibrary{..} =
+  S.map (fTechnology <:)
+    $ (ω $ σ (const $ f . (fProductive <:)) processCostCube :: Technologies)
+
+
+productions :: ProcessLibrary -> Set Technology
+productions = filterTechnologiesByProductive isProduction
+
+
+deliveries :: ProcessLibrary -> Set Technology
+deliveries = filterTechnologiesByProductive $ not . isProduction
+
+
+processes :: ProcessLibrary -> Set Technology
+processes = filterTechnologiesByProductive $ const True
+
+
+pathways :: ProcessLibrary -> Set Pathway
+pathways ProcessLibrary{..} = υ (fPathway <:) pathwayCube

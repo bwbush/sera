@@ -2,13 +2,16 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Material.Types (
 -- * Data types
   Material
+, UpstreamMaterial
 , Pricer
 -- * Field types
 , FMaterial
@@ -37,10 +40,17 @@ module SERA.Material.Types (
 , ProductionCube
 , PriceCube
 , IntensityCube
+-- * Key access
+, materials
+, upstreamMaterials
 ) where
 
 
-import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Daft.DataCube (DataCube(Key, Keys))
+import Data.Daft.Vinyl.FieldCube (FieldCube, type (*↝), υ)
+import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Set (Set)
+import Data.Vinyl.Lens (type (∈))
 import SERA.Types (Year, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
@@ -67,6 +77,14 @@ type PriceCube key = (FMaterial ': FYear ': key) *↝ '[FPrice]
 
 
 type IntensityCube key = (FMaterial ': FUpstreamMaterial ': FYear ': key) *↝ '[FIntensity]
+
+
+materials :: (FMaterial ∈ ks, Key cube Material, DataCube cube, Keys cube ~ Set) => FieldCube cube ks vs -> Set Material
+materials = υ (fMaterial <:)
+
+
+upstreamMaterials :: (FUpstreamMaterial ∈ ks, Key cube UpstreamMaterial, DataCube cube, Keys cube ~ Set) => FieldCube cube ks vs -> Set UpstreamMaterial
+upstreamMaterials = υ (fUpstreamMaterial <:)
 
 
 type Pricer = Material -> Year -> Double
