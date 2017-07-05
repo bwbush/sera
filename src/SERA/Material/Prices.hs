@@ -26,10 +26,10 @@ module SERA.Material.Prices (
 
 
 import Data.Daft.Vinyl.FieldCube ((⋈), κ, ω)
-import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Daft.Vinyl.FieldRec ((<:), (<+>))
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, (=:))
-import SERA.Material.Types (fPrice, PriceCube)
+import SERA.Material.Types (fBillable, fPrice, PriceCube)
 import SERA.Network.Types (FLocation, FZone, ZoneCube)
 import SERA.Types (fFraction)
 
@@ -41,4 +41,6 @@ rezonePrices prices zones = -- FIXME: Generalize this to `key` instead of `FLoca
   κ (ω zones :: Set (FieldRec '[FZone])) combine
     $ prices ⋈ zones
     where
-      combine _ fps = fPrice =: sum [fFraction <: fp * fPrice <: fp | fp <- fps] -- FIXME: Generalize.
+      combine _ fps =
+            fPrice    =: sum [fFraction <: fp * fPrice <: fp | fp <- fps]
+        <+> fBillable =: or  [fBillable <: fp                | fp <- fps]  -- FIXME: Generalize.

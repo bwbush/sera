@@ -21,6 +21,7 @@ module SERA.Material.Types (
 , FProductionRate
 , FProductionRateStretch
 , FPrice
+, FBillable
 , FTotalConsumption
 , FTotalProduction
 , FIntensity
@@ -32,6 +33,7 @@ module SERA.Material.Types (
 , fProductionRate
 , fProductionRateStretch
 , fPrice
+, fBillable
 , fTotalConsumption
 , fTotalProduction
 , fIntensity
@@ -62,6 +64,7 @@ $(makeField       "ConsumptionRateStretch"  "Consumption [unit/km/kg]"  ''Double
 $(makeField       "ProductionRate"          "Production [unit/kg]"      ''Double)
 $(makeField       "ProductionRateStretch"   "Production [unit/km/kg]"   ''Double)
 $(makeField       "Price"                   "Price [$/unit]"            ''Double)
+$(makeField       "Billable"                "Billable?"                 ''Bool  )
 $(makeField       "TotalConsumption"        "Consumption [unit]"        ''Double)
 $(makeField       "TotalProduction"         "Production [unit]"         ''Double)
 $(makeField       "Intensity"               "Intensity [upstream/unit]" ''Double)
@@ -73,7 +76,7 @@ type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate, FConsumpt
 type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate, FProductionRateStretch]
 
 
-type PriceCube key = (FMaterial ': FYear ': key) *↝ '[FPrice]
+type PriceCube key = (FMaterial ': FYear ': key) *↝ '[FPrice, FBillable]
 
 
 type IntensityCube key = (FMaterial ': FUpstreamMaterial ': FYear ': key) *↝ '[FIntensity]
