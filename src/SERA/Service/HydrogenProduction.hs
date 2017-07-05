@@ -33,10 +33,11 @@ import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (evaluate, knownSize)
 import Data.Daft.Vinyl.FieldCube
+import Data.Daft.Vinyl.FieldCube.IO (writeFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec
-import Data.Daft.Vinyl.FieldRec.IO (writeFieldRecFile)
 import Data.Foldable (foldlM)
 import Data.List (unzip4)
+import Data.Map.Strict (fromListWithKey)
 import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
@@ -159,10 +160,63 @@ productionMain ConfigProduction{..} =
         (demandCube', ([], [], [], []))
         [firstYear, (firstYear+timeWindow) .. lastYear]
 
-    writeFieldRecFile constructionFile constructions
-    writeFieldRecFile flowFile         flows
-    writeFieldRecFile cashFile         cashes
-    writeFieldRecFile impactFile       impacts
+    let
+      saleCube =
+        fromListWithKey
+          (
+            \_ v1 v2 ->
+                  fProduction  =: fProduction  <: v1 + fProduction  <: v2
+              <+> fSale        =: fSale        <: v1 + fSale        <: v2
+              <+> fConsumption =: fConsumption <: v1 + fConsumption <: v2
+              <+> fSales       =: fSales       <: v1 + fSales       <: v2
+          )
+          $ [
+              (
+                    fLocation    =: fLocation <: ((fromRecords constructions :: ConstructionCube) ! (fInfrastructure =: fInfrastructure <: rec))
+                <+> fYear        =: fYear <: rec
+              ,     fProduction  =: fProduction <: rec
+                <+> fSale        =: fSale <: rec
+                <+> fConsumption =: 0
+                <+> fSales       =: fSale <: rec
+              )
+            |
+              rec <- flows
+            ]
+            ++
+            [
+              (
+                    fLocation    =: fLocation <: rec
+                <+> fYear        =: fYear <: rec
+              ,     fProduction  =: 0
+                <+> fSale        =: 0
+                <+> fConsumption =: fConsumption <: rec
+                <+> fSales       =: 0
+              )
+            |
+              rec <- toKnownRecords demandCube
+            , lastYear >= fYear <: rec
+            ]
+      saleCube' =
+        κ
+          (undefined :: Set (FieldRec '[FLocation]))
+          (
+            \_ recs ->
+                  fProduction  =: sum (fmap (\rec -> fFraction <: rec * fProduction  <: rec) recs)
+              <+> fSale        =: sum (fmap (\rec -> fFraction <: rec * fSale        <: rec) recs)
+              <+> fCost        =: sum (fmap (\rec -> fFraction <: rec * fSale        <: rec) recs)
+                                / sum (fmap (\rec -> fFraction <: rec * fProduction  <: rec) recs)
+              <+> fConsumption =: sum (fmap (\rec -> fFraction <: rec * fConsumption <: rec) recs)
+              <+> fSales       =: sum (fmap (\rec -> fFraction <: rec * fSales       <: rec) recs)
+              <+> fNetPrice    =: sum (fmap (\rec -> fFraction <: rec * fSales       <: rec) recs)
+                                / sum (fmap (\rec -> fFraction <: rec * fConsumption <: rec) recs)
+          )
+          $ territoryCube ⋈ saleCube
+
+    writeFieldCubeFile constructionFile (fromRecords constructions :: ConstructionCube)
+    writeFieldCubeFile flowFile         (fromRecords flows         :: FlowCube        )
+    writeFieldCubeFile cashFile         (fromRecords cashes        :: CashCube        )
+    writeFieldCubeFile impactFile       (fromRecords impacts       :: ImpactCube      )
+    writeFieldCubeFile saleFile         (saleCube'                 :: SaleCube        )
 
     liftIO $ putStrLn ""
 

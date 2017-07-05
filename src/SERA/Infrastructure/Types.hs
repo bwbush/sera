@@ -42,7 +42,7 @@ $(makeField       "Flow"           "Flow [kg]"         ''Double        )
 $(makeField       "Loss"           "Loss [kg]"         ''Double        )
 $(makeField       "Consumption"    "Consumption [kg]"  ''Double        )
 $(makeField       "TotalCost"      "Cost [kg]"         ''Double        )
-$(makeField       "Sales"          "Sales [kg]"        ''Double        )
+$(makeField       "Sales"          "Sales [$]"         ''Double        )
 $(makeField       "NetPrice"       "Price [$/kg]"      ''Double        )
 $(makeField       "Quantity"       "Quantity [unit]"   ''Double        )
 $(makeField       "CostCategory"   "Cost Component"    ''CostCategory  )
@@ -52,19 +52,19 @@ $(makeField       "ImpactCategory" "Disposition"       ''ImpactCategory)
 type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
 
 
-type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FYear, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
+type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FConsumption, FCost]
+type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FSale]
 
 
-type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FCost]
+type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FSale]
 
 
-type ImpactCube = '[FInfrastructure, FYear, FMaterial] *↝ '[FImpactCategory, FQuantity, FCost]
+type ImpactCube = '[FInfrastructure, FYear, FMaterial] *↝ '[FImpactCategory, FQuantity, FSale]
 
 
-type SaleCube = '[FTerritory, FYear] *↝ '[FConsumption, FCost, FSales, FNetPrice]
+type SaleCube = '[FTerritory, FYear] *↝ '[FProduction, FSale, FCost, FConsumption, FSales, FNetPrice]
 
 
 data InfrastructureCubes =
