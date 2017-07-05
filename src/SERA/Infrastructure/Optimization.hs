@@ -27,10 +27,11 @@ fOptimum :: SField FOptimum
 fOptimum = SField
 
 
-cheapestLocally :: PriceCube '[FLocation] -> ProcessLibrary -> [FieldRec '[FLocation, FYear, FConsumption]] -> FieldRec '[FYear, FConsumption, FOptimum]
+cheapestLocally :: PriceCube '[FLocation] -> ProcessLibrary -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> FieldRec '[FYear, FConsumption, FOptimum]
 cheapestLocally priceCube processLibrary demands =
   let
     loc = fLocation <: head demands :: Location
+    area = fArea <: head demands
     (year, consumption) =
       (minimum *** maximum)
         $ unzip
@@ -47,7 +48,7 @@ cheapestLocally priceCube processLibrary demands =
         (fInfrastructure =: Infrastructure (location loc ++ " @ " ++ show year) <+> fLocation =: loc)
         year
         consumption
-        30
+        (2 * sqrt area)
     candidates =
         [
           (

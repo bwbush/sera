@@ -151,11 +151,12 @@ productionMain ConfigProduction{..} =
     let
       InfrastructureFiles{..} = infrastructureFiles
       priceCube' = rezonePrices priceCube zoneCube
+      demandCube' = demandCube ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandCube'
 
     (_, (constructions, flows, cashes, impacts)) <-
       foldlM
         (compute priceCube' processLibrary timeWindow)
-        (demandCube, ([], [], [], []))
+        (demandCube', ([], [], [], []))
         [firstYear, (firstYear+timeWindow) .. lastYear]
 
     writeFieldRecFile constructionFile constructions
@@ -166,13 +167,16 @@ productionMain ConfigProduction{..} =
     liftIO $ putStrLn ""
 
 
+type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
+
+
 compute :: (IsString e, MonadError e m, MonadIO m)
         => PriceCube '[FLocation]
         -> ProcessLibrary
         -> Year
-        -> (DemandCube, ([Construction], [Flow], [Cash], [Impact]))
+        -> (DemandCube', ([Construction], [Flow], [Cash], [Impact]))
         -> Year
-        -> m (DemandCube, ([Construction], [Flow], [Cash], [Impact]))
+        -> m (DemandCube', ([Construction], [Flow], [Cash], [Impact]))
 compute priceCube processLibrary timeWindow (demandCube, (constructions, flows, cashes, impacts)) year =
   do
     let
@@ -197,7 +201,7 @@ compute priceCube processLibrary timeWindow (demandCube, (constructions, flows, 
 --  liftIO $ putStrLn "Searching for component upgrades . . ."
     return
       (
-        π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (results `evaluate` τ key)]) demandCube
+        π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (results `evaluate` τ key)] <+> fArea =: fArea <: rec) demandCube
       , (
           constructions ++ constructions'
         , flows         ++ concat flows'

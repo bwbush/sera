@@ -18,6 +18,7 @@ module SERA.Network.Types (
 , FZone
 , FX
 , FY
+, FArea
 , FSale
 , FRent
 , FFrom
@@ -29,6 +30,7 @@ module SERA.Network.Types (
 , fZone
 , fX
 , fY
+, fArea
 , fSale
 , fRent
 , fFrom
@@ -58,6 +60,7 @@ $(makeField       "From"        "From Node ID"     ''Location)
 $(makeField       "To"          "To Node ID"       ''Location)
 $(makeField       "X"           "X"                ''Double  )
 $(makeField       "Y"           "Y"                ''Double  )
+$(makeField       "Area"        "Area [km^2]"      ''Double  )
 $(makeField       "Length"      "Length [km]"      ''Double  )
 $(makeField       "Sale"        "Cost [$]"         ''Double  )
 $(makeField       "Rent"        "Cost [$/yr]"      ''Double  )
@@ -77,7 +80,7 @@ data Network =
     deriving (Eq, Ord, Show)
 
 
-type NodeCube = '[FLocation] *↝ '[FX, FY, FProductive, FSale, FRent]
+type NodeCube = '[FLocation] *↝ '[FX, FY, FArea, FProductive, FSale, FRent]
 
 
 type LinkCube = '[FLocation] *↝ '[FFrom, FTo, FLength, FSale, FRent, FTransmission, FDelivery]
@@ -92,7 +95,7 @@ type TerritoryCube = '[FTerritory, FLocation] *↝ '[FFraction]
 type ZoneCube key = (FZone ': key) *↝ '[FFraction]
 
 
-type Node = FieldRec '[FLocation, FX, FY, FProductive, FSale, FRent]
+type Node = FieldRec '[FLocation, FX, FY, FArea, FProductive, FSale, FRent]
 
 
 type Link = FieldRec '[FLocation, FFrom, FTo, FLength, FSale, FRent, FTransmission, FDelivery]
