@@ -103,6 +103,10 @@ productions :: ProcessLibrary -> Set Technology
 productions = filterTechnologiesByProductive isProduction
 
 
+productions' :: Productive -> ProcessLibrary -> Set Technology
+productions' = filterTechnologiesByProductive . (==)
+
+
 deliveries :: ProcessLibrary -> Set Technology
 deliveries = filterTechnologiesByProductive $ not . isProduction
 

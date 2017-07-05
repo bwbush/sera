@@ -13,11 +13,12 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE DeriveGeneric   #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections   #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE DeriveGeneric    #-}
+{-# LANGUAGE FlexibleContexts #-} 
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE TupleSections    #-}
+{-# LANGUAGE TypeOperators    #-}
 
 
 module SERA.Service.HydrogenProduction (
@@ -30,18 +31,29 @@ module SERA.Service.HydrogenProduction (
 
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.DataCube (knownSize)
+import Data.Daft.DataCube (evaluate, knownSize)
+import Data.Daft.Vinyl.FieldCube
+import Data.Daft.Vinyl.FieldRec
+import Data.Daft.Vinyl.FieldRec.IO (writeFieldRecFile)
+import Data.Foldable (foldlM)
+import Data.List (unzip4)
+import Data.Set (Set)
 import Data.String (IsString)
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
+import SERA.Infrastructure.Optimization
+import SERA.Infrastructure.Types 
 import SERA.Material.IO (readIntensities, readPrices)
+import SERA.Material.Prices
 import SERA.Material.Types -- FIXME
 import SERA.Network.IO (NetworkFiles(..), readNetwork)
 import SERA.Network.Types -- FIXME
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Process.Types -- FIXME
 import SERA.Service ()
-import SERA.Types (Year)
+import SERA.Types
 
 
 -- | Configuration for hydrogen station sizing.
@@ -138,21 +150,58 @@ productionMain ConfigProduction{..} =
 
     let
       InfrastructureFiles{..} = infrastructureFiles
+      priceCube' = rezonePrices priceCube zoneCube
 
-    sequence_
-      [
-        do
-          liftIO $ putStrLn ""
-          liftIO $ putStrLn ""
-          liftIO . putStrLn $ "***** Years " ++ show year ++ "-" ++ show (year + timeWindow - 1) ++ " *****"
-          liftIO $ putStrLn ""
-          liftIO $ putStrLn "Satisfying new demands locally . . ."
-          liftIO $ putStrLn ""
-          liftIO $ putStrLn "Searching for synergies between demand centers . . ."
-          liftIO $ putStrLn ""
-          liftIO $ putStrLn "Searching for component upgrades . . ."
-      |
-        year <- take 1 [firstYear, (firstYear+timeWindow) .. lastYear] :: [Year]
-      ]
+    (_, (constructions, flows, cashes, impacts)) <-
+      foldlM
+        (compute priceCube' processLibrary timeWindow)
+        (demandCube, ([], [], [], []))
+        [firstYear, (firstYear+timeWindow) .. lastYear]
+
+    writeFieldRecFile constructionFile constructions
+    writeFieldRecFile flowFile         flows
+    writeFieldRecFile cashFile         cashes
+    writeFieldRecFile impactFile       impacts
 
     liftIO $ putStrLn ""
+
+
+compute :: (IsString e, MonadError e m, MonadIO m)
+        => PriceCube '[FLocation]
+        -> ProcessLibrary
+        -> Year
+        -> (DemandCube, ([Construction], [Flow], [Cash], [Impact]))
+        -> Year
+        -> m (DemandCube, ([Construction], [Flow], [Cash], [Impact]))
+compute priceCube processLibrary timeWindow (demandCube, (constructions, flows, cashes, impacts)) year =
+  do
+    let
+      allYears :: Set (FieldRec '[FYear])
+      allYears = undefined
+      filterYear :: (FYear ∈ ks) => FieldRec ks -> Bool
+      filterYear rec = fYear <: rec >= year && fYear <: rec < year + timeWindow
+      results :: '[FLocation] *↝ '[FYear, FConsumption, FOptimum]
+      results =
+          κ' allYears (cheapestLocally priceCube processLibrary)
+        $ σ (const . filterYear) demandCube
+      (constructions', flows', cashes', impacts') = unzip4 $ fmap (fOptimum <:) $ toKnownRecords results
+    liftIO $ putStrLn ""
+    liftIO $ putStrLn ""
+    liftIO . putStrLn $ "***** Years " ++ show year ++ "-" ++ show (year + timeWindow - 1) ++ " *****"
+    liftIO $ putStrLn ""
+    liftIO $ putStrLn "Satisfying new demands locally . . ."
+    liftIO . putStrLn $ " . . . " ++ show (length constructions') ++ " facilities constructed."
+--  liftIO $ putStrLn ""
+--  liftIO $ putStrLn "Searching for synergies between demand centers . . ."
+--  liftIO $ putStrLn ""
+--  liftIO $ putStrLn "Searching for component upgrades . . ."
+    return
+      (
+        π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (results `evaluate` τ key)]) demandCube
+      , (
+          constructions ++ constructions'
+        , flows         ++ concat flows'
+        , cashes        ++ concat cashes'
+        , impacts       ++ concat impacts'
+        )
+      )

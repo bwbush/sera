@@ -25,17 +25,17 @@ import SERA.Types (Year, fYear)
 type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
 
 
-type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Technology -> Year -> Double -> Double -> Maybe (Construction, TechnologyOperation)
+type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Year -> Double -> Double -> Technology -> Maybe (Construction, TechnologyOperation)
 
 
 technologyReifier :: ProcessLibrary -> Pricer -> TechnologyReifier
-technologyReifier ProcessLibrary{..} pricer specifics tech built capacity distance = 
+technologyReifier ProcessLibrary{..} pricer specifics built capacity distance tech = 
   do -- FIXME: Add interpolation
     let
       candidate key _ =
            tech     == fTechnology <: key -- Technologies must match exactly,
         && built    >= fYear       <: key -- must be available in the given built, and
-        && capacity >= fCapacity   <: key -- must be large enough.
+--      && capacity <= fCapacity   <: key -- must be large enough.
     (specification, costs) <- selectKnownMaximum $ σ candidate processCostCube
     let
       scaleCost cost stretch =

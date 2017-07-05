@@ -30,14 +30,14 @@ import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, (=:))
 import SERA.Material.Types (fPrice, PriceCube)
-import SERA.Network.Types (FZone, ZoneCube)
-import SERA.Types (fFraction, FRegion, FYear)
+import SERA.Network.Types (FLocation, FZone, ZoneCube)
+import SERA.Types (fFraction)
 
 
-rezonePrices :: PriceCube '[FYear, FZone]
-             -> ZoneCube '[FRegion]
-             -> PriceCube '[FYear, FRegion]
-rezonePrices prices zones = -- FIXME: Generalize this to `key` instead of `FRegion`.
+rezonePrices :: PriceCube '[FZone]
+             -> ZoneCube '[FLocation]
+             -> PriceCube '[FLocation]
+rezonePrices prices zones = -- FIXME: Generalize this to `key` instead of `FLocation`.
   κ (ω zones :: Set (FieldRec '[FZone])) combine
     $ prices ⋈ zones
     where

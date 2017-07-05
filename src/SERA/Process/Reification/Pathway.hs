@@ -53,7 +53,7 @@ pathwayReifier candidate ProcessLibrary{..} reifyTechnology (label, GenericPath{
       sequence
         $ [
             first (rput (Field 0 :: ElField FLength))
-              <$> reifyTechnology (relabel rec 0 <+> fLocation =: sourceId) (fTechnology <: rec) built capacity distance
+              <$> reifyTechnology (relabel rec 0 <+> fLocation =: sourceId) built capacity distance (fTechnology <: rec)
           |
             rec <- stages
           , fStage <: rec < extendedStage
