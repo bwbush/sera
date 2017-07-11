@@ -88,7 +88,7 @@ cheapestLocally priceCube processLibrary demands =
       , let Just (construction, operate) = reification
       , let (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
       , path <- toList $ localPathways processLibrary
-      , let reification' = reifyPathway (Infrastructure "z", GenericPath loc [] loc) path
+      , let reification' = reifyPathway (Infrastructure (location loc ++ " @ " ++ show year), GenericPath loc [(loc, 2 * sqrt area)] loc) path
       , isJust reification'
       , let Just (construction', operate') = reification'
       , let (flows', cashes', impacts') = unzip3 $ (\rec -> operate' (fYear <: rec) (fConsumption <: rec)) <$> demands
