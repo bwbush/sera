@@ -120,9 +120,10 @@ productionMain ConfigProduction{..} =
     count "input"   processInputCube
     count "output"  processOutputCube
     count "pathway" pathwayCube
-    list  "Production"  $ productions processLibrary
-    list  "Delivery"    $ deliveries  processLibrary
-    list  "Pathway"     $ pathways    processLibrary
+    list  "Production"    $ productions   processLibrary
+    list  "Delivery"      $ deliveries    processLibrary
+    list  "Pathway"       $ pathways      processLibrary
+    list  "Local Pathway" $ localPathways processLibrary
 
     liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading network . . ."
@@ -257,7 +258,7 @@ compute priceCube processLibrary timeWindow (demandCube, (constructions, flows, 
       (
         π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (results `evaluate` τ key)] <+> fArea =: fArea <: rec) demandCube
       , (
-          constructions ++ constructions'
+          constructions ++ concat constructions'
         , flows         ++ concat flows'
         , cashes        ++ concat cashes'
         , impacts       ++ concat impacts'

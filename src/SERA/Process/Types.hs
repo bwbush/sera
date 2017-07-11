@@ -14,8 +14,10 @@ module SERA.Process.Types
 where
 
 
-import Data.Daft.Vinyl.FieldCube (type (*↝), σ, υ, ω)
-import Data.Daft.Vinyl.FieldRec ((<:))
+import Data.Daft.Vinyl.FieldCube (type (*↝), κ', σ, υ, ω)
+import Data.Daft.Vinyl.FieldRec ((=:), (<:))
+import Data.Function (on)
+import Data.List (sortBy)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (ConsumptionCube, ProductionCube)
@@ -59,6 +61,7 @@ $(makeField       "Delivery"            "Delivery?"                         ''Bo
 $(makeStringField "Format"              "Format"                                        )
 $(makeField       "Cost"                "Cost [$/kg]"                       ''Double    )
 $(makeField       "Yield"               "Yield [upstream/kg]"               ''Double    )
+$(makeField       "Condition"           "Condition?"                        ''Bool      )
 
 
 type ProcessKey = '[FTechnology, FYear, FCapacity]
@@ -117,3 +120,26 @@ processes = filterTechnologiesByProductive $ const True
 
 pathways :: ProcessLibrary -> Set Pathway
 pathways ProcessLibrary{..} = υ (fPathway <:) pathwayCube
+
+
+type Pathways = Set (FieldRec '[FPathway])
+
+
+localPathways :: ProcessLibrary -> Set Pathway
+localPathways ProcessLibrary{..} =
+  let
+    results :: '[FPathway] *↝ '[FCondition]
+    results = 
+      σ (\_ rec -> fCondition <: rec)
+        $ κ' (ω pathwayCube :: Set (FieldRec '[FStage]))
+          (
+            \recs -> 
+              let
+                recs' = sortBy (compare `on` (fStage <:)) recs
+              in
+                fCondition =: not ((fExtended <:) $ head recs') && all (fDelivery <:) (tail recs')
+          )
+          pathwayCube
+  in
+    S.map (fPathway <:)
+      $ (ω results :: Pathways)

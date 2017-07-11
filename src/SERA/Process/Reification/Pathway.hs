@@ -26,7 +26,7 @@ import SERA.Types (Year)
 type PathwayOperation = Year -> Double -> ([Flow], [Cash], [Impact])
 
 
-type PathwayReifier = (Infrastructure, Path) -> Pathway -> Year -> Double -> Double -> Maybe ([Construction], PathwayOperation)
+type PathwayReifier = Year -> Double -> Double -> (Infrastructure, Path) -> Pathway -> Maybe ([Construction], PathwayOperation)
 
 
 transmissionReifier :: ProcessLibrary -> TechnologyReifier -> PathwayReifier
@@ -42,7 +42,7 @@ deliveryReifier =
 
 
 pathwayReifier :: (Bool -> Bool -> Bool) -> ProcessLibrary -> TechnologyReifier -> PathwayReifier
-pathwayReifier candidate ProcessLibrary{..} reifyTechnology (label, GenericPath{..}) path built capacity distance = 
+pathwayReifier candidate ProcessLibrary{..} reifyTechnology built capacity distance (label, GenericPath{..}) path = 
   do
     let
       candidate' key val = path == fPathway <: key && candidate (fTransmission <: val) (fDelivery <: val)

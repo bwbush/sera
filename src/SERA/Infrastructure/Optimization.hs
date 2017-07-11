@@ -15,12 +15,13 @@ import Data.Vinyl.Derived (FieldRec, SField(..))
 import SERA.Infrastructure.Types
 import SERA.Material.Types
 import SERA.Network.Types
+import SERA.Process.Reification.Pathway
 import SERA.Process.Reification.Technology
 import SERA.Process.Types
 import SERA.Types
 
 
-type FOptimum = '("Optimum", (Construction, [Flow], [Cash], [Impact]))
+type FOptimum = '("Optimum", ([Construction], [Flow], [Cash], [Impact]))
 
 
 fOptimum :: SField FOptimum
@@ -50,20 +51,50 @@ cheapestLocally priceCube processLibrary demands =
         consumption
         (2 * sqrt area)
     candidates =
-        [
-          (
-            sum $ (fSale <:) <$> flows
-          , (construction, flows, concat cashes, concat impacts)
-          )
-        |
-          tech <- toList $ productions' Onsite processLibrary
-        , let reification = reifyTechnology tech
-        , isJust reification
-        , let Just (construction, operate) = reification
-        , let (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
-        ]
-    best = minimum $ fst <$> candidates
+      [
+        (
+          sum $ (fSale <:) <$> flows
+        , ([construction], flows, concat cashes, concat impacts)
+        )
+      |
+        tech <- toList $ productions' Onsite processLibrary
+      , let reification = reifyTechnology tech
+      , isJust reification
+      , let Just (construction, operate) = reification
+      , let (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
+      ]
+    reifyPathway =
+      pathwayReifier
+        (\_ _ -> True)
+        processLibrary
+        (
+          technologyReifier
+            processLibrary
+            (\m y -> maybe 0 (fPrice <:) $ priceCube `evaluate` (fMaterial =: m <+> fYear =: y <+> fLocation =: loc)) -- FIXME: extrapolate
+        )
+        year
+        consumption
+        (2 * sqrt area)
+    candidates' =
+      [
+        (
+          sum $ (fSale <:) <$> flows
+        , (construction : construction', concat (flows : flows'), concat (cashes ++ cashes'), concat (impacts ++ impacts'))
+        )
+      |
+        tech <- toList $ productions' Central processLibrary
+      , let reification = reifyTechnology tech
+      , isJust reification
+      , let Just (construction, operate) = reification
+      , let (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
+      , path <- toList $ localPathways processLibrary
+      , let reification' = reifyPathway (Infrastructure "z", GenericPath loc [] loc) path
+      , isJust reification'
+      , let Just (construction', operate') = reification'
+      , let (flows', cashes', impacts') = unzip3 $ (\rec -> operate' (fYear <: rec) (fConsumption <: rec)) <$> demands
+      ]
+    best = minimum $ fst <$> candidates ++ candidates'
   in
         fYear =: year
     <+> fConsumption =: consumption
-    <+> fOptimum =: snd (head $ dropWhile ((/= best) . fst) candidates)
+    <+> fOptimum =: snd (head $ dropWhile ((/= best) . fst) $ candidates ++ candidates')
