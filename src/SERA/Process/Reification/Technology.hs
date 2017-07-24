@@ -10,16 +10,17 @@ module SERA.Process.Reification.Technology
 where
 
 
-import Data.Daft.DataCube (selectKnownMaximum)
-import Data.Daft.Vinyl.FieldCube (κ, σ, τ, toKnownRecords)
+import Data.Daft.DataCube (knownKeys, selectKnownMaximum)
+import Data.Daft.Vinyl.FieldCube (σ, τ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
-import Data.Set (singleton)
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Material.Types -- FIXME
 import SERA.Network.Types -- FIXME
 import SERA.Process.Types -- FIXME
-import SERA.Types (Year, fYear)
+import SERA.Types (Year, FYear, fYear)
+
+import qualified Data.Set as S (filter, findMin, map, toList)
 
 
 type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
@@ -32,16 +33,22 @@ technologyReifier :: ProcessLibrary -> Pricer -> TechnologyReifier
 technologyReifier ProcessLibrary{..} pricer specifics built capacity distance tech = 
   do -- FIXME: Add interpolation
     let
-      candidate key _ =
-           tech     == fTechnology <: key -- Technologies must match exactly,
-        && built    >= fYear       <: key -- must be available in the given built, and
---      && capacity <= fCapacity   <: key -- must be large enough.
-    (specification, costs) <- selectKnownMaximum $ σ candidate processCostCube
+      eligible =
+        [
+              fTechnology =: tech
+          <+> fYear       =: year
+          <+> (if null caps' then minimum caps else maximum caps')
+        |
+          let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processCostCube
+        , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys
+        , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys
+        , let caps' = S.filter (\key -> capacity >= fCapacity <: key) caps
+        ]
+    (specification, costs) <- selectKnownMaximum $ σ (\key _ -> key `elem` eligible) processCostCube
     let
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
           * (capacity / fCapacity <: specification) ** (fScaling <: costs)
-      extract = κ (singleton specification) (const head) . σ (const . (specification ==) . τ)
       construction =
             specifics
         <+> fTechnology   =: tech
@@ -53,8 +60,36 @@ technologyReifier ProcessLibrary{..} pricer specifics built capacity distance te
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
         <+> fVariableCost =: scaleCost fVariableCost fVariableCostStretch
-      inputs = extract processInputCube :: ConsumptionCube '[]
-      outputs = extract processOutputCube :: ProductionCube '[]
+      inputs =
+        σ (\kex _ -> kex `elem` [
+                                      fMaterial   =: material
+                                  <+> fTechnology =: tech
+                                  <+> fYear       =: year
+                                  <+> (if null caps' then minimum caps else maximum caps')
+                                |
+                                  let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processInputCube
+                                , material <- S.toList $ S.map (fMaterial <:) keys
+                                , let keys' = S.filter (\key -> material == fMaterial <: key) keys
+                                , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
+                                , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
+                                , let caps' = S.filter (\key -> capacity >= fCapacity <: key) caps
+                                ]
+          ) processInputCube
+      outputs =
+        σ (\kex _ -> kex `elem` [
+                                      fMaterial   =: material
+                                  <+> fTechnology =: tech
+                                  <+> fYear       =: year
+                                  <+> (if null caps' then minimum caps else maximum caps')
+                                |
+                                  let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processOutputCube
+                                , material <- S.toList $ S.map (fMaterial <:) keys
+                                , let keys' = S.filter (\key -> material == fMaterial <: key) keys
+                                , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
+                                , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
+                                , let caps' = S.filter (\key -> capacity >= fCapacity <: key) caps
+                                ]
+          ) processOutputCube
     return
       (
         construction
