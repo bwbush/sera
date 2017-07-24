@@ -13,6 +13,7 @@ import Data.Maybe (isJust)
 import Data.Set (toList)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import SERA.Infrastructure.Types
+import SERA.Material.Prices
 import SERA.Material.Types
 import SERA.Network.Types
 import SERA.Process.Reification.Pathway
@@ -28,8 +29,8 @@ fOptimum :: SField FOptimum
 fOptimum = SField
 
 
-cheapestLocally :: PriceCube '[FLocation] -> ProcessLibrary -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> FieldRec '[FYear, FConsumption, FOptimum]
-cheapestLocally priceCube processLibrary demands =
+cheapestLocally :: PriceCube '[FLocation] -> ProcessLibrary -> IntensityCube '[FLocation] -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> FieldRec '[FYear, FConsumption, FOptimum]
+cheapestLocally priceCube processLibrary intensityCube demands =
   let
     loc = fLocation <: head demands :: Location
     area = fArea <: head demands
@@ -45,6 +46,7 @@ cheapestLocally priceCube processLibrary demands =
     reifyTechnology =
       technologyReifier
         processLibrary
+        (localize intensityCube loc)
         (\m y -> maybe 0 (fPrice <:) $ priceCube `evaluate` (fMaterial =: m <+> fYear =: y <+> fLocation =: loc)) -- FIXME: extrapolate
         (fInfrastructure =: Infrastructure (location loc ++ " @ " ++ show year) <+> fLocation =: loc)
         year
@@ -70,6 +72,7 @@ cheapestLocally priceCube processLibrary demands =
         (
           technologyReifier
             processLibrary
+            (localize intensityCube loc)
             (\m y -> maybe 0 (fPrice <:) $ priceCube `evaluate` (fMaterial =: m <+> fYear =: y <+> fLocation =: loc)) -- FIXME: extrapolate
         )
         year

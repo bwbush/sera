@@ -11,8 +11,9 @@ where
 
 
 import Data.Daft.DataCube (knownKeys, selectKnownMaximum)
-import Data.Daft.Vinyl.FieldCube (σ, τ, toKnownRecords)
+import Data.Daft.Vinyl.FieldCube ((!), σ, τ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Material.Types -- FIXME
@@ -20,7 +21,7 @@ import SERA.Network.Types -- FIXME
 import SERA.Process.Types -- FIXME
 import SERA.Types (Year, FYear, fYear)
 
-import qualified Data.Set as S (filter, findMin, map, toList)
+import qualified Data.Set as S (filter, findMin, map, null, toList)
 
 
 type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
@@ -29,8 +30,8 @@ type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
 type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Year -> Double -> Double -> Technology -> Maybe (Construction, TechnologyOperation)
 
 
-technologyReifier :: ProcessLibrary -> Pricer -> TechnologyReifier
-technologyReifier ProcessLibrary{..} pricer specifics built capacity distance tech = 
+technologyReifier :: ProcessLibrary -> IntensityCube '[] -> Pricer -> TechnologyReifier
+technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capacity distance tech = 
   do -- FIXME: Add interpolation
     let
       eligible =
@@ -100,6 +101,23 @@ technologyReifier ProcessLibrary{..} pricer specifics built capacity distance te
           fixed = fFixedCost <: construction
           variable = output * fVariableCost <: construction
           impacts =
+            [
+                  specifics'
+              <+> fMaterial       =: upstream
+              <+> fImpactCategory =: Upstream
+              <+> fQuantity       =: quantity * intensity
+              <+> fSale           =: quantity * intensity -- * pricer upstream year
+            |
+              rec <- toKnownRecords inputs
+            , let material = fMaterial <: rec
+            , let rate = fConsumptionRate <: rec + distance * fConsumptionRateStretch <: rec
+            , let quantity = output * rate
+            , upstream <- S.toList $ upstreamMaterials intensityCube :: [Material]
+            , let keys = S.filter (\key -> material == fMaterial <: key && upstream == fUpstreamMaterial <: key && year >= fYear <: key) $ knownKeys intensityCube :: Set (FieldRec '[FMaterial, FUpstreamMaterial, FYear])
+            , not $ S.null keys
+            , let intensity = (fIntensity <:) $ intensityCube ! S.findMin keys :: Double
+            ]
+            ++
             [
                   specifics'
               <+> fMaterial       =: fMaterial <: rec

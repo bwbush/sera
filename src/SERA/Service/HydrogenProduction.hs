@@ -153,11 +153,12 @@ productionMain ConfigProduction{..} =
     let
       InfrastructureFiles{..} = infrastructureFiles
       priceCube' = rezonePrices priceCube zoneCube
+      intensityCube' = rezoneIntensities intensityCube zoneCube
       demandCube' = demandCube ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandCube'
 
     (_, (constructions, flows, cashes, impacts)) <-
       foldlM
-        (compute priceCube' processLibrary timeWindow)
+        (compute priceCube' processLibrary intensityCube' timeWindow)
         (demandCube', ([], [], [], []))
         [firstYear, (firstYear+timeWindow) .. lastYear]
 
@@ -228,11 +229,12 @@ type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
 compute :: (IsString e, MonadError e m, MonadIO m)
         => PriceCube '[FLocation]
         -> ProcessLibrary
+        -> IntensityCube '[FLocation]
         -> Year
         -> (DemandCube', ([Construction], [Flow], [Cash], [Impact]))
         -> Year
         -> m (DemandCube', ([Construction], [Flow], [Cash], [Impact]))
-compute priceCube processLibrary timeWindow (demandCube, (constructions, flows, cashes, impacts)) year =
+compute priceCube processLibrary intensityCube timeWindow (demandCube, (constructions, flows, cashes, impacts)) year =
   do
     let
       allYears :: Set (FieldRec '[FYear])
@@ -241,7 +243,7 @@ compute priceCube processLibrary timeWindow (demandCube, (constructions, flows, 
       filterYear rec = fYear <: rec >= year && fYear <: rec < year + timeWindow
       results :: '[FLocation] *↝ '[FYear, FConsumption, FOptimum]
       results =
-          κ' allYears (cheapestLocally priceCube processLibrary)
+          κ' allYears (cheapestLocally priceCube processLibrary intensityCube)
         $ σ (const . filterYear) demandCube
       (constructions', flows', cashes', impacts') = unzip4 $ fmap (fOptimum <:) $ toKnownRecords results
     liftIO $ putStrLn ""

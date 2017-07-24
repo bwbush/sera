@@ -11,7 +11,6 @@
 module SERA.Material.Types (
 -- * Data types
   Material
-, UpstreamMaterial
 , Pricer
 -- * Field types
 , FMaterial
@@ -57,17 +56,17 @@ import SERA.Types (Year, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
 
-$(makeStringField "Material"                "Material"                          )
-$(makeStringField "UpstreamMaterial"        "Upstream Material"                 )
-$(makeField       "ConsumptionRate"         "Consumption [unit/kg]"     ''Double)
-$(makeField       "ConsumptionRateStretch"  "Consumption [unit/km/kg]"  ''Double)
-$(makeField       "ProductionRate"          "Production [unit/kg]"      ''Double)
-$(makeField       "ProductionRateStretch"   "Production [unit/km/kg]"   ''Double)
-$(makeField       "Price"                   "Price [$/unit]"            ''Double)
-$(makeField       "Billable"                "Billable?"                 ''Bool  )
-$(makeField       "TotalConsumption"        "Consumption [unit]"        ''Double)
-$(makeField       "TotalProduction"         "Production [unit]"         ''Double)
-$(makeField       "Intensity"               "Intensity [upstream/unit]" ''Double)
+$(makeStringField "Material"                "Material"                            )
+$(makeField       "UpstreamMaterial"        "Upstream Material"         ''Material)
+$(makeField       "ConsumptionRate"         "Consumption [unit/kg]"     ''Double  )
+$(makeField       "ConsumptionRateStretch"  "Consumption [unit/km/kg]"  ''Double  )
+$(makeField       "ProductionRate"          "Production [unit/kg]"      ''Double  )
+$(makeField       "ProductionRateStretch"   "Production [unit/km/kg]"   ''Double  )
+$(makeField       "Price"                   "Price [$/unit]"            ''Double  )
+$(makeField       "Billable"                "Billable?"                 ''Bool    )
+$(makeField       "TotalConsumption"        "Consumption [unit]"        ''Double  )
+$(makeField       "TotalProduction"         "Production [unit]"         ''Double  )
+$(makeField       "Intensity"               "Intensity [upstream/unit]" ''Double  )
 
 
 type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate, FConsumptionRateStretch]
@@ -86,7 +85,7 @@ materials :: (FMaterial ∈ ks, Key cube Material, DataCube cube, Keys cube ~ Se
 materials = υ (fMaterial <:)
 
 
-upstreamMaterials :: (FUpstreamMaterial ∈ ks, Key cube UpstreamMaterial, DataCube cube, Keys cube ~ Set) => FieldCube cube ks vs -> Set UpstreamMaterial
+upstreamMaterials :: (FUpstreamMaterial ∈ ks, Key cube Material, DataCube cube, Keys cube ~ Set) => FieldCube cube ks vs -> Set Material
 upstreamMaterials = υ (fUpstreamMaterial <:)
 
 
