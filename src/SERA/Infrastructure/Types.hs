@@ -61,7 +61,7 @@ type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FSal
 type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FSale]
 
 
-type ImpactCube = '[FInfrastructure, FYear, FMaterial] *↝ '[FImpactCategory, FQuantity, FSale]
+type ImpactCube = '[FInfrastructure, FYear, FMaterial, FImpactCategory] *↝ '[FQuantity, FSale]
 
 
 type SaleCube = '[FTerritory, FYear] *↝ '[FProduction, FSale, FCost, FConsumption, FSales, FNetPrice]
