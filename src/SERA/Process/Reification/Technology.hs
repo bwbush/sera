@@ -106,7 +106,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
               <+> fMaterial       =: upstream
               <+> fImpactCategory =: Upstream
               <+> fQuantity       =: quantity * intensity
-              <+> fSale           =: quantity * intensity -- * pricer upstream year
+              <+> fSale           =: quantity * intensity * pricer upstream year
             |
               rec <- toKnownRecords inputs
             , let material = fMaterial <: rec
