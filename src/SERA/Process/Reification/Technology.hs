@@ -106,7 +106,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
               <+> fMaterial       =: upstream
               <+> fImpactCategory =: Upstream
               <+> fQuantity       =: quantity * intensity
-              <+> fSale           =: quantity * intensity * pricer upstream year
+              <+> fSale           =: - quantity * intensity * pricer upstream year
             |
               rec <- toKnownRecords inputs
             , let material = fMaterial <: rec
@@ -134,7 +134,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
               <+> fMaterial       =: fMaterial <: rec
               <+> fImpactCategory =: Production
               <+> fQuantity       =: output * rate
-              <+> fSale           =: output * rate * pricer (fMaterial <: rec) year
+              <+> fSale           =: - output * rate * pricer (fMaterial <: rec) year
             |
               rec <- toKnownRecords outputs
             , let rate = fProductionRate <: rec + distance * fProductionRateStretch <: rec
