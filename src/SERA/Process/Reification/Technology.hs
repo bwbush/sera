@@ -122,7 +122,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
                   specifics'
               <+> fMaterial       =: fMaterial <: rec
               <+> fImpactCategory =: Consumption
-              <+> fQuantity       =: output * rate
+              <+> fQuantity       =: - output * rate
               <+> fSale           =: output * rate * pricer (fMaterial <: rec) year
             |
               rec <- toKnownRecords inputs
