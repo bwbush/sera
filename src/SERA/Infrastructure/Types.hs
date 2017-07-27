@@ -24,8 +24,8 @@ data CostCategory =
     Capital
   | Fixed
   | Variable
-  | Consuming Material
-  | Producing Material
+  | Direct   Material
+  | Indirect Material
     deriving (Eq, Ord, Read, Show)
 
 

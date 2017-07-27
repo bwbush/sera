@@ -106,7 +106,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
               <+> fMaterial       =: upstream
               <+> fImpactCategory =: Upstream
               <+> fQuantity       =: quantity * intensity
-              <+> fSale           =: - quantity * intensity * pricer upstream year
+              <+> fSale           =: maximum [0, - quantity * intensity * pricer upstream year]
             |
               rec <- toKnownRecords inputs
             , let material = fMaterial <: rec
@@ -153,7 +153,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
             , let cc = case fImpactCategory <: rec of
                          Consumption -> Consuming
                          Production  -> Producing
-                         Upstream    -> Producing
+                         Upstream    -> Indirect
             ]
         in
           (
