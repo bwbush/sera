@@ -60,7 +60,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
         <+> fLength       =: distance
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
-        <+> fVariableCost =: scaleCost fVariableCost fVariableCostStretch
+        <+> fVariableCost =: fVariableCost <: costs + distance * fVariableCostStretch <: costs
       inputs =
         σ (\kex _ -> kex `elem` [
                                       fMaterial   =: material
@@ -151,8 +151,8 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
             |
               rec <- impacts
             , let cc = case fImpactCategory <: rec of
-                         Consumption -> Consuming
-                         Production  -> Producing
+                         Consumption -> Direct
+                         Production  -> Direct
                          Upstream    -> Indirect
             ]
         in
