@@ -47,16 +47,17 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
         ]
     (specification, costs) <- selectKnownMaximum $ σ (\key _ -> key `elem` eligible) processCostCube
     let
+      capacity' = maximum [capacity, fCapacity <: specification]
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
-          * (capacity / fCapacity <: specification) ** (fScaling <: costs)
+          * (capacity' / fCapacity <: specification) ** (fScaling <: costs)
       construction =
             specifics
         <+> fTechnology   =: tech
         <+> fProductive   =: fProductive <: costs
         <+> fYear         =: built
         <+> fLifetime     =: fLifetime <: costs
-        <+> fCapacity     =: capacity
+        <+> fCapacity     =: capacity'
         <+> fLength       =: distance
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
@@ -73,7 +74,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
                                 , let keys' = S.filter (\key -> material == fMaterial <: key) keys
                                 , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
                                 , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
-                                , let caps' = S.filter (\key -> capacity >= fCapacity <: key) caps
+                                , let caps' = S.filter (\key -> capacity' >= fCapacity <: key) caps
                                 ]
           ) processInputCube
       outputs =
@@ -88,7 +89,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
                                 , let keys' = S.filter (\key -> material == fMaterial <: key) keys
                                 , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
                                 , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
-                                , let caps' = S.filter (\key -> capacity >= fCapacity <: key) caps
+                                , let caps' = S.filter (\key -> capacity' >= fCapacity <: key) caps
                                 ]
           ) processOutputCube
     return
