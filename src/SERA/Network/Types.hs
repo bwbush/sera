@@ -13,6 +13,8 @@ module SERA.Network.Types (
 , Path(..)
 , Node
 , Link
+, AdjacencyMatrix
+, ShortestPaths
 -- * Field types
 , FLocation
 , FZone
@@ -49,6 +51,7 @@ module SERA.Network.Types (
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Map.Strict (Map)
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Process.Types (FCapacity, FCost, FDelivery, FProductive, FTransmission, FYield)
 import SERA.Types (FFraction, FYear)
@@ -76,6 +79,8 @@ data Network =
   , existingCube :: ExistingCube
   , territoryCube :: TerritoryCube
   , zoneCube :: ZoneCube '[FLocation]
+  , adjacencies :: AdjacencyMatrix
+  , paths    :: ShortestPaths
   }
     deriving (Eq, Ord, Show)
 
@@ -102,7 +107,14 @@ type Link = FieldRec '[FLocation, FFrom, FTo, FLength, FSale, FRent, FTransmissi
 
 
 data Path =
-    TransmissionPath -- FIXME: Enforce semantics.
+    GenericPath -- FIXME: Enforce semantics.
+    {
+      sourceId        :: Location
+    , linkIds         :: [(Location, Double)]
+    , sinkId          :: Location
+    }
+{-
+  | TransmissionPath -- FIXME: Enforce semantics.
     {
       sourceId        :: Location
     , transmissionIds :: [(Location, Double)]
@@ -122,10 +134,11 @@ data Path =
     , deliveryIds     :: [(Location, Double)]
     , sinkId          :: Location
     }
-  | GenericPath -- FIXME: Enforce semantics.
-    {
-      sourceId        :: Location
-    , linkIds         :: [(Location, Double)]
-    , sinkId          :: Location
-    }
+-}
     deriving (Eq, Ord, Read, Show)
+
+
+type AdjacencyMatrix = Map Location (Map Location (Location, Double))
+
+
+type ShortestPaths = Map (Location, Location) Path

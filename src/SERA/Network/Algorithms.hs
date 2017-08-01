@@ -14,18 +14,12 @@ import Data.Map.Strict (Map)
 import Data.PQueue.Min (MinQueue)
 import SERA.Network.Types
 
-import qualified Data.Map.Strict as M ((!), empty, fromList, fromListWith, insert, keys, map, singleton, toList, union, unions)
+import qualified Data.Map.Strict as M ((!), empty, fromList, fromListWith, insert, lookup, keys, map, singleton, toList, union, unions)
 import qualified Data.PQueue.Min as Q (deleteFindMin, fromList, insert, null, union)
 
 
-type Adjacencies = Map Location (Map Location (Location, Double))
-
-
-type ShortestPaths = Map (Location, Location) Path
-
-
-adjacencies :: Network -> Adjacencies
-adjacencies Network{..} =
+adjacencyMatrix :: NodeCube -> LinkCube -> AdjacencyMatrix
+adjacencyMatrix nodeCube linkCube =
   M.fromListWith
     M.union
     $ concat
@@ -45,51 +39,57 @@ adjacencies Network{..} =
     ]
 
 
-shortestPaths :: Network -> ShortestPaths
-shortestPaths network =
-  let
-    as = adjacencies network
-  in
-    M.unions
-      [
-        shortestPathTree as root
-      |
-        root <- M.keys as
-      ]
+shortestPaths :: AdjacencyMatrix -> ShortestPaths
+shortestPaths adjacencies =
+  M.unions
+    [
+      shortestPathTree adjacencies root
+    |
+      root <- M.keys adjacencies
+    ]
       
 
-shortestPathTree :: Adjacencies -> Location -> ShortestPaths
-shortestPathTree as root =
+shortestPathTree :: AdjacencyMatrix -> Location -> ShortestPaths
+shortestPathTree adjacencies root =
   let
     tree =
       shortestPathTree' 
-        as
+        adjacencies
         M.empty
-        (M.insert root 0 $ M.map (const inf) as)
-        (Q.insert (0, root) $ Q.fromList $ map (inf, ) $ M.keys as)
+        (M.insert root 0 $ M.map (const inf) adjacencies)
+        (Q.insert (0, root) $ Q.fromList $ map (inf, ) $ M.keys adjacencies)
   in
-    walkTree as -- handle as fold
+    M.fromList
+      [
+        ((sourceId, sinkId), walkTree adjacencies tree sinkId $ GenericPath{..})
+      |
+        let sourceId = root
+      , let linkIds = []
+      , sinkId <- M.keys tree
+      ]
 
 
-walkTree :: Adjacencies -> ShortestPaths -> Set Location -> ShortestPaths
-walkTree as paths fringe =
-  undefined
+walkTree :: AdjacencyMatrix -> Map Location Location -> Location -> Path -> Path
+walkTree adjacencies tree vertex' path@GenericPath{..} =
+  case vertex' `M.lookup` tree of
+    Nothing     -> path
+    Just vertex -> walkTree adjacencies tree vertex $ GenericPath vertex ((adjacencies M.! vertex) M.! vertex' : linkIds) sinkId
+  
 
-
-shortestPathTree' :: Adjacencies -> Map Location Location -> Map Location Double -> MinQueue (Double, Location) -> Map Location Location
-shortestPathTree' as previous distances unseen'' =
+shortestPathTree' :: AdjacencyMatrix -> Map Location Location -> Map Location Double -> MinQueue (Double, Location) -> Map Location Location
+shortestPathTree' adjacencies previous distances unseen'' =
   let
     ((distance, vertex), unseen) = Q.deleteFindMin unseen''
     (updatePrevious, updateDistances, updateUnseen) =
       unzip3
         [
           (
-            (vertex, vertex')
+            (vertex', vertex)
           , (vertex', distance')
           , (distance', vertex')
           )
         |
-          (vertex', (_, length')) <- M.toList $ as M.! vertex
+          (vertex', (_, length')) <- M.toList $ adjacencies M.! vertex
         , let distance' = distance + length'
         , distance' < distances M.! vertex'
         ]
@@ -99,4 +99,4 @@ shortestPathTree' as previous distances unseen'' =
   in
     if Q.null unseen'
       then previous'
-      else shortestPathTree' as previous' distances' unseen'
+      else shortestPathTree' adjacencies previous' distances' unseen'

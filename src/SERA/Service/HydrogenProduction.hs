@@ -135,6 +135,18 @@ productionMain ConfigProduction{..} =
     count "zone"      zoneCube
 
     liftIO $ putStrLn ""
+    liftIO . putStrLn $ "Computing shortest paths . . ."
+    liftIO . putStrLn $ " . . . " ++ show (length paths) ++ " paths."
+--  liftIO
+--    $ sequence_
+--    [
+--      print [show (i :: Int), show sourceId, show sinkId, show (j :: Int), show linkId, show distance]
+--    |
+--      (i, GenericPath{..}) <- zip [1..] $ M.elems paths
+--    , (j, (linkId, distance)) <- zip [1..] linkIds
+--    ]
+
+    liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading demands " ++ show demandFiles ++ " . . ."
     demandCube <- readDemands demandFiles
     count "demand" demandCube

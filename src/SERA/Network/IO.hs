@@ -37,6 +37,7 @@ import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
 import Data.String (IsString)
 import GHC.Generics (Generic)
+import SERA.Network.Algorithms
 import SERA.Network.Types (ExistingCube, LinkCube, FLocation, Network(..), NodeCube, TerritoryCube, ZoneCube)
 
 
@@ -64,6 +65,9 @@ readNetwork NetworkFiles{..} =
     existingCube <- readExistings existingFiles
     territoryCube <- readTerritories territoryFiles
     zoneCube <- readZones zoneFiles
+    let
+      adjacencies = adjacencyMatrix nodeCube linkCube
+      paths = shortestPaths adjacencies
     return Network{..}
 
 
