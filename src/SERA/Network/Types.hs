@@ -47,6 +47,8 @@ module SERA.Network.Types (
 , ExistingCube
 , TerritoryCube
 , ZoneCube
+
+, pathLength
 ) where
 
 
@@ -136,6 +138,10 @@ data Path =
     }
 -}
     deriving (Eq, Ord, Read, Show)
+
+
+pathLength :: Path -> Double
+pathLength = sum . fmap snd . linkIds
 
 
 type AdjacencyMatrix = Map Location (Map Location (Location, Double))

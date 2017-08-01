@@ -39,18 +39,18 @@ adjacencyMatrix nodeCube linkCube =
     ]
 
 
-shortestPaths :: AdjacencyMatrix -> ShortestPaths
-shortestPaths adjacencies =
+shortestPaths :: Double -> AdjacencyMatrix -> ShortestPaths
+shortestPaths maximumPathLength adjacencies =
   M.unions
     [
-      shortestPathTree adjacencies root
+      shortestPathTree maximumPathLength adjacencies root
     |
       root <- M.keys adjacencies
     ]
       
 
-shortestPathTree :: AdjacencyMatrix -> Location -> ShortestPaths
-shortestPathTree adjacencies root =
+shortestPathTree :: Double -> AdjacencyMatrix -> Location -> ShortestPaths
+shortestPathTree maximumPathLength adjacencies root =
   let
     tree =
       shortestPathTree' 
@@ -61,11 +61,13 @@ shortestPathTree adjacencies root =
   in
     M.fromList
       [
-        ((sourceId, sinkId), walkTree adjacencies tree sinkId $ GenericPath{..})
+        ((sourceId, sinkId), path)
       |
         let sourceId = root
       , let linkIds = []
       , sinkId <- M.keys tree
+      , let path = walkTree adjacencies tree sinkId $ GenericPath{..}
+      , pathLength path <= maximumPathLength
       ]
 
 

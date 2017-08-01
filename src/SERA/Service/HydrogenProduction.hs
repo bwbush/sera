@@ -35,9 +35,11 @@ import Data.Daft.DataCube (evaluate, knownSize)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldCube.IO (writeFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec
+import Data.Default.Util (inf)
 import Data.Foldable (foldlM)
 import Data.List (unzip4)
 import Data.Map.Strict (fromListWithKey)
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
@@ -67,6 +69,7 @@ data ConfigProduction =
   , discountRate        :: Double
   , escalationRate      :: Double
   , interpolate         :: Bool
+  , maximumPathLength   :: Maybe Double
   , priceFiles          :: [FilePath]
   , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
@@ -127,7 +130,7 @@ productionMain ConfigProduction{..} =
 
     liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading network . . ."
-    Network{..} <- readNetwork networkFiles
+    Network{..} <- readNetwork (fromMaybe inf maximumPathLength) networkFiles
     count "node"      nodeCube
     count "link"      linkCube
     count "existing"  existingCube
