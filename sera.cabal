@@ -1,5 +1,5 @@
 name: sera
-version: 3.0.0.45
+version: 3.0.0.46
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -82,6 +82,7 @@ library
                     SERA.Material.IO
                     SERA.Material.Types
                     SERA.Material.Prices
+                    SERA.Network.Algorithms
                     SERA.Network.IO
                     SERA.Network.Types
                     SERA.Process
@@ -131,6 +132,7 @@ library
                   , monoid-extras
                   , mtl
                   , parallel
+                  , pqueue
                   , raft
                   , regex-posix
                   , split
@@ -162,6 +164,7 @@ executable sera
                   , filepath
                   , monoid-extras
                   , mtl
+                  , pqueue
                   , raft
                   , regex-posix
                   , split
