@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 
 module SERA.Infrastructure.Optimization
@@ -10,6 +11,7 @@ import Control.Arrow ((***))
 import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Maybe (catMaybes)
+import Data.Monoid ((<>))
 import Data.Set (toList)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import SERA.Infrastructure.Types
@@ -36,7 +38,7 @@ type DeliveryReifier = Pathway -> Maybe ([Construction], PathwayOperation)
 
 
 productionReifier :: PriceCube '[FLocation] -> ProcessLibrary -> IntensityCube '[FLocation] -> Location -> Double -> Year -> Double -> TechnologyReifier
-productionReifier priceCube processLibrary intensityCube loc area year consumption =
+productionReifier priceCube processLibrary intensityCube loc distance year consumption =
   technologyReifier
     processLibrary
     (localize intensityCube loc)
@@ -44,11 +46,11 @@ productionReifier priceCube processLibrary intensityCube loc area year consumpti
     (fInfrastructure =: Infrastructure (location loc ++ " @ " ++ show year) <+> fLocation =: loc)
     year
     consumption
-    (2 * sqrt area)
+    distance
 
 
 deliveryReifier' :: PriceCube '[FLocation] -> ProcessLibrary -> IntensityCube '[FLocation] -> Location -> Double -> Year -> Double -> DeliveryReifier
-deliveryReifier' priceCube processLibrary intensityCube loc area year consumption =
+deliveryReifier' priceCube processLibrary intensityCube loc distance year consumption =
   pathwayReifier
     (\_ _ -> True)
     processLibrary
@@ -60,8 +62,8 @@ deliveryReifier' priceCube processLibrary intensityCube loc area year consumptio
     )
     year
     consumption
-    (2 * sqrt area)
-    (Infrastructure (location loc ++ " @ " ++ show year), GenericPath loc [(loc, 2 * sqrt area)] loc)
+    distance
+    (Infrastructure (location loc ++ " @ " ++ show year), GenericPath loc [(loc, distance)] loc)
 
 
 productionCandidates :: TechnologyReifier -> [Technology] -> [([Construction], PathwayOperation)]
@@ -75,6 +77,7 @@ productionCandidates reifyTechnology techs =
       tech <- techs
     ]
 
+
 deliveryCandidates :: DeliveryReifier -> [Pathway] -> [([Construction], PathwayOperation)]
 deliveryCandidates reifyDelivery paths' =
   catMaybes
@@ -85,6 +88,7 @@ deliveryCandidates reifyDelivery paths' =
     |
       path <- paths'
     ]
+
 
 costCandidate :: ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Double, ([Construction], [Flow], [Cash], [Impact]))
 costCandidate (construction, operate) demands =
@@ -97,8 +101,8 @@ costCandidate (construction, operate) demands =
     )
 
 
-cheapestLocally :: PriceCube '[FLocation] -> ProcessLibrary -> IntensityCube '[FLocation] -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> FieldRec '[FYear, FConsumption, FOptimum]
-cheapestLocally priceCube processLibrary intensityCube demands =
+characterizeDemands :: [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Location, Double, Year, Double)
+characterizeDemands demands =
   let
     loc = fLocation <: head demands :: Location
     area = fArea <: head demands
@@ -111,24 +115,37 @@ cheapestLocally priceCube processLibrary intensityCube demands =
           rec <- demands
         , 0 < fConsumption <: rec
         ]
-    reifyTechnology = productionReifier priceCube processLibrary intensityCube loc area year consumption
+  in
+    (loc, 2 * sqrt area, year, consumption)
+
+
+instance Monoid (Double, ([Construction], [Flow], [Cash], [Impact])) where
+  mempty = (0, mempty)
+  mappend (x, xs) (y, ys) = (x + y, xs `mappend` ys)
+
+
+cheapestLocally :: PriceCube '[FLocation] -> ProcessLibrary -> IntensityCube '[FLocation] -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> FieldRec '[FYear, FConsumption, FOptimum]
+cheapestLocally priceCube processLibrary intensityCube demands =
+  let
+    (loc, distance, year, consumption) = characterizeDemands demands
+    reifyTechnology = productionReifier priceCube processLibrary intensityCube loc distance year
     candidates =
       [
         costCandidate candidate demands
       |
-        candidate <- productionCandidates reifyTechnology $ toList $ productions' Onsite processLibrary
+        candidate <- productionCandidates (reifyTechnology consumption) $ toList $ productions' Onsite processLibrary
       ]
-    reifyDelivery = deliveryReifier' priceCube processLibrary intensityCube loc area year consumption
+    reifyDelivery = deliveryReifier' priceCube processLibrary intensityCube loc distance year 
     candidates' =
       [
         (
           cost + cost'
-        , (construction ++ construction', flows ++ flows', cashes ++ cashes', impacts ++ impacts')
+        , (construction, flows, cashes, impacts) <> (construction', flows', cashes', impacts')
         )
       |
-        candidate <- productionCandidates reifyTechnology $ toList $ productions' Central processLibrary
+        candidate <- productionCandidates (reifyTechnology consumption) $ toList $ productions' Central processLibrary
       , let (cost, (construction, flows, cashes, impacts)) = costCandidate candidate demands
-      , candidate' <- deliveryCandidates reifyDelivery $ toList $ localPathways processLibrary
+      , candidate' <- deliveryCandidates (reifyDelivery consumption) $ toList $ localPathways processLibrary
       , let (cost', (construction', flows', cashes', impacts')) = costCandidate candidate' demands
       ]
     best = minimum $ fst <$> candidates ++ candidates'
@@ -138,3 +155,15 @@ cheapestLocally priceCube processLibrary intensityCube demands =
       else     fYear =: year
            <+> fConsumption =: consumption
            <+> fOptimum =: snd (head $ dropWhile ((/= best) . fst) $ candidates ++ candidates')
+
+
+cheapestPair :: PriceCube '[FLocation] -> ProcessLibrary -> IntensityCube '[FLocation] -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> FieldRec '[FYear, FConsumption, FOptimum]
+cheapestPair priceCube processLibrary intensityCube demandsLeft demandsRight =
+  let
+    (locLeft, distanceLeft, yearLeft, consumptionLeft) = characterizeDemands demandsLeft
+    (locRight, distanceRight, yearRight, consumptionRight) = characterizeDemands demandsRight
+    year = maximum [yearLeft, yearRight]
+    reifyTechnologyLeft = productionReifier priceCube processLibrary intensityCube locLeft distanceLeft year
+    reifyTechnologyRight = productionReifier priceCube processLibrary intensityCube locRight distanceRight year
+  in
+    undefined
