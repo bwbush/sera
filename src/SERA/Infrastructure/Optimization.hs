@@ -98,6 +98,8 @@ cheapestLocally priceCube processLibrary intensityCube demands =
       ]
     best = minimum $ fst <$> candidates ++ candidates'
   in
-        fYear =: year
-    <+> fConsumption =: consumption
-    <+> fOptimum =: snd (head $ dropWhile ((/= best) . fst) $ candidates ++ candidates')
+    if null candidates && null candidates'
+      then error ("No eligible technologies in year " ++ show year ++ ".") -- FIXME: Move to error monad.
+      else     fYear =: year
+           <+> fConsumption =: consumption
+           <+> fOptimum =: snd (head $ dropWhile ((/= best) . fst) $ candidates ++ candidates')
