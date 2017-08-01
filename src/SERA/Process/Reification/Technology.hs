@@ -41,7 +41,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
           <+> (if null caps' then minimum caps else maximum caps')
         |
           let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processCostCube
-        , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys
+        , let year = (fYear <:) . findMin ("Missing component cost data for technology \"" ++ show tech ++ "\" in year " ++ show built ++ ".") $ S.map (\key -> τ key :: FieldRec '[FYear]) keys
         , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys
         , let caps' = S.filter (\key -> capacity >= fCapacity <: key) caps
         ]
@@ -72,7 +72,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
                                   let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processInputCube
                                 , material <- S.toList $ S.map (fMaterial <:) keys
                                 , let keys' = S.filter (\key -> material == fMaterial <: key) keys
-                                , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
+                                , let year = (fYear <:) . findMin ("Missing input cost data for technology \"" ++ show tech ++ "\" and material \"" ++ show material ++ "\" in year " ++ show year ++ ".") $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
                                 , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
                                 , let caps' = S.filter (\key -> capacity' >= fCapacity <: key) caps
                                 ]
@@ -87,7 +87,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
                                   let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processOutputCube
                                 , material <- S.toList $ S.map (fMaterial <:) keys
                                 , let keys' = S.filter (\key -> material == fMaterial <: key) keys
-                                , let year = (fYear <:) . S.findMin $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
+                                , let year = (fYear <:) . findMin ("Missing output cost data for technology \"" ++ show tech ++ "\" and material \"" ++ show material ++ "\" in year " ++ show year ++ ".") $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
                                 , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
                                 , let caps' = S.filter (\key -> capacity' >= fCapacity <: key) caps
                                 ]
@@ -116,7 +116,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
             , upstream <- S.toList $ upstreamMaterials intensityCube :: [Material]
             , let keys = S.filter (\key -> material == fMaterial <: key && upstream == fUpstreamMaterial <: key && year >= fYear <: key) $ knownKeys intensityCube :: Set (FieldRec '[FMaterial, FUpstreamMaterial, FYear])
             , not $ S.null keys
-            , let intensity = (fIntensity <:) $ intensityCube ! S.findMin keys :: Double
+            , let intensity = (fIntensity <:) $ intensityCube ! findMin ("Missing intensity data for upstream material \"" ++ show upstream ++ "\" and material \"" ++ show material ++ "\" in year " ++ show year ++ ".") keys :: Double
             ]
             ++
             [
@@ -167,3 +167,9 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
           , impacts
           )
       )
+
+
+findMin :: String -> Set a -> a -- FIXME: Move this to the error monad.
+findMin message x
+  | S.null x  = error message
+  | otherwise = S.findMin x
