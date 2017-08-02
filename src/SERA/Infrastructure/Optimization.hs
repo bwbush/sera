@@ -11,6 +11,7 @@ module SERA.Infrastructure.Optimization
 where
 
 
+import Control.Applicative (liftA2)
 import Control.Arrow ((***))
 import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldCube
@@ -34,7 +35,7 @@ import SERA.Types
 import SERA.Types.TH (makeField)
 
 
-import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, toList, union)
+import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, member, toList, union)
 
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
@@ -204,26 +205,31 @@ optimize globalContext@GlobalContext{..} year =
       κ' allYears (\recs -> fConsumption =: maximum ((fConsumption <:) <$> recs))
         $ σ (const . filterYear) demandCube
     locations =
-      fmap snd
-        $ sortBy (flip compare)
+      sortBy (flip compare)
         [
           (fConsumption <: rec, fLocation <: rec)
         |
           rec <- toKnownRecords supply
         ]
-    f :: Map Location Optimum -> Location -> Map Location Optimum
+    f :: Map Location Optimum -> (Double, Location) -> Map Location Optimum
     f previous loc =
-      (
-        M.fromList
-          $ cheapestLocally
-          $ toLocalContext globalContext year loc
+      M.fromList (
+        cheapestLocally
+          $ toLocalContext globalContext year $ snd loc
       ) `M.union` previous
     singly = foldl f M.empty locations
+    g :: Map Location Optimum -> ((Double, Location), (Double, Location)) -> Map Location Optimum
+    g previous (locSource, locSink) =
+      M.fromList (
+        if locSource <= locSink || snd locSource `M.member` previous
+          then []
+          else cheapestLocally $ toLocalContext globalContext year $ snd locSource
+      ) `M.union` previous
+    doubly = foldl g singly $ liftA2 (,) locations locations
   in
     (
       supply
-    , mconcat
-        $ M.elems singly
+    , mconcat $ M.elems doubly
     )
 
 
