@@ -15,13 +15,14 @@ import Control.Arrow ((***))
 import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.List (sortBy)
 import Data.Map.Strict (Map)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Set (Set, toList)
-import Data.Vinyl.Core (Rec(RNil))
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
+import SERA (trace')
 import SERA.Infrastructure.Types
 import SERA.Material.Prices
 import SERA.Material.Types
@@ -33,7 +34,7 @@ import SERA.Types
 import SERA.Types.TH (makeField)
 
 
-import qualified Data.Map.Strict as M (elems, fromList)
+import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, toList, union)
 
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
@@ -192,24 +193,38 @@ instance Monoid Optimum where
 $(makeField "Optimum" "Optimum" ''Optimum)
 
 
-optimize :: GlobalContext -> Year -> '[FLocation] *↝ '[FConsumption, FOptimum]
+optimize :: GlobalContext -> Year -> ('[FLocation] *↝ '[FConsumption], Optimum)
 optimize globalContext@GlobalContext{..} year =
   let
     allYears :: Set (FieldRec '[FYear])
     allYears = undefined
     filterYear :: (FYear ∈ ks) => FieldRec ks -> Bool
     filterYear rec = fYear <: rec >= year && fYear <: rec < year + timeWindow
+    supply =
+      κ' allYears (\recs -> fConsumption =: maximum ((fConsumption <:) <$> recs))
+        $ σ (const . filterYear) demandCube
     locations =
-      map (fLocation <:)
-        $ toKnownRecords
-        $ (κ' allYears (\_ -> RNil) $ σ (const . filterYear) demandCube :: '[FLocation] *↝ '[])
+      fmap snd
+        $ sortBy (flip compare)
+        [
+          (fConsumption <: rec, fLocation <: rec)
+        |
+          rec <- toKnownRecords supply
+        ]
+    f :: Map Location Optimum -> Location -> Map Location Optimum
+    f previous loc =
+      (
+        M.fromList
+          $ cheapestLocally
+          $ toLocalContext globalContext year loc
+      ) `M.union` previous
+    singly = foldl f M.empty locations
   in
-    fromRecords
-      [
-        fLocation =: localLocation localContext <+> cheapestLocally localContext
-      |
-        localContext <- toLocalContext globalContext year <$> locations
-      ]
+    (
+      supply
+    , mconcat
+        $ M.elems singly
+    )
 
 
 data LocalContext =
@@ -258,7 +273,7 @@ toLocalContext GlobalContext{..} year' localLocation =
     LocalContext{..}
 
 
-cheapestLocally :: LocalContext -> FieldRec '[FConsumption, FOptimum]
+cheapestLocally :: LocalContext -> [(Location, Optimum)]
 cheapestLocally LocalContext{..} =
   let
     candidatesOnsite = M.elems productionsOnsite
@@ -268,18 +283,52 @@ cheapestLocally LocalContext{..} =
   in
     if null candidatesOnsite && (null candidatesCentral || null candidatesLocal)
       then error ("No eligible technologies in year " ++ show (maximum localYears) ++ ".") -- FIXME: Move to error monad.
-      else fConsumption =: maximum (M.elems localDemands) <+> fOptimum =: snd best
+      else [(localLocation, snd best)]
 
 
-{-
-cheapestPair :: PriceCube '[FLocation] -> ProcessLibrary -> IntensityCube '[FLocation] -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> FieldRec '[FYear, FConsumption, FOptimum]
-cheapestPair priceCube processLibrary intensityCube demandsLeft demandsRight =
+costedDeliveryCandidates :: GlobalContext -> LocalContext -> LocalContext -> [(Pathway, CostedOptimum)]
+costedDeliveryCandidates GlobalContext{..} localContextLeft localContextRight =
   let
-    (locLeft , distanceLeft , yearLeft , consumptionLeft ) = characterizeDemands demandsLeft
-    (locRight, distanceRight, yearRight, consumptionRight) = characterizeDemands demandsRight
-    year = maximum [yearLeft, yearRight]
-    reifyTechnologyLeft  = productionReifier priceCube processLibrary intensityCube locLeft  distanceLeft  year
-    reifyTechnologyRight = productionReifier priceCube processLibrary intensityCube locRight distanceRight year
+    Network{..} = network
+    path = paths M.! (localLocation localContextLeft, localLocation localContextRight)
+    year' = fst $ M.findMin $ M.filter (> 0) $ localDemands localContextLeft
+    consumption' = maximum $ M.elems $ localDemands localContextLeft
+    distance' = sum $ snd <$> linkIds path
+    transmissionReifier' =
+      pathwayReifier
+        (\_ _ -> True)
+        processLibrary
+        (
+          technologyReifier
+            processLibrary
+            (localize intensityCube $ localLocation localContextLeft) -- FIXME
+            (\m y -> maybe 0 (fPrice <:) $ priceCube `evaluate` (fMaterial =: m <+> fYear =: y <+> fLocation =: localLocation localContextLeft)) -- FIXME: extrapolate
+        )
+        year'
+        consumption'
+        distance'
+        (Infrastructure (location (localLocation localContextLeft) ++ " @ " ++ show year'), path)
   in
-    undefined
--}
+    [
+      let
+        (flows, cashes, impacts) = unzip3 $ map (uncurry operate) $ M.toList $ localDemands localContextLeft
+      in
+        (
+          pathway
+        , (
+            Sum $ sum $ (fSale <:) <$> concat flows
+          , Optimum construction (concat flows) (concat cashes) (concat impacts)
+          )
+        )
+    |
+      pathway <- toList $ pathways processLibrary
+    , let z = transmissionReifier' pathway
+    , isJust z
+    , let Just (construction, operate) = z
+    ]
+
+
+cheapestDoubly :: GlobalContext -> LocalContext -> LocalContext -> Maybe (FieldRec '[FConsumption, FOptimum])
+cheapestDoubly globalContext localContextLeft localContextRight =
+  trace' (show $ costedDeliveryCandidates globalContext localContextLeft localContextRight)
+    Nothing

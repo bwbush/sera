@@ -263,9 +263,7 @@ compute :: (IsString e, MonadError e m, MonadIO m)
 compute globalContext@GlobalContext{..} year =
   do
     let
-      results :: '[FLocation] *↝ '[FConsumption, FOptimum]
-      results = optimize globalContext year
-      Optimum{..} = mconcat $ fmap (fOptimum <:) $ toKnownRecords results
+      (supply, Optimum{..}) = optimize globalContext year
     liftIO $ putStrLn ""
     liftIO $ putStrLn ""
     liftIO . putStrLn $ "***** Years " ++ show year ++ "-" ++ show (year + timeWindow - 1) ++ " *****"
@@ -279,7 +277,7 @@ compute globalContext@GlobalContext{..} year =
     return
       globalContext
       {
-        G.demandCube         = π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (results `evaluate` τ key)] <+> fArea =: fArea <: rec) demandCube
+        G.demandCube         = π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (supply `evaluate` τ key)] <+> fArea =: fArea <: rec) demandCube
       , G.extantConstruction = extantConstruction <> optimalConstruction
       , G.extantFlow         = extantFlow         <> optimalFlow
       , G.extantCash         = extantCash         <> optimalCash
