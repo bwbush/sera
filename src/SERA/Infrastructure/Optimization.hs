@@ -221,9 +221,16 @@ optimize globalContext@GlobalContext{..} year =
     g :: Map Location Optimum -> ((Double, Location), (Double, Location)) -> Map Location Optimum
     g previous (locSource, locSink) =
       M.fromList (
-        if locSource <= locSink || snd locSource `M.member` previous
-          then []
-          else cheapestLocally $ toLocalContext globalContext year $ snd locSource
+        let
+          capacitySource = sum $ fmap (fCapacity <:) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ previous M.! snd locSource
+          capacitySink   = sum $ fmap (fCapacity <:) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ previous M.! snd locSink
+        in
+          if locSource <= locSink || snd locSource `M.member` previous || capacitySource == 0 || capacitySink == 0
+            then []
+            else cheapestRemotely
+                   globalContext
+                   (capacitySource, toLocalContext globalContext year $ snd locSource)
+                   (capacitySink  , toLocalContext globalContext year $ snd locSink  )
       ) `M.union` previous
     doubly = foldl g singly $ liftA2 (,) locations locations
   in
@@ -334,7 +341,6 @@ costedDeliveryCandidates GlobalContext{..} localContextLeft localContextRight =
     ]
 
 
-cheapestDoubly :: GlobalContext -> LocalContext -> LocalContext -> Maybe (FieldRec '[FConsumption, FOptimum])
-cheapestDoubly globalContext localContextLeft localContextRight =
-  trace' (show $ costedDeliveryCandidates globalContext localContextLeft localContextRight)
-    Nothing
+cheapestRemotely :: GlobalContext -> (Double, LocalContext) -> (Double, LocalContext) -> [(Location, Optimum)]
+cheapestRemotely globalContext (productionLeft, localContextLeft) (productionRight, localContextRight) =
+  []
