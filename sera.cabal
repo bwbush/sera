@@ -1,5 +1,5 @@
 name: sera
-version: 3.0.0.57
+version: 3.0.0.58
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved

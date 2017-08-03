@@ -41,6 +41,7 @@ data InfrastructureFiles =
   , cashFile         :: FilePath
   , impactFile       :: FilePath
   , saleFile         :: FilePath
+  , geometryFile     :: FilePath
   }
     deriving (Eq, Generic, Ord, Read, Show)
 

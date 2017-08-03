@@ -247,11 +247,33 @@ productionMain ConfigProduction{..} =
           )
           $ territoryCube ⋈ saleCube
 
+      geometryCube =
+        fromRecords
+          $ [
+                  fLocation =: fLocation <: rec
+              <+> fPosition =: Position "center"
+              <+> fX        =: fX <: rec
+              <+> fY        =: fY <: rec
+            |
+              rec <- toKnownRecords nodeCube
+            ]
+            ++
+            [
+                  fLocation =: fLocation <: rec
+              <+> fPosition =: p
+              <+> fX        =: fX <: (nodeCube ! n)
+              <+> fY        =: fY <: (nodeCube ! n)
+            |
+              rec <- toKnownRecords linkCube
+            , (p, n) <- zip (Position <$> ["left", "right"]) ((fLocation =:) <$> [fFrom <: rec, fTo <: rec])
+            ]
+
     writeFieldCubeFile constructionFile (fromRecords constructions :: ConstructionCube)
     writeFieldCubeFile flowFile         (fromRecords flows         :: FlowCube        )
     writeFieldCubeFile cashFile         (fromRecords cashes        :: CashCube        )
     writeFieldCubeFile impactFile       (fromRecords impacts       :: ImpactCube      )
     writeFieldCubeFile saleFile         (saleCube'                 :: SaleCube        )
+    writeFieldCubeFile geometryFile     (geometryCube              :: GeometryCube    )
 
     liftIO $ putStrLn ""
 

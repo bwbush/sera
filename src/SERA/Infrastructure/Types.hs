@@ -14,7 +14,7 @@ where
 import Data.Daft.Vinyl.FieldCube (type (*↝))
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (Material, FMaterial)
-import SERA.Network.Types (FLength, FLocation, FSale, FTerritory)
+import SERA.Network.Types (FLength, FLocation, FSale, FTerritory, FX, FY)
 import SERA.Process.Types (FCapacity, FCapitalCost, FCost, FFixedCost, FLifetime, FProductive, FTechnology, FVariableCost)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
@@ -47,6 +47,7 @@ $(makeField       "NetPrice"       "Price [$/kg]"      ''Double        )
 $(makeField       "Quantity"       "Quantity [unit]"   ''Double        )
 $(makeField       "CostCategory"   "Cost Component"    ''CostCategory  )
 $(makeField       "ImpactCategory" "Disposition"       ''ImpactCategory)
+$(makeStringField "Position"       "Position"                          )
 
 
 type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
@@ -65,6 +66,9 @@ type ImpactCube = '[FInfrastructure, FYear, FMaterial, FImpactCategory] *↝ '[F
 
 
 type SaleCube = '[FTerritory, FYear] *↝ '[FProduction, FSale, FCost, FConsumption, FSales, FNetPrice]
+
+
+type GeometryCube = '[FLocation, FPosition] *↝ '[FX, FY]
 
 
 data InfrastructureCubes =
@@ -89,3 +93,6 @@ type Cash = FieldRec '[FInfrastructure, FYear, FCostCategory, FSale]
 
 
 type Impact = FieldRec '[FInfrastructure, FYear, FMaterial, FImpactCategory, FQuantity, FSale]
+
+
+type Geometry = FieldRec '[FLocation, FPosition, FX, FY]
