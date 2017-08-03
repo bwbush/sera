@@ -269,6 +269,7 @@ compute globalContext@GlobalContext{..} year =
     liftIO . putStrLn $ "***** Years " ++ show year ++ "-" ++ show (year + timeWindow - 1) ++ " *****"
     liftIO $ putStrLn ""
     liftIO $ putStrLn "Satisfying new demands locally . . ."
+--  liftIO $ putStrLn "Identifying regional synergies . . ."
     liftIO . putStrLn $ " . . . " ++ show (length optimalConstruction) ++ " facilities constructed."
 --  liftIO $ putStrLn ""
 --  liftIO $ putStrLn "Searching for synergies between demand centers . . ."
