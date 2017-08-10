@@ -101,6 +101,8 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
       , \year output ->
         let
           specifics' = fInfrastructure =: fInfrastructure <: specifics <+> fYear =: year
+          lifetime = fLifetime <: costs
+          salvage = maximum [0, fCapitalCost <: construction * fromIntegral (built + lifetime - year) / fromIntegral lifetime]
           capital = if built == year then fCapitalCost <: construction else 0
           fixed = fFixedCost <: construction
           variable = output * fVariableCost <: construction
@@ -162,10 +164,11 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
         in
           (
                 specifics'
-            <+> fProduction =: (if isProduction (fProductive <: costs) then output else 0       )
-            <+> fFlow       =: (if isProduction (fProductive <: costs) then 0        else output)
+            <+> fProduction =: (if isProduction (fProductive <: costs) then output else 0     )
+            <+> fFlow       =: (if isProduction (fProductive <: costs) then 0      else output)
             <+> fLoss       =: 0
             <+> fSale       =: (sum $ (fSale <:) <$> cash)
+            <+> fSalvage    =: salvage
           , cash
           , impacts
           )

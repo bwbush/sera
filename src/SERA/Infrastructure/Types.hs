@@ -42,6 +42,7 @@ $(makeField       "Flow"           "Flow [kg]"         ''Double        )
 $(makeField       "Loss"           "Loss [kg]"         ''Double        )
 $(makeField       "Consumption"    "Consumption [kg]"  ''Double        )
 $(makeField       "TotalCost"      "Cost [kg]"         ''Double        )
+$(makeField       "Salvage"        "Salvage Value [$]" ''Double        )
 $(makeField       "Sales"          "Sales [$]"         ''Double        )
 $(makeField       "NetPrice"       "Price [$/kg]"      ''Double        )
 $(makeField       "Quantity"       "Quantity [unit]"   ''Double        )
@@ -56,7 +57,7 @@ type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
 type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FSale]
+type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FSale, FSalvage]
 
 
 type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FSale]
@@ -86,7 +87,7 @@ data InfrastructureCubes =
 type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type Flow = FieldRec '[FInfrastructure, FYear, FProduction, FFlow, FLoss, FSale]
+type Flow = FieldRec '[FInfrastructure, FYear, FProduction, FFlow, FLoss, FSale, FSalvage]
 
 
 type Cash = FieldRec '[FInfrastructure, FYear, FCostCategory, FSale]

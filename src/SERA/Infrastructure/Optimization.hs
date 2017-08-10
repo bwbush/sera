@@ -24,7 +24,7 @@ import Data.Monoid (Sum(..), (<>))
 import Data.Set (Set, toList)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
-import SERA (unsafeInform)
+import SERA (unsafePrint)
 import SERA.Infrastructure.Types
 import SERA.Material.Prices
 import SERA.Material.Types
@@ -129,7 +129,7 @@ costCandidate (construction, operate) demands =
     (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
   in
     (
-      Sum $ sum $ (fSale <:) <$> concat flows
+      Sum $ sum $ (\rec -> fSale <: rec - fSalvage <: rec) <$> concat flows
     , Optimum construction (concat flows) (concat cashes) (concat impacts)
     )
 
@@ -239,7 +239,7 @@ optimize globalContext@GlobalContext{..} year =
             then []
             else revisions
       ) `M.union` previous
-    doubly = foldl g (unsafeInform " . . . identifying regional synergies . . ." singly) $ liftA2 (,) locations locations
+    doubly = foldl g (unsafePrint " . . . identifying regional synergies . . ." singly) $ liftA2 (,) locations locations
   in
     (
       supply
@@ -370,7 +370,7 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
           (
             pathway
           , (
-              Sum $ sum $ (fSale <:) <$> concat flows
+              Sum $ sum $ (\rec -> fSale <: rec - fSalvage <: rec) <$> concat flows
             , Optimum construction (concat flows) (concat cashes) (concat impacts)
             )
           )

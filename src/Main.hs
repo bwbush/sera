@@ -283,6 +283,6 @@ dispatch' s operation =
     let
       path = configuration s
     configuration' <- decodeYaml path
-    inform $ "Setting working directory to \"" ++ takeDirectory path ++ "\""
+    inform $ "Setting working directory to \"" ++ takeDirectory path ++ "\"."
     liftIO . setCurrentDirectory $ takeDirectory path
     operation configuration'

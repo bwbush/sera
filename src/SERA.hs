@@ -27,6 +27,7 @@ module SERA (
 , trace'
 , inform
 , unsafeInform
+, unsafePrint
 -- * I/O
 , verboseReadFieldCubeSource
 , verboseWriteFieldCubeSource
@@ -86,6 +87,14 @@ unsafeInform s x =
   unsafePerformIO
     $ do
       hPutStrLn stderr s
+      return x
+
+
+unsafePrint :: String -> a -> a
+unsafePrint s x =
+  unsafePerformIO
+    $ do
+      putStrLn s
       return x
 
 
