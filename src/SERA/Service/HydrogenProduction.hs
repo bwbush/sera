@@ -191,7 +191,6 @@ productionMain ConfigProduction{..} =
           []
           []
 
-
     GlobalContext _ _ _ _ _ _ _ _ _ _ _ _ constructions flows cashes impacts <-
       foldlM compute globalContext [firstYear, (firstYear+timeWindow) .. lastYear]
 
