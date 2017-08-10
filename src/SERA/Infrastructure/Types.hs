@@ -22,6 +22,7 @@ import SERA.Types.TH (makeField, makeStringField)
 
 data CostCategory =
     Capital
+  | Salvage
   | Fixed
   | Variable
   | Direct   Material

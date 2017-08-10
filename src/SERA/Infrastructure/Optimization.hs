@@ -195,6 +195,28 @@ instance Monoid Optimum where
 $(makeField "Optimum" "Optimum" ''Optimum)
 
 
+doSalvage :: Year -> Optimum -> Optimum
+doSalvage year optimum@Optimum{..} =
+  let
+    salvages =
+      [
+            fInfrastructure =: fInfrastructure <: rec
+        <+> fYear           =: fYear           <: rec
+        <+> fCostCategory   =: Salvage
+        <+> fSale           =: - salvage
+      |
+        rec <- optimalFlow
+      , fYear <: rec == year
+      , let salvage = fSalvage <: rec
+      , salvage > 0
+      ]
+  in
+    optimum
+    {
+      optimalCash = optimalCash ++ salvages
+    }
+
+
 optimize :: GlobalContext -> Year -> ('[FLocation] *↝ '[FConsumption], Optimum)
 optimize globalContext@GlobalContext{..} year =
   let
@@ -243,7 +265,7 @@ optimize globalContext@GlobalContext{..} year =
   in
     (
       supply
-    , mconcat $ fmap snd $ M.elems doubly
+    , doSalvage lastYear $ mconcat $ fmap snd $ M.elems doubly
     )
 
 
