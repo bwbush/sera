@@ -22,8 +22,8 @@ import Data.Map.Strict (Map)
 import Data.Maybe (catMaybes, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Set (Set, toList)
-import Data.Vinyl.Derived (FieldRec)
-import Data.Vinyl.Lens (type (∈))
+import Data.Vinyl.Derived (ElField(..), FieldRec)
+import Data.Vinyl.Lens (type (∈), rput)
 import SERA (unsafePrint)
 import SERA.Infrastructure.Types
 import SERA.Material.Prices
@@ -213,7 +213,14 @@ doSalvage year optimum@Optimum{..} =
   in
     optimum
     {
-      optimalCash = optimalCash ++ salvages
+      optimalFlow = [
+                      if fYear <: rec == year
+                        then rput (Field $ fSale <:rec - fSalvage <: rec :: ElField FSale) rec
+                        else rec
+                    |
+                      rec <- optimalFlow
+                    ]
+    , optimalCash = optimalCash ++ salvages
     }
 
 
