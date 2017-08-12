@@ -13,15 +13,19 @@ where
 import Data.Daft.DataCube (knownKeys, selectKnownMaximum)
 import Data.Daft.Vinyl.FieldCube ((!), σ, τ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Function (on)
+import Data.Function.MapReduce (mapReduce)
+import Data.List (nub, sortBy)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
+import SERA (trace')
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Material.Types -- FIXME
 import SERA.Network.Types -- FIXME
 import SERA.Process.Types -- FIXME
 import SERA.Types (Year, FYear, fYear)
 
-import qualified Data.Set as S (filter, findMin, map, null, toList)
+import qualified Data.Set as S (filter, findMax, findMin, map, null, toList)
 
 
 type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
@@ -30,24 +34,119 @@ type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
 type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Year -> Double -> Double -> Technology -> Maybe (Construction, TechnologyOperation)
 
 
+selectTechnology tech built capacity candidates =
+  let
+    eligible =
+      sortBy (compare `on` (fCapacity <:))
+        [
+          candidate
+        |
+          candidate <- S.toList candidates
+        , tech  == fTechnology <: candidate
+        , built >= fYear       <: candidate
+        ]
+    year = maximum $ (fYear <:) <$> eligible
+    scalable =
+      [
+        candidate
+      |
+        candidate <- eligible
+      , year     == fYear     <: candidate
+      , capacity >= fCapacity <: candidate
+      ]
+  in
+    if null eligible
+      then Nothing
+      else Just $ if null scalable
+        then head eligible
+        else last scalable
+
+
+selectTechnology' message tech built capacity candidates =
+  let
+    eligible' =
+      [
+        candidate
+      |
+        candidate <- S.toList candidates
+      , tech      == fTechnology <: candidate
+      , built     >= fYear       <: candidate
+      ]
+  in
+    [
+      let
+        eligible =
+          sortBy (compare `on` (fCapacity <:))
+            [
+              candidate
+            |
+              candidate <- eligible'
+            , material == fMaterial <: candidate
+            ]
+        year = maximum $ (fYear <:) <$> eligible
+        scalable =
+          [
+            candidate
+          |
+            candidate <- eligible
+          , year     == fYear     <: candidate
+          , capacity >= fCapacity <: candidate
+          ]
+      in
+        if null eligible
+          then error $ "Missing " ++ message ++ " data for technology \"" ++ show tech ++ "\" and material \"" ++ show material ++ "\" in year " ++ show built ++ "."
+          else if null scalable
+            then head eligible
+            else last scalable
+    |
+      material <- nub $ (fMaterial <:) <$> eligible'
+    ]
+
+
+selectIntensity year material intensities =
+  let
+    eligible' =
+      [
+        candidate
+      |
+        candidate <- S.toList $ knownKeys (intensities :: IntensityCube '[])
+      , material  == fMaterial <: candidate
+      , year      >= fYear     <: candidate
+      ]
+  in
+    [
+      let
+        eligible =
+          sortBy (compare `on` (fYear <:))
+            [
+              candidate
+            |
+              candidate <- eligible'
+            , upstream == fUpstreamMaterial <: candidate
+            ]
+      in
+        if null eligible
+          then error $ "Missing intensity data for material \"" ++ show material ++ "\" and upstream material \"" ++ show upstream ++ "\" in year " ++ show year ++ "."
+          else let
+                 z = last eligible
+               in
+                 z <+> intensities ! z
+    |
+      upstream <- nub $ (fUpstreamMaterial <:) <$> eligible'
+    ]
+
+
 technologyReifier :: ProcessLibrary -> IntensityCube '[] -> Pricer -> TechnologyReifier
 technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capacity distance tech = 
   do -- FIXME: Add interpolation
+    specification <-
+      selectTechnology
+        tech
+        built
+        capacity
+        $ knownKeys processCostCube
     let
-      eligible =
-        [
-              fTechnology =: tech
-          <+> fYear       =: year
-          <+> (if null caps' then minimum caps else maximum caps')
-        |
-          let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processCostCube
-        , not $ S.null keys
-        , let year = (fYear <:) . findMin ("Missing component cost data for technology \"" ++ show tech ++ "\" in year " ++ show built ++ ".") $ S.map (\key -> τ key :: FieldRec '[FYear]) keys
-        , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys
-        , let caps' = S.filter (\key -> capacity >= fCapacity <: key) caps
-        ]
-    (specification, costs) <- selectKnownMaximum $ σ (\key _ -> key `elem` eligible) processCostCube
-    let
+      costs = processCostCube ! specification :: FieldRec ProcessCost
       capacity' = maximum [capacity, fCapacity <: specification]
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
@@ -64,36 +163,20 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
         <+> fVariableCost =: fVariableCost <: costs + distance * fVariableCostStretch <: costs
       inputs =
-        σ (\kex _ -> kex `elem` [
-                                      fMaterial   =: material
-                                  <+> fTechnology =: tech
-                                  <+> fYear       =: year
-                                  <+> (if null caps' then minimum caps else maximum caps')
-                                |
-                                  let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processInputCube
-                                , material <- S.toList $ S.map (fMaterial <:) keys
-                                , let keys' = S.filter (\key -> material == fMaterial <: key) keys
-                                , not $ S.null keys'
-                                , let year = (fYear <:) . findMin ("Missing input cost data for technology \"" ++ show tech ++ "\" and material \"" ++ show material ++ "\" in year " ++ show year ++ ".") $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
-                                , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
-                                , let caps' = S.filter (\key -> capacity' >= fCapacity <: key) caps
-                                ]
+        σ (\kex _ -> kex `elem` selectTechnology'
+                                  "input cost"
+                                  tech
+                                  built
+                                  capacity
+                                  (knownKeys processInputCube)
           ) processInputCube
       outputs =
-        σ (\kex _ -> kex `elem` [
-                                      fMaterial   =: material
-                                  <+> fTechnology =: tech
-                                  <+> fYear       =: year
-                                  <+> (if null caps' then minimum caps else maximum caps')
-                                |
-                                  let keys = S.filter (\key -> tech == fTechnology <: key && built >= fYear <: key) $ knownKeys processOutputCube
-                                , material <- S.toList $ S.map (fMaterial <:) keys
-                                , let keys' = S.filter (\key -> material == fMaterial <: key) keys
-                                , not $ S.null keys'
-                                , let year = (fYear <:) . findMin ("Missing output cost data for technology \"" ++ show tech ++ "\" and material \"" ++ show material ++ "\" in year " ++ show year ++ ".") $ S.map (\key -> τ key :: FieldRec '[FYear]) keys'
-                                , let caps = S.map (\key -> τ key :: FieldRec '[FCapacity]) $ S.filter (\key -> year == fYear <: key) keys'
-                                , let caps' = S.filter (\key -> capacity' >= fCapacity <: key) caps
-                                ]
+        σ (\kex _ -> kex `elem` selectTechnology'
+                                  "output cost"
+                                  tech
+                                  built
+                                  capacity
+                                  (knownKeys processOutputCube)
           ) processOutputCube
     return
       (
@@ -107,22 +190,26 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capaci
           fixed = fFixedCost <: construction
           variable = output * fVariableCost <: construction
           impacts =
-            [
-                  specifics'
-              <+> fMaterial       =: upstream
-              <+> fImpactCategory =: Upstream
-              <+> fQuantity       =: quantity * intensity
-              <+> fSale           =: - maximum [0, quantity * intensity] * minimum [0, pricer upstream year]
-            |
-              rec <- toKnownRecords inputs
-            , let material = fMaterial <: rec
-            , let rate = fConsumptionRate <: rec + distance * fConsumptionRateStretch <: rec
-            , let quantity = output * rate
-            , upstream <- S.toList $ upstreamMaterials intensityCube :: [Material]
-            , let keys = S.filter (\key -> material == fMaterial <: key && upstream == fUpstreamMaterial <: key && year >= fYear <: key) $ knownKeys intensityCube :: Set (FieldRec '[FMaterial, FUpstreamMaterial, FYear])
-            , not $ S.null keys
-            , let intensity = (fIntensity <:) $ intensityCube ! findMin ("Missing intensity data for upstream material \"" ++ show upstream ++ "\" and material \"" ++ show material ++ "\" in year " ++ show year ++ ".") keys :: Double
-            ]
+            mapReduce
+              id
+              (\key vals -> key <+> fQuantity =: sum ((fQuantity <:) <$> vals) <+> fSale =: sum ((fSale <:) <$> vals))
+              [
+                (
+                      specifics'
+                  <+> fMaterial       =: upstream
+                  <+> fImpactCategory =: Upstream
+                ,     fQuantity       =: quantity * intensity
+                  <+> fSale           =: - maximum [0, quantity * intensity] * minimum [0, pricer upstream year]
+                )
+              |
+                rec <- toKnownRecords inputs
+              , let material = fMaterial <: rec
+              , let rate = fConsumptionRate <: rec + distance * fConsumptionRateStretch <: rec
+              , let quantity = output * rate
+              , intensities <- selectIntensity year material intensityCube
+              , let upstream = fUpstreamMaterial <: intensities
+              , let intensity = (fIntensity <:) intensities
+              ]
             ++
             [
                   specifics'
@@ -179,3 +266,9 @@ findMin :: String -> Set a -> a -- FIXME: Move this to the error monad.
 findMin message x
   | S.null x  = error message
   | otherwise = S.findMin x
+
+
+findMax :: String -> Set a -> a -- FIXME: Move this to the error monad.
+findMax message x
+  | S.null x  = error message
+  | otherwise = S.findMax x
