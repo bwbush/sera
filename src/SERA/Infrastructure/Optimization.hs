@@ -97,7 +97,7 @@ deliveryReifier' priceCube processLibrary intensityCube loc distance year consum
     year
     consumption
     distance
-    (Infrastructure (location loc ++ " @ " ++ show year), GenericPath loc [(loc, distance)] loc)
+    (Infrastructure (location loc ++ " @ " ++ show year), GenericPath loc [(loc, 0)] loc)
 
 
 productionCandidates :: TechnologyReifier -> [Technology] -> [(Technology, ([Construction], PathwayOperation))]
@@ -378,7 +378,6 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
     consumption' = maximum $ M.elems $ localDemands localContextSink
     Network{..} = network
     path = paths M.! (localLocation localContextSource, localLocation localContextSink)
-    distance' = sum $ snd <$> linkIds path
     transmissionReifier' =
       pathwayReifier
         (\_ _ -> True)
@@ -391,7 +390,7 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
         )
         year'
         consumption'
-        distance'
+        (localDistance localContextSink)
         (Infrastructure (location (localLocation localContextSink) ++ " @ " ++ show year'), path)
   in
     M.fromList

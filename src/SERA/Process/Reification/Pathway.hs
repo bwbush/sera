@@ -10,12 +10,9 @@ module SERA.Process.Reification.Pathway
 where
 
 
-import Control.Arrow (first)
 import Data.Daft.Vinyl.FieldCube (σ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Tuple.Util (fst3, snd3, trd3)
-import Data.Vinyl.Derived (ElField(..))
-import Data.Vinyl.Lens (rput)
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Network.Types -- FIXME
 import SERA.Process.Reification.Technology (TechnologyReifier)
@@ -45,6 +42,7 @@ pathwayReifier :: (Bool -> Bool -> Bool) -> ProcessLibrary -> TechnologyReifier 
 pathwayReifier candidate ProcessLibrary{..} reifyTechnology built capacity distance (label, GenericPath{..}) path = 
   do
     let
+      distance' = distance + sum (snd <$> linkIds)
       candidate' key val = path == fPathway <: key && candidate (fTransmission <: val) (fDelivery <: val)
       stages = toKnownRecords $ σ candidate' pathwayCube
       extendedStage = fStage <: head (filter (\r -> fExtended <: r) stages)
@@ -52,25 +50,23 @@ pathwayReifier candidate ProcessLibrary{..} reifyTechnology built capacity dista
     constructions <-
       sequence
         $ [
-            first (rput (Field 0 :: ElField FLength))
-              <$> reifyTechnology (relabel rec 0 <+> fLocation =: sourceId) built capacity distance (fTechnology <: rec)
+            reifyTechnology (relabel rec 0 <+> fLocation =: sourceId) built capacity distance' (fTechnology <: rec)
           |
             rec <- stages
           , fStage <: rec < extendedStage
           ]
           ++
           [
-            first (rput (Field d :: ElField FLength))
-              <$> reifyTechnology (relabel rec i <+> fLocation =: l) built capacity d (fTechnology <: rec)
+            reifyTechnology (relabel rec i <+> fLocation =: l) built capacity d' (fTechnology <: rec)
           |
             rec <- stages
           , fStage <: rec == extendedStage
           , (i, (l, d)) <- zip [1..] linkIds
+          , let d' = if i == length linkIds then d + distance else d
           ]
           ++
           [
-            first (rput (Field 0 :: ElField FLength))
-              <$> reifyTechnology (relabel rec 0 <+> fLocation =: sinkId) built capacity distance (fTechnology <: rec)
+            reifyTechnology (relabel rec 0 <+> fLocation =: sinkId) built capacity distance (fTechnology <: rec)
           |
             rec <- stages
           , fStage <: rec > extendedStage

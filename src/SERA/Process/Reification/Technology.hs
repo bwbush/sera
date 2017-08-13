@@ -10,22 +10,21 @@ module SERA.Process.Reification.Technology
 where
 
 
-import Data.Daft.DataCube (knownKeys, selectKnownMaximum)
-import Data.Daft.Vinyl.FieldCube ((!), σ, τ, toKnownRecords)
+import Data.Daft.DataCube (knownKeys)
+import Data.Daft.Vinyl.FieldCube ((!), σ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Function (on)
 import Data.Function.MapReduce (mapReduce)
 import Data.List (nub, sortBy)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
-import SERA (trace')
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Material.Types -- FIXME
 import SERA.Network.Types -- FIXME
 import SERA.Process.Types -- FIXME
-import SERA.Types (Year, FYear, fYear)
+import SERA.Types (Year, fYear)
 
-import qualified Data.Set as S (filter, findMax, findMin, map, null, toList)
+import qualified Data.Set as S (findMax, findMin, null, toList)
 
 
 type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
@@ -137,16 +136,17 @@ selectIntensity year material intensities =
 
 
 technologyReifier :: ProcessLibrary -> IntensityCube '[] -> Pricer -> TechnologyReifier
-technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capacity distance tech = 
+technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capacity distance' tech = 
   do -- FIXME: Add interpolation
-    specification <-
+    specification <- 
       selectTechnology
         tech
         built
         capacity
         $ knownKeys processCostCube
     let
-      costs = processCostCube ! specification :: FieldRec ProcessCost
+      costs =  processCostCube ! specification :: FieldRec ProcessCost
+      distance = if fProductive <: costs == Central then 0 else distance'
       capacity' = maximum [capacity, fCapacity <: specification]
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
