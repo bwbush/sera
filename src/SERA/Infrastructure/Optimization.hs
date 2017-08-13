@@ -36,7 +36,7 @@ import SERA.Types
 import SERA.Types.TH (makeField)
 
 
-import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, map, member, toList, union, unionWith)
+import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, map, member, null, toList, union, unionWith)
 
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
@@ -416,11 +416,12 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
 cheapestRemotely :: GlobalContext -> (Double, LocalContext) -> (Double, LocalContext) -> [(Location, CostedOptimum)]
 cheapestRemotely globalContext (productionSource, localContextSource) (_, localContextSink) =
   let
-    bestSource = minimum $ M.elems $ productionsCentral $ toLocalContext' globalContext localContextSource productionSource $ localDemands localContextSink
+    ps = productionsCentral $ toLocalContext' globalContext localContextSource productionSource $ localDemands localContextSink
+    bestSource = minimum ps
     bestLocal = minimum $ M.elems $ deliveries localContextSource
     bestSink = minimum $ M.elems $ costedDeliveryCandidates globalContext localContextSource localContextSink
   in
-    if (localLocation localContextSource, localLocation localContextSink) `M.member` (paths $ network globalContext)
+    if not (M.null ps) && (localLocation localContextSource, localLocation localContextSink) `M.member` (paths $ network globalContext)
       then [
              (localLocation localContextSource, bestSource <> bestLocal)
            , (localLocation localContextSink  , bestSink  )
