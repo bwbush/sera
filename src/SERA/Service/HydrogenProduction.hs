@@ -72,6 +72,7 @@ data ConfigProduction =
   , escalationRate      :: Double
   , interpolate         :: Bool
   , maximumPathLength   :: Maybe Double
+  , localPenaltyFactor  :: Maybe Double
   , priceFiles          :: [FilePath]
   , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
@@ -186,12 +187,13 @@ productionMain ConfigProduction{..} =
           escalationRate
           interpolate
           maximumPathLength
+          localPenaltyFactor
           []
           []
           []
           []
 
-    GlobalContext _ _ _ _ _ _ _ _ _ _ _ _ constructions flows cashes impacts <-
+    GlobalContext _ _ _ _ _ _ _ _ _ _ _ _ _ constructions flows cashes impacts <-
       foldlM compute globalContext [firstYear, (firstYear+timeWindow) .. lastYear]
 
     let

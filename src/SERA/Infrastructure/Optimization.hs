@@ -12,7 +12,7 @@ where
 
 
 import Control.Applicative (liftA2)
-import Control.Arrow ((***))
+import Control.Arrow ((***), first)
 import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
@@ -36,7 +36,7 @@ import SERA.Types
 import SERA.Types.TH (makeField)
 
 
-import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, member, toList, union, unionWith)
+import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, map, member, toList, union, unionWith)
 
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
@@ -57,6 +57,7 @@ data GlobalContext =
   , escalationRate     :: Double
   , interpolate        :: Bool
   , maximumPathLength  :: Maybe Double
+  , localPenaltyFactor :: Maybe Double
   , extantConstruction :: [Construction]
   , extantFlow         :: [Flow]
   , extantCash         :: [Cash]
@@ -126,10 +127,11 @@ deliveryCandidates reifyDelivery paths' =
 costCandidate :: ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Sum Double, Optimum)
 costCandidate (construction, operate) demands =
   let
+    year = maximum $ (fYear <:) <$> demands
     (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
   in
     (
-      Sum $ sum $ (\rec -> fSale <: rec - fSalvage <: rec) <$> concat flows
+      Sum $ sum $ (\rec -> fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0)) <$> concat flows
     , Optimum construction (concat flows) (concat cashes) (concat impacts)
     )
 
@@ -243,10 +245,11 @@ optimize globalContext@GlobalContext{..} year =
         ]
     f :: Map Location CostedOptimum -> (Double, Location) -> Map Location CostedOptimum
     f previous loc =
-      M.fromList (
-        cheapestLocally
-          $ toLocalContext globalContext year $ snd loc
-      ) `M.union` previous
+      (maybe id (\s -> M.map (first (Sum s *))) localPenaltyFactor) $
+        M.fromList (
+          cheapestLocally
+            $ toLocalContext globalContext year $ snd loc
+        ) `M.union` previous
     singly = foldl f M.empty locations
     g :: Map Location CostedOptimum -> ((Double, Location), (Double, Location)) -> Map Location CostedOptimum
     g previous (locSource, locSink) =
