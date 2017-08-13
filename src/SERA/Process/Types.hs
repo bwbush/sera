@@ -143,3 +143,19 @@ localPathways ProcessLibrary{..} =
   in
     S.map (fPathway <:)
       $ (ω results :: Pathways)
+
+
+transmissionPathways :: ProcessLibrary -> Set Pathway
+transmissionPathways ProcessLibrary{..} =
+  let
+    results :: '[FPathway] *↝ '[FCondition]
+    results = 
+      σ (\_ rec -> fCondition <: rec)
+        $ κ' (ω pathwayCube :: Set (FieldRec '[FStage]))
+          (
+            \recs -> fCondition =: any (fTransmission <:) recs
+          )
+          pathwayCube
+  in
+    S.map (fPathway <:)
+      $ (ω results :: Pathways)

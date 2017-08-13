@@ -126,10 +126,10 @@ productionMain ConfigProduction{..} =
     count "input"   processInputCube
     count "output"  processOutputCube
     count "pathway" pathwayCube
-    list  "Production"    $ productions   processLibrary
-    list  "Delivery"      $ deliveries    processLibrary
-    list  "Pathway"       $ pathways      processLibrary
-    list  "Local Pathway" $ localPathways processLibrary
+    list  "Production"           $ productions          processLibrary
+    list  "Delivery"             $ deliveries           processLibrary
+    list  "Transmission Pathway" $ transmissionPathways processLibrary
+    list  "Local Pathway"        $ localPathways        processLibrary
 
     liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading network . . ."

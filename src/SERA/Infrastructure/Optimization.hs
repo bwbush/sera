@@ -406,7 +406,7 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
             )
           )
       |
-        pathway <- toList $ pathways processLibrary
+        pathway <- toList $ transmissionPathways processLibrary
       , let z = transmissionReifier' pathway
       , isJust z
       , let Just (construction, operate) = z
