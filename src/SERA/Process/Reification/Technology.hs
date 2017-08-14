@@ -18,11 +18,12 @@ import Data.Function.MapReduce (mapReduce)
 import Data.List (nub, sortBy)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (type (∈))
 import SERA.Infrastructure.Types -- FIXME
 import SERA.Material.Types -- FIXME
 import SERA.Network.Types -- FIXME
 import SERA.Process.Types -- FIXME
-import SERA.Types (Year, fYear)
+import SERA.Types (Year, FYear, fYear)
 
 import qualified Data.Set as S (findMax, findMin, null, toList)
 
@@ -33,6 +34,7 @@ type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
 type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Year -> Double -> Double -> Technology -> Maybe (Construction, TechnologyOperation)
 
 
+selectTechnology :: (FTechnology ∈ rs, FYear ∈ rs, FCapacity ∈ rs) => Technology -> Year -> Double -> Set (FieldRec rs) -> Maybe (FieldRec rs)
 selectTechnology tech built capacity candidates =
   let
     eligible =
@@ -61,6 +63,7 @@ selectTechnology tech built capacity candidates =
         else last scalable
 
 
+selectTechnology' :: (FMaterial ∈ rs, FTechnology ∈ rs, FYear ∈ rs, FCapacity ∈ rs) => String -> Technology -> Year -> Double -> Set (FieldRec rs) -> [FieldRec rs]
 selectTechnology' message tech built capacity candidates =
   let
     eligible' =
@@ -102,6 +105,7 @@ selectTechnology' message tech built capacity candidates =
     ]
 
 
+selectIntensity :: Year -> Material -> IntensityCube '[] -> [FieldRec '[FMaterial, FUpstreamMaterial, FYear, FIntensity]]
 selectIntensity year material intensities =
   let
     eligible' =
