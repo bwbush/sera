@@ -10,7 +10,7 @@
 
 module SERA.Material.Types (
 -- * Data types
-  Material
+  Material(..)
 , Pricer
 -- * Field types
 , FMaterial

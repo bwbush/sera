@@ -179,7 +179,7 @@ productionMain ConfigProduction{..} =
           processLibrary
           intensityCube
           network
-          demandCube
+          (σ (\k _ -> fYear <: k <= lastYear) demandCube)
           firstYear
           lastYear
           timeWindow

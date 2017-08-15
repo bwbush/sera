@@ -36,7 +36,7 @@ import SERA.Types
 import SERA.Types.TH (makeField)
 
 
-import qualified Data.Map.Strict as M ((!), elems, empty, filter, findMin, fromList, map, member, null, toList, union, unionWith)
+import qualified Data.Map.Strict as M ((!), elems, empty, filter, filterWithKey, findMin, fromList, map, member, null, toList, union, unionWith)
 
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
@@ -124,34 +124,38 @@ deliveryCandidates reifyDelivery paths' =
     ]
 
 
-costCandidate :: ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Sum Double, Optimum)
-costCandidate (construction, operate) demands =
+costCandidate :: Year -> ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Sum Double, Optimum)
+costCandidate year (construction, operate) demands =
   let
-    year = maximum $ (fYear <:) <$> demands
     (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
   in
     (
-      Sum $ sum $ (\rec -> fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0)) <$> concat flows
+      Sum
+        $ sum
+        $ (\rec -> fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0))
+        <$> filter (\rec -> fYear <: rec <= year)
+        (concat flows)
     , Optimum construction (concat flows) (concat cashes) (concat impacts)
     )
 
 
 costedCandidates :: Ord a
-                 => ([a] -> [(a, ([Construction], PathwayOperation))])
+                 => Year
+                 -> ([a] -> [(a, ([Construction], PathwayOperation))])
                  -> Set a
                  -> [FieldRec '[FLocation, FYear, FConsumption, FArea]]
                  -> Map a (Sum Double, Optimum)
-costedCandidates makeCandidates xs demands =
+costedCandidates year makeCandidates xs demands =
   M.fromList
     [
-      (x, costCandidate candidate demands)
+      (x, costCandidate year candidate demands)
     |
       (x, candidate) <- makeCandidates $ toList xs
     ]
 
 
-characterizeDemands :: [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Location, Double, Year, Double)
-characterizeDemands demands =
+characterizeDemands :: Year -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Location, Double, Year, Double)
+characterizeDemands year' demands =
   let
     loc = fLocation <: head demands :: Location
     area = fArea <: head demands
@@ -162,6 +166,7 @@ characterizeDemands demands =
           (fYear <: rec, fConsumption <: rec)
         |
           rec <- demands
+        , fYear <: rec <= year'
         , 0 < fConsumption <: rec
         ]
   in
@@ -236,6 +241,13 @@ optimize globalContext@GlobalContext{..} year =
     supply =
       κ' allYears (\recs -> fConsumption =: maximum ((fConsumption <:) <$> recs))
         $ σ (const . filterYear) demandCube
+    globalContext' =
+      globalContext
+      {
+        demandCube =
+          π (\_ rec -> fConsumption =: minimum [fConsumption <: rec, fProduction <: rec] <+> fArea =: fArea <: rec)
+            $ demandCube ⋈ π (\_ rec -> fProduction =: fConsumption <: rec) supply
+      }
     locations =
       sortBy (flip compare)
         [
@@ -248,7 +260,7 @@ optimize globalContext@GlobalContext{..} year =
       (maybe id (\s -> M.map (first (Sum s *))) localPenaltyFactor) $
         M.fromList (
           cheapestLocally
-            $ toLocalContext globalContext year $ snd loc
+            $ toLocalContext globalContext' year $ snd loc
         ) `M.union` previous
     singly = foldl f M.empty locations
     g :: Map Location CostedOptimum -> ((Double, Location), (Double, Location)) -> Map Location CostedOptimum
@@ -262,9 +274,9 @@ optimize globalContext@GlobalContext{..} year =
           capacitySink   = sum $ fmap (fCapacity <:) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSink
           revisions =
             cheapestRemotely
-              globalContext
-              (capacitySource, toLocalContext globalContext year $ snd locSource)
-              (capacitySink  , toLocalContext globalContext year $ snd locSink  )
+              globalContext'
+              (capacitySource, toLocalContext globalContext' year $ snd locSource)
+              (capacitySink  , toLocalContext globalContext' year $ snd locSink  )
           revisedCost  = mconcat $ fst . snd <$> revisions
         in
           if locSource <= locSink || capacitySource <= 0 || capacitySink <= 0 || null revisions || previousCost < revisedCost
@@ -300,25 +312,28 @@ toLocalContext GlobalContext{..} year' localLocation =
   let
     localYears = [year' .. year'+timeWindow-1]
     filterLocally :: (FYear ∈ ks, FLocation ∈ ks) => FieldRec ks -> Bool
-    filterLocally rec = fYear <: rec `elem` localYears && fLocation <: rec == localLocation
+    filterLocally rec = fYear <: rec >= head localYears && fLocation <: rec == localLocation
     demandCube' = σ (const . filterLocally) demandCube
     demands' = toKnownRecords demandCube'
     localDemands = M.fromList [(fYear <: rec, fConsumption <: rec) | rec <- demands']
-    (_, localDistance, year, consumption) = characterizeDemands demands'
+    (_, localDistance, year, consumption) = characterizeDemands (last localYears) demands'
     reifyTechnology = productionReifier priceCube processLibrary intensityCube localLocation localDistance year
     reifyDelivery = deliveryReifier' priceCube processLibrary intensityCube localLocation localDistance year 
     productionsOnsite =
       costedCandidates
+        (last localYears)
         (productionCandidates $ reifyTechnology consumption)
         (productions' Onsite processLibrary)
         demands'
     productionsCentral =
       costedCandidates
+        (last localYears)
         (productionCandidates $ reifyTechnology consumption)
         (productions' Central processLibrary)
         demands'
     deliveries =
       costedCandidates
+        (last localYears)
         (deliveryCandidates $ reifyDelivery consumption)
         (localPathways processLibrary)
         demands'
@@ -331,7 +346,7 @@ toLocalContext' GlobalContext{..} previous@LocalContext{..} minimumCapacity dema
   let
     localDemands' = M.unionWith (+) localDemands demandIncrement
     year = fst $ M.findMin $ M.filter (> 0) localDemands'
-    consumption = maximum $ minimumCapacity : M.elems localDemands'
+    consumption = maximum $ minimumCapacity : M.elems (M.filterWithKey (\k _ -> k <= last localYears) localDemands')
     demands' =
       [
             fLocation    =: localLocation
@@ -348,6 +363,7 @@ toLocalContext' GlobalContext{..} previous@LocalContext{..} minimumCapacity dema
       localDemands = localDemands'
     , productionsCentral =
         costedCandidates
+          (last localYears)
           (productionCandidates $ reifyTechnology consumption)
           (productions' Central processLibrary)
           demands'
@@ -375,7 +391,7 @@ costedDeliveryCandidates :: GlobalContext -> LocalContext -> LocalContext -> Map
 costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
   let
     year' = fst $ M.findMin $ M.filter (> 0) $ localDemands localContextSink
-    consumption' = maximum $ M.elems $ localDemands localContextSink
+    consumption' = maximum $ M.elems $ M.filterWithKey (\k _ -> k <= last (localYears localContextSink)) $ localDemands localContextSink
     Network{..} = network
     path = paths M.! (localLocation localContextSource, localLocation localContextSink)
     transmissionReifier' =
@@ -397,11 +413,16 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
       [
         let
           (flows, cashes, impacts) = unzip3 $ map (uncurry operate) $ M.toList $ localDemands localContextSink
+          year = last $ localYears localContextSink
         in
           (
             pathway
           , (
-              Sum $ sum $ (\rec -> fSale <: rec - fSalvage <: rec) <$> concat flows
+              Sum
+                $ sum
+                $ (\rec -> fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0))
+                <$> filter (\rec -> fYear <: rec <= year)
+                (concat flows)
             , Optimum construction (concat flows) (concat cashes) (concat impacts)
             )
           )
