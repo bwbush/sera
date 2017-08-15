@@ -123,16 +123,23 @@ deliveryCandidates reifyDelivery paths' =
       path <- paths'
     ]
 
+referenceYear :: Year
+referenceYear = 2000
 
-costCandidate :: Year -> ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Sum Double, Optimum)
-costCandidate year (construction, operate) demands =
+
+costCandidate :: Double -> Year -> ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Sum Double, Optimum)
+costCandidate discount year (construction, operate) demands =
   let
     (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
   in
     (
       Sum
         $ sum
-        $ (\rec -> fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0))
+        $ (
+            \rec ->
+               (fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0))
+                 / (1 + discount)^(fYear <: rec - referenceYear)
+          )
         <$> filter (\rec -> fYear <: rec <= year)
         (concat flows)
     , Optimum construction (concat flows) (concat cashes) (concat impacts)
@@ -140,15 +147,16 @@ costCandidate year (construction, operate) demands =
 
 
 costedCandidates :: Ord a
-                 => Year
+                 => Double
+                 -> Year
                  -> ([a] -> [(a, ([Construction], PathwayOperation))])
                  -> Set a
                  -> [FieldRec '[FLocation, FYear, FConsumption, FArea]]
                  -> Map a (Sum Double, Optimum)
-costedCandidates year makeCandidates xs demands =
+costedCandidates discount year makeCandidates xs demands =
   M.fromList
     [
-      (x, costCandidate year candidate demands)
+      (x, costCandidate discount year candidate demands)
     |
       (x, candidate) <- makeCandidates $ toList xs
     ]
@@ -321,18 +329,21 @@ toLocalContext GlobalContext{..} year' localLocation =
     reifyDelivery = deliveryReifier' priceCube processLibrary intensityCube localLocation localDistance year 
     productionsOnsite =
       costedCandidates
+        discountRate
         (last localYears)
         (productionCandidates $ reifyTechnology consumption)
         (productions' Onsite processLibrary)
         demands'
     productionsCentral =
       costedCandidates
+        discountRate
         (last localYears)
         (productionCandidates $ reifyTechnology consumption)
         (productions' Central processLibrary)
         demands'
     deliveries =
       costedCandidates
+        discountRate
         (last localYears)
         (deliveryCandidates $ reifyDelivery consumption)
         (localPathways processLibrary)
@@ -363,6 +374,7 @@ toLocalContext' GlobalContext{..} previous@LocalContext{..} minimumCapacity dema
       localDemands = localDemands'
     , productionsCentral =
         costedCandidates
+          discountRate
           (last localYears)
           (productionCandidates $ reifyTechnology consumption)
           (productions' Central processLibrary)
@@ -420,7 +432,11 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
           , (
               Sum
                 $ sum
-                $ (\rec -> fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0))
+                $ (
+                    \rec ->
+                      (fSale <: rec - (if fYear <: rec == year then fSalvage <: rec else 0))
+                        / (1 + discountRate)^(fYear <: rec - referenceYear)
+                  )
                 <$> filter (\rec -> fYear <: rec <= year)
                 (concat flows)
             , Optimum construction (concat flows) (concat cashes) (concat impacts)
