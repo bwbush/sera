@@ -31,6 +31,7 @@ import qualified Data.Set as S (map)
 data Productive =
     Onsite
   | Central
+  | Yes
   | No
     deriving (Bounded, Enum, Eq, Ord, Read, Show)
 

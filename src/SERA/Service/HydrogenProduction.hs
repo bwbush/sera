@@ -32,7 +32,7 @@ module SERA.Service.HydrogenProduction (
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
 import Data.Monoid ((<>))
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.DataCube (evaluate, knownSize)
+import Data.Daft.DataCube (evaluable, evaluate, knownSize)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldCube.IO (writeFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec
@@ -267,6 +267,7 @@ productionMain ConfigProduction{..} =
             |
               rec <- toKnownRecords linkCube
             , (p, n) <- zip (Position <$> ["left", "right"]) ((fLocation =:) <$> [fFrom <: rec, fTo <: rec])
+            , nodeCube `evaluable` n
             ]
 
     writeFieldCubeFile constructionFile (fromRecords constructions :: ConstructionCube)

@@ -13,15 +13,17 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Arrow ((***), first)
-import Data.Daft.DataCube (evaluate)
+import Data.Daft.DataCube (evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Default (Default(def))
 import Data.Default.Util (inf)
 import Data.List (sortBy)
 import Data.Map.Strict (Map)
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Set (Set, toList)
+import Data.Tuple.Util (snd3, trd3)
 import Data.Vinyl.Derived (ElField(..), FieldRec)
 import Data.Vinyl.Lens (type (∈), rput)
 import SERA (unsafePrint)
@@ -36,7 +38,14 @@ import SERA.Types
 import SERA.Types.TH (makeField)
 
 
-import qualified Data.Map.Strict as M ((!), elems, empty, filter, filterWithKey, findMin, fromList, map, member, null, toList, union, unionWith)
+import qualified Data.Map.Strict as M ((!), elems, empty, filter, filterWithKey, findMin, fromList, lookup, map, member, null, singleton, toList, union, unionWith)
+
+
+type CostedOptimum = (Sum Double, Optimum)
+
+
+emptyCandidate :: CostedOptimum
+emptyCandidate = (0, mempty)
 
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
@@ -146,13 +155,14 @@ costCandidate discount year (construction, operate) demands =
     )
 
 
-costedCandidates :: Ord a
+costedCandidates :: (Default a, Ord a)
                  => Double
                  -> Year
                  -> ([a] -> [(a, ([Construction], PathwayOperation))])
                  -> Set a
                  -> [FieldRec '[FLocation, FYear, FConsumption, FArea]]
                  -> Map a (Sum Double, Optimum)
+costedCandidates _ _ _ _ [] = M.singleton def emptyCandidate
 costedCandidates discount year makeCandidates xs demands =
   M.fromList
     [
@@ -163,6 +173,7 @@ costedCandidates discount year makeCandidates xs demands =
 
 
 characterizeDemands :: Year -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Location, Double, Year, Double)
+characterizeDemands year' [] = (undefined, 0, year', 0)
 characterizeDemands year' demands =
   let
     loc = fLocation <: head demands :: Location
@@ -256,38 +267,44 @@ optimize globalContext@GlobalContext{..} year =
           π (\_ rec -> fConsumption =: minimum [fConsumption <: rec, fProduction <: rec] <+> fArea =: fArea <: rec)
             $ demandCube ⋈ π (\_ rec -> fProduction =: fConsumption <: rec) supply
       }
+    locations :: [(Double, Location, Productive)]
     locations =
-      sortBy (flip compare)
+      sortBy (flip compare) -- $ filter ((/= 0) . fst3)
         [
-          (fConsumption <: rec, fLocation <: rec)
+          (
+            maybe 0 (fConsumption <:) (supply `evaluate` loc)
+          , fLocation <: loc
+          , fProductive <: (nodeCube M.! loc)
+          )
         |
-          rec <- toKnownRecords supply
+          let Network{..} = network
+        , loc <- toList $ knownKeys nodeCube
         ]
-    f :: Map Location CostedOptimum -> (Double, Location) -> Map Location CostedOptimum
+    f :: Map Location CostedOptimum -> (Double, Location, Productive) -> Map Location CostedOptimum
     f previous loc =
       (maybe id (\s -> M.map (first (Sum s *))) localPenaltyFactor) $
         M.fromList (
           cheapestLocally
-            $ toLocalContext globalContext' year $ snd loc
+            $ toLocalContext globalContext' year (snd3 loc) (trd3 loc)
         ) `M.union` previous
     singly = foldl f M.empty locations
-    g :: Map Location CostedOptimum -> ((Double, Location), (Double, Location)) -> Map Location CostedOptimum
+    g :: Map Location CostedOptimum -> ((Double, Location, Productive), (Double, Location, Productive)) -> Map Location CostedOptimum
     g previous (locSource, locSink) =
       M.fromList (
         let
-          previousSource = previous M.! snd locSource
-          previousSink   = previous M.! snd locSink
+          previousSource = fromMaybe noCandidate $ snd3 locSource `M.lookup` previous
+          previousSink   = fromMaybe noCandidate $ snd3 locSink `M.lookup` previous
           previousCost = fst $ previousSource <> previousSink
           capacitySource = sum $ fmap (fCapacity <:) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSource
           capacitySink   = sum $ fmap (fCapacity <:) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSink
           revisions =
             cheapestRemotely
               globalContext'
-              (capacitySource, toLocalContext globalContext' year $ snd locSource)
-              (capacitySink  , toLocalContext globalContext' year $ snd locSink  )
+              (capacitySource, toLocalContext globalContext' year (snd3 locSource) (trd3 locSource))
+              (capacitySink  , toLocalContext globalContext' year (snd3 locSink  ) (trd3 locSink  ))
           revisedCost  = mconcat $ fst . snd <$> revisions
         in
-          if locSource <= locSink || capacitySource <= 0 || capacitySink <= 0 || null revisions || previousCost < revisedCost
+          if locSource == locSink || locSource < locSink && capacitySource /= 0 || null revisions || previousCost < revisedCost
             then []
             else revisions
       ) `M.union` previous
@@ -304,6 +321,7 @@ data LocalContext =
   {
     localLocation      :: Location
   , localDistance      :: Double
+  , localProductive    :: Productive
   , localYears         :: [Year]
   , localDemands       :: Map Year Double
   , productionsOnsite  :: Map Technology CostedOptimum
@@ -312,11 +330,8 @@ data LocalContext =
   }
 
 
-type CostedOptimum = (Sum Double, Optimum)
-
-
-toLocalContext :: GlobalContext -> Year -> Location -> LocalContext
-toLocalContext GlobalContext{..} year' localLocation =
+toLocalContext :: GlobalContext -> Year -> Location -> Productive -> LocalContext
+toLocalContext GlobalContext{..} year' localLocation localProductive =
   let
     localYears = [year' .. year'+timeWindow-1]
     filterLocally :: (FYear ∈ ks, FLocation ∈ ks) => FieldRec ks -> Bool
@@ -328,26 +343,32 @@ toLocalContext GlobalContext{..} year' localLocation =
     reifyTechnology = productionReifier priceCube processLibrary intensityCube localLocation localDistance year
     reifyDelivery = deliveryReifier' priceCube processLibrary intensityCube localLocation localDistance year 
     productionsOnsite =
-      costedCandidates
-        discountRate
-        (last localYears)
-        (productionCandidates $ reifyTechnology consumption)
-        (productions' Onsite processLibrary)
-        demands'
+      if localProductive `elem` [Yes, Onsite]
+        then costedCandidates
+               discountRate
+               (last localYears)
+               (productionCandidates $ reifyTechnology consumption)
+               (productions' Onsite processLibrary)
+               demands'
+        else M.empty
     productionsCentral =
-      costedCandidates
-        discountRate
-        (last localYears)
-        (productionCandidates $ reifyTechnology consumption)
-        (productions' Central processLibrary)
-        demands'
+      if localProductive `elem` [Yes, Central]
+        then costedCandidates
+               discountRate
+               (last localYears)
+               (productionCandidates $ reifyTechnology consumption)
+               (productions' Central processLibrary)
+               demands'
+        else M.empty
     deliveries =
-      costedCandidates
-        discountRate
-        (last localYears)
-        (deliveryCandidates $ reifyDelivery consumption)
-        (localPathways processLibrary)
-        demands'
+      if localProductive `elem` [Yes, Onsite]
+        then costedCandidates
+               discountRate
+               (last localYears)
+               (deliveryCandidates $ reifyDelivery consumption)
+               (localPathways processLibrary)
+               demands'
+        else M.empty
   in
     LocalContext{..}
 
@@ -356,7 +377,7 @@ toLocalContext' :: GlobalContext -> LocalContext -> Double -> Map Year Double ->
 toLocalContext' GlobalContext{..} previous@LocalContext{..} minimumCapacity demandIncrement {- FIXME -} =
   let
     localDemands' = M.unionWith (+) localDemands demandIncrement
-    year = fst $ M.findMin $ M.filter (> 0) localDemands'
+    year = (\x -> if M.null x then last localYears else fst $ M.findMin x) $ M.filter (> 0) localDemands'
     consumption = maximum $ minimumCapacity : M.elems (M.filterWithKey (\k _ -> k <= last localYears) localDemands')
     demands' =
       [
@@ -373,12 +394,14 @@ toLocalContext' GlobalContext{..} previous@LocalContext{..} minimumCapacity dema
     {
       localDemands = localDemands'
     , productionsCentral =
-        costedCandidates
-          discountRate
-          (last localYears)
-          (productionCandidates $ reifyTechnology consumption)
-          (productions' Central processLibrary)
-          demands'
+        if localProductive `elem` [Yes, Central]
+          then costedCandidates
+                 discountRate
+                 (last localYears)
+                 (productionCandidates $ reifyTechnology consumption)
+                 (productions' Central processLibrary)
+                 demands'
+          else M.empty
     }
 
 
@@ -387,23 +410,25 @@ noCandidate = (Sum inf, mempty)
 
 
 cheapestLocally :: LocalContext -> [(Location, CostedOptimum)]
-cheapestLocally LocalContext{..} =
-  let
-    candidatesOnsite = noCandidate : M.elems productionsOnsite
-    candidatesCentral = noCandidate : M.elems productionsCentral
-    candidatesLocal = noCandidate : M.elems deliveries
-    best = minimum [minimum candidatesOnsite, minimum candidatesCentral <> minimum candidatesLocal]
-  in
-    if best == noCandidate
-      then error ("No eligible technologies in year " ++ show (maximum localYears) ++ ".") -- FIXME: Move to error monad.
-      else [(localLocation, best)]
+cheapestLocally LocalContext{..}
+  | localProductive `elem` [No, Central] = [(localLocation, noCandidate)]
+  | otherwise =
+      let
+        candidatesOnsite = noCandidate : M.elems productionsOnsite
+        candidatesCentral = noCandidate : M.elems productionsCentral
+        candidatesLocal = noCandidate : M.elems deliveries
+        best = minimum [minimum candidatesOnsite, minimum candidatesCentral <> minimum candidatesLocal]
+      in
+        if best == noCandidate
+          then error ("No eligible technologies in year " ++ show (maximum localYears) ++ ".") -- FIXME: Move to error monad.
+          else [(localLocation, best)]
 
 
 costedDeliveryCandidates :: GlobalContext -> LocalContext -> LocalContext -> Map Pathway CostedOptimum
 costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
   let
-    year' = fst $ M.findMin $ M.filter (> 0) $ localDemands localContextSink
-    consumption' = maximum $ M.elems $ M.filterWithKey (\k _ -> k <= last (localYears localContextSink)) $ localDemands localContextSink
+    year' = (\x -> if M.null x then last $ localYears localContextSink else fst $ M.findMin x) $ M.filter (> 0) $ localDemands localContextSink
+    consumption' = maximum $ (0 :) $ M.elems $ M.filterWithKey (\k _ -> k <= last (localYears localContextSink)) $ localDemands localContextSink
     Network{..} = network
     path = paths M.! (localLocation localContextSource, localLocation localContextSink)
     transmissionReifier' =
@@ -451,16 +476,22 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
 
 
 cheapestRemotely :: GlobalContext -> (Double, LocalContext) -> (Double, LocalContext) -> [(Location, CostedOptimum)]
-cheapestRemotely globalContext (productionSource, localContextSource) (_, localContextSink) =
-  let
-    ps = productionsCentral $ toLocalContext' globalContext localContextSource productionSource $ localDemands localContextSink
-    bestSource = minimum ps
-    bestLocal = minimum $ M.elems $ deliveries localContextSource
-    bestSink = minimum $ M.elems $ costedDeliveryCandidates globalContext localContextSource localContextSink
-  in
-    if not (M.null ps) && (localLocation localContextSource, localLocation localContextSink) `M.member` (paths $ network globalContext)
-      then [
-             (localLocation localContextSource, bestSource <> bestLocal)
-           , (localLocation localContextSink  , bestSink  )
-           ]
-      else []
+cheapestRemotely globalContext (productionSource, localContextSource) (_, localContextSink)
+  | localProductive localContextSource `elem` [No, Onsite] || localProductive localContextSink == Onsite = []
+  | maximum (0 : M.elems (localDemands localContextSink)) == 0 = []
+  | otherwise =
+      let
+        ps = productionsCentral $ toLocalContext' globalContext localContextSource productionSource $ localDemands localContextSink
+        bestSource = minimum ps
+        bestLocal =
+          if null $ localDemands localContextSource
+            then emptyCandidate
+            else minimum $ (noCandidate :) $ M.elems $ deliveries localContextSource
+        bestSink = minimum $ (noCandidate :) $ M.elems $ costedDeliveryCandidates globalContext localContextSource localContextSink
+      in
+        if (localLocation localContextSource, localLocation localContextSink) `M.member` (paths $ network globalContext) && not (null ps)
+          then [
+                 (localLocation localContextSource, bestSource <> bestLocal)
+               , (localLocation localContextSink  , bestSink  )
+               ]
+          else []
