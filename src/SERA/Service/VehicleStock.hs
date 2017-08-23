@@ -142,9 +142,9 @@ stockMain ConfigStock{..} =
     let
       (sales, stock, energy, emission) = computeStock regionalSales marketShare survival annualTravel fuelSplit fuelEfficiency emissionRate
     verboseWriteFieldCubeSource "vehicle sales" salesSource sales
-    verboseWriteFieldCubeSource "vehicle Stock" stockSource stock
+    verboseWriteFieldCubeSource "vehicle stock" stockSource stock
     verboseWriteFieldCubeSource "energy consumption" energySource energy
-    verboseWriteFieldCubeSource "emssion of pollutants" emissionSource emission
+    verboseWriteFieldCubeSource "emission of pollutants" emissionSource emission
 
 
 -- | Invert a vehicle stock computation.
