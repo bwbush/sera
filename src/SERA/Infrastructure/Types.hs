@@ -15,7 +15,7 @@ import Data.Daft.Vinyl.FieldCube (type (*↝))
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (Material, FMaterial)
 import SERA.Network.Types (FLength, FLocation, FSale, FTerritory, FX, FY)
-import SERA.Process.Types (FCapacity, FCapitalCost, FCost, FFixedCost, FLifetime, FProductive, FTechnology, FVariableCost)
+import SERA.Process.Types (FNameplate, FCapitalCost, FCost, FDutyCycle, FFixedCost, FLifetime, FProductive, FTechnology, FVariableCost)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
 
@@ -55,7 +55,7 @@ $(makeStringField "Position"       "Position"                          )
 type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
 
 
-type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
+type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
 type FlowCube = '[FInfrastructure, FYear] *↝ '[FProduction, FFlow, FLoss, FSale, FSalvage]
@@ -85,7 +85,7 @@ data InfrastructureCubes =
     deriving (Eq, Ord, Show)
 
 
-type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProductive, FYear, FLifetime, FCapacity, FLength, FCapitalCost, FFixedCost, FVariableCost]
+type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
 type Flow = FieldRec '[FInfrastructure, FYear, FProduction, FFlow, FLoss, FSale, FSalvage]

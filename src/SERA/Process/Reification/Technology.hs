@@ -34,11 +34,11 @@ type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
 type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Year -> Double -> Double -> Technology -> Maybe (Construction, TechnologyOperation)
 
 
-selectTechnology :: (FTechnology ∈ rs, FYear ∈ rs, FCapacity ∈ rs) => Technology -> Year -> Double -> Set (FieldRec rs) -> Maybe (FieldRec rs)
-selectTechnology tech built capacity candidates =
+selectTechnology :: (FTechnology ∈ rs, FYear ∈ rs, FNameplate ∈ rs, FDutyCycle ∈ rs) => Technology -> Year -> Double -> Set (FieldRec rs) -> Maybe (FieldRec rs)
+selectTechnology tech built demand candidates =
   let
     eligible =
-      sortBy (compare `on` (fCapacity <:))
+      sortBy (compare `on` (\rec -> fNameplate <: rec * fDutyCycle <: rec))
         [
           candidate
         |
@@ -53,7 +53,7 @@ selectTechnology tech built capacity candidates =
       |
         candidate <- eligible
       , year     == fYear     <: candidate
-      , capacity >= fCapacity <: candidate
+      , demand   >= fNameplate <: candidate * fDutyCycle <: candidate
       ]
   in
     if null eligible
@@ -63,7 +63,7 @@ selectTechnology tech built capacity candidates =
         else last scalable
 
 
-selectTechnology' :: (FMaterial ∈ rs, FTechnology ∈ rs, FYear ∈ rs, FCapacity ∈ rs) => String -> Technology -> Year -> Double -> Set (FieldRec rs) -> [FieldRec rs]
+selectTechnology' :: (FMaterial ∈ rs, FTechnology ∈ rs, FYear ∈ rs, FNameplate ∈ rs) => String -> Technology -> Year -> Double -> Set (FieldRec rs) -> [FieldRec rs]
 selectTechnology' message tech built capacity candidates =
   let
     eligible' =
@@ -78,7 +78,7 @@ selectTechnology' message tech built capacity candidates =
     [
       let
         eligible =
-          sortBy (compare `on` (fCapacity <:))
+          sortBy (compare `on` (fNameplate <:))
             [
               candidate
             |
@@ -92,7 +92,7 @@ selectTechnology' message tech built capacity candidates =
           |
             candidate <- eligible
           , year     == fYear     <: candidate
-          , capacity >= fCapacity <: candidate
+          , capacity >= fNameplate <: candidate
           ]
       in
         if null eligible
@@ -140,28 +140,29 @@ selectIntensity year material intensities =
 
 
 technologyReifier :: ProcessLibrary -> IntensityCube '[] -> Pricer -> TechnologyReifier
-technologyReifier ProcessLibrary{..} intensityCube pricer specifics built capacity distance' tech = 
+technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand distance' tech = 
   do -- FIXME: Add interpolation
     specification <- 
       selectTechnology
         tech
         built
-        capacity
+        demand
         $ knownKeys processCostCube
     let
       costs =  processCostCube ! specification :: FieldRec ProcessCost
       distance = if fProductive <: costs == Central then 0 else distance'
-      capacity' = maximum [capacity, fCapacity <: specification]
+      capacity = maximum [demand / fDutyCycle <: specification, fNameplate <: specification]
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
-          * (capacity' / fCapacity <: specification) ** (fScaling <: costs)
+          * (capacity / fNameplate <: specification) ** (fScaling <: costs)
       construction =
             specifics
         <+> fTechnology   =: tech
         <+> fProductive   =: fProductive <: costs
         <+> fYear         =: built
         <+> fLifetime     =: fLifetime <: costs
-        <+> fCapacity     =: capacity'
+        <+> fNameplate     =: capacity
+        <+> fDutyCycle    =: fDutyCycle <: specification
         <+> fLength       =: distance
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch

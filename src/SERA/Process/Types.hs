@@ -45,6 +45,7 @@ isProduction _  = True
 $(makeStringField "Technology"          "Technology"                                    )
 $(makeField       "Distance"            "Distance [km]"                     ''Double    )
 $(makeField       "Capacity"            "Capacity [kg/yr]"                  ''Double    )
+$(makeField       "Nameplate"           "Nameplate Capacity [kg/yr]"        ''Double    )
 $(makeField       "Productive"          "Production?"                       ''Productive)
 $(makeField       "Lifetime"            "Lifetime [yr]"                     ''Age       )
 $(makeField       "Scaling"             "Scaling Exponent"                  ''Double    )
@@ -54,6 +55,7 @@ $(makeField       "FixedCost"           "Fixed Operating Cost [$/yr]"       ''Do
 $(makeField       "FixedCostStretch"    "Fixed Operating Cost [$/km/yr]"    ''Double    )
 $(makeField       "VariableCost"        "Variable Operating Cost [$/kg]"    ''Double    )
 $(makeField       "VariableCostStretch" "Variable Operating Cost [$/km/kg]" ''Double    )
+$(makeField       "DutyCycle"           "Maximum Utilization [kg/kg]"       ''Double    )
 $(makeStringField "Pathway"             "Pathway"                                       )
 $(makeField       "Stage"               "Stage"                             ''Int       )
 $(makeField       "Extended"            "Extended?"                         ''Bool      )
@@ -65,7 +67,10 @@ $(makeField       "Yield"               "Yield [upstream/kg]"               ''Do
 $(makeField       "Condition"           "Condition?"                        ''Bool      )
 
 
-type ProcessKey = '[FTechnology, FYear, FCapacity]
+type ProcessKey = '[FTechnology, FYear, FNameplate, FDutyCycle]
+
+
+type ProcessKey' = '[FTechnology, FYear, FNameplate]
 
 
 type ProcessCost = '[FProductive, FLifetime, FScaling, FCapitalCost, FCapitalCostStretch, FFixedCost, FFixedCostStretch, FVariableCost, FVariableCostStretch]
@@ -74,10 +79,10 @@ type ProcessCost = '[FProductive, FLifetime, FScaling, FCapitalCost, FCapitalCos
 type ProcessCostCube = ProcessKey *↝ ProcessCost
 
 
-type ProcessInputCube = ConsumptionCube ProcessKey
+type ProcessInputCube = ConsumptionCube ProcessKey'
 
 
-type ProcessOutputCube = ProductionCube ProcessKey
+type ProcessOutputCube = ProductionCube ProcessKey'
 
 
 type PathwayCube = '[FPathway, FStage] *↝  '[FTechnology, FYield, FExtended, FTransmission, FDelivery, FFormat]

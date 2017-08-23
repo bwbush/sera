@@ -5,5 +5,3 @@ tmp/
 cabal.sandbox.config
 dist/
 data/
-SERA Vehicle Stock Matrix.xlsx
-vision/

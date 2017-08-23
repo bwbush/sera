@@ -295,8 +295,8 @@ optimize globalContext@GlobalContext{..} year =
           previousSource = fromMaybe noCandidate $ snd3 locSource `M.lookup` previous
           previousSink   = fromMaybe noCandidate $ snd3 locSink `M.lookup` previous
           previousCost = fst $ previousSource <> previousSink
-          capacitySource = sum $ fmap (fCapacity <:) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSource
-          capacitySink   = sum $ fmap (fCapacity <:) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSink
+          capacitySource = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSource
+          capacitySink   = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSink
           revisions =
             cheapestRemotely
               globalContext'
@@ -361,7 +361,7 @@ toLocalContext GlobalContext{..} year' localLocation localProductive =
                demands'
         else M.empty
     deliveries =
-      if localProductive `elem` [Yes, Onsite]
+      if localProductive `elem` [Yes, Central]
         then costedCandidates
                discountRate
                (last localYears)
@@ -411,7 +411,7 @@ noCandidate = (Sum inf, mempty)
 
 cheapestLocally :: LocalContext -> [(Location, CostedOptimum)]
 cheapestLocally LocalContext{..}
-  | localProductive `elem` [No, Central] = [(localLocation, noCandidate)]
+  | localProductive `elem` [No] = [(localLocation, noCandidate)]
   | otherwise =
       let
         candidatesOnsite = noCandidate : M.elems productionsOnsite
