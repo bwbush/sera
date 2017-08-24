@@ -304,7 +304,7 @@ optimize globalContext@GlobalContext{..} year =
               (capacitySink  , toLocalContext globalContext' year (snd3 locSink  ) (trd3 locSink  ))
           revisedCost  = mconcat $ fst . snd <$> revisions
         in
-          if locSource == locSink || locSource < locSink && capacitySource /= 0 || null revisions || previousCost < revisedCost
+          if locSource == locSink || {- locSource < locSink && capacitySource /= 0 || -} null revisions || previousCost < revisedCost
             then []
             else revisions
       ) `M.union` previous
