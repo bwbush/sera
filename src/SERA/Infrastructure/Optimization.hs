@@ -12,7 +12,7 @@ where
 
 
 import Control.Applicative (liftA2)
-import Control.Arrow ((***), first)
+import Control.Arrow ((***))
 import Data.Daft.DataCube (evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
@@ -66,7 +66,6 @@ data GlobalContext =
   , escalationRate     :: Double
   , interpolate        :: Bool
   , maximumPathLength  :: Maybe Double
-  , localPenaltyFactor :: Maybe Double
   , extantConstruction :: [Construction]
   , extantFlow         :: [Flow]
   , extantCash         :: [Cash]
@@ -280,29 +279,28 @@ optimize globalContext@GlobalContext{..} year =
           let Network{..} = network
         , loc <- toList $ knownKeys nodeCube
         ]
-    f :: Map Location CostedOptimum -> (Double, Location, Productive) -> Map Location CostedOptimum
+    f :: Map Location (LocalContext, CostedOptimum) -> (Double, Location, Productive) -> Map Location (LocalContext, CostedOptimum)
     f previous loc =
-      (maybe id (\s -> M.map (first (Sum s *))) localPenaltyFactor) $
-        M.fromList (
-          cheapestLocally
-            $ toLocalContext globalContext' year (snd3 loc) (trd3 loc)
-        ) `M.union` previous
+      M.fromList (
+        cheapestLocally
+          $ toLocalContext globalContext' year (snd3 loc) (trd3 loc)
+      ) `M.union` previous
     singly = foldl f M.empty locations
-    g :: Map Location CostedOptimum -> ((Double, Location, Productive), (Double, Location, Productive)) -> Map Location CostedOptimum
+    g :: Map Location (LocalContext, CostedOptimum) -> ((Double, Location, Productive), (Double, Location, Productive)) -> Map Location (LocalContext, CostedOptimum)
     g previous (locSource, locSink) =
       M.fromList (
         let
-          previousSource = fromMaybe noCandidate $ snd3 locSource `M.lookup` previous
-          previousSink   = fromMaybe noCandidate $ snd3 locSink `M.lookup` previous
+          (previousSourceContext, previousSource) = fromMaybe (toLocalContext globalContext' year (snd3 locSource) (trd3 locSource), noCandidate) $ snd3 locSource `M.lookup` previous
+          (previousSinkContext  , previousSink)   = fromMaybe (toLocalContext globalContext' year (snd3 locSink  ) (trd3 locSink  ), noCandidate) $ snd3 locSink   `M.lookup` previous
           previousCost = fst $ previousSource <> previousSink
           capacitySource = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSource
           capacitySink   = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSink
           revisions =
             cheapestRemotely
               globalContext'
-              (capacitySource, toLocalContext globalContext' year (snd3 locSource) (trd3 locSource))
-              (capacitySink  , toLocalContext globalContext' year (snd3 locSink  ) (trd3 locSink  ))
-          revisedCost  = mconcat $ fst . snd <$> revisions
+              (capacitySource, previousSourceContext)
+              (capacitySink  , previousSinkContext  )
+          revisedCost  = mconcat $ fst . snd . snd <$> revisions
         in
           if locSource == locSink || {- locSource < locSink && capacitySource /= 0 || -} null revisions || previousCost < revisedCost
             then []
@@ -312,7 +310,7 @@ optimize globalContext@GlobalContext{..} year =
   in
     (
       supply
-    , doSalvage lastYear $ mconcat $ fmap snd $ M.elems doubly
+    , doSalvage lastYear $ mconcat $ fmap (snd . snd) $ M.elems doubly
     )
 
 
@@ -409,9 +407,9 @@ noCandidate :: CostedOptimum
 noCandidate = (Sum inf, mempty)
 
 
-cheapestLocally :: LocalContext -> [(Location, CostedOptimum)]
-cheapestLocally LocalContext{..}
-  | localProductive `elem` [No] = [(localLocation, noCandidate)]
+cheapestLocally :: LocalContext -> [(Location, (LocalContext, CostedOptimum))]
+cheapestLocally localContext@LocalContext{..}
+  | localProductive `elem` [No] = [(localLocation, (localContext, noCandidate))]
   | otherwise =
       let
         candidatesOnsite = noCandidate : M.elems productionsOnsite
@@ -421,7 +419,7 @@ cheapestLocally LocalContext{..}
       in
         if best == noCandidate
           then error ("No eligible technologies in year " ++ show (maximum localYears) ++ ".") -- FIXME: Move to error monad.
-          else [(localLocation, best)]
+          else [(localLocation, (localContext, best))]
 
 
 costedDeliveryCandidates :: GlobalContext -> LocalContext -> LocalContext -> Map Pathway CostedOptimum
@@ -475,13 +473,14 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
       ]
 
 
-cheapestRemotely :: GlobalContext -> (Double, LocalContext) -> (Double, LocalContext) -> [(Location, CostedOptimum)]
+cheapestRemotely :: GlobalContext -> (Double, LocalContext) -> (Double, LocalContext) -> [(Location, (LocalContext, CostedOptimum))]
 cheapestRemotely globalContext (productionSource, localContextSource) (_, localContextSink)
   | localProductive localContextSource `elem` [No, Onsite] || localProductive localContextSink == Onsite = []
   | maximum (0 : M.elems (localDemands localContextSink)) == 0 = []
   | otherwise =
       let
-        ps = productionsCentral $ toLocalContext' globalContext localContextSource productionSource $ localDemands localContextSink
+        bestSourceContext = toLocalContext' globalContext localContextSource productionSource $ localDemands localContextSink
+        ps = productionsCentral bestSourceContext
         bestSource = minimum ps
         bestLocal =
           if null $ localDemands localContextSource
@@ -490,8 +489,9 @@ cheapestRemotely globalContext (productionSource, localContextSource) (_, localC
         bestSink = minimum $ (noCandidate :) $ M.elems $ costedDeliveryCandidates globalContext localContextSource localContextSink
       in
         if (localLocation localContextSource, localLocation localContextSink) `M.member` (paths $ network globalContext) && not (null ps)
-          then [
-                 (localLocation localContextSource, bestSource <> bestLocal)
-               , (localLocation localContextSink  , bestSink  )
+          then
+               [
+                 (localLocation localContextSource, (bestSourceContext, bestSource <> bestLocal))
+               , (localLocation localContextSink  , (localContextSink , bestSink               ))
                ]
           else []
