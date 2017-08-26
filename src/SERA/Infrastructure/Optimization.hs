@@ -18,6 +18,7 @@ import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Default (Default(def))
 import Data.Default.Util (inf)
+import Data.Function (on)
 import Data.List (sortBy)
 import Data.Map.Strict (Map)
 import Data.Maybe (catMaybes, fromMaybe, isJust)
@@ -269,17 +270,16 @@ optimize globalContext@GlobalContext{..} year =
       }
     locations :: [(Double, Location, Productive)]
     locations =
-      sortBy (flip compare) -- $ filter ((/= 0) . fst3)
-        [
-          (
-            maybe 0 (fConsumption <:) (supply `evaluate` loc)
-          , fLocation <: loc
-          , fProductive <: (nodeCube M.! loc)
-          )
-        |
-          let Network{..} = network
-        , loc <- toList $ knownKeys nodeCube
-        ]
+      [
+        (
+          maybe 0 (fConsumption <:) (supply `evaluate` loc)
+        , fLocation <: loc
+        , fProductive <: (nodeCube M.! loc)
+        )
+      |
+        let Network{..} = network
+      , loc <- toList $ knownKeys nodeCube
+      ]
     f :: Map Location (LocalContext, CostedOptimum) -> (Double, Location, Productive) -> Map Location (LocalContext, CostedOptimum)
     f previous loc =
       M.fromList (
@@ -302,12 +302,32 @@ optimize globalContext@GlobalContext{..} year =
               (capacitySource, previousSourceContext)
               (capacitySink  , previousSinkContext  )
           revisedCost  = mconcat $ fst . snd . snd <$> revisions
-        in
+        in {- unsafePrint (show (
+                               localLocation previousSourceContext
+                             , localLocation previousSinkContext
+                             , getSum previousCost
+                             , getSum revisedCost
+                             , (getSum *** (fmap (fNameplate <:) . optimalConstruction)) . snd . snd <$> revisions)
+                             ) $ -}
           if locSource == locSink || {- locSource < locSink && capacitySource /= 0 || -} null revisions || previousCost < revisedCost
             then []
-            else revisions
+            else {- unsafePrint "ACCEPT" -} revisions
       ) `M.union` previous
-    doubly = foldl g (unsafePrint " . . . identifying regional synergies . . ." singly) $ liftA2 (,) locations locations
+    doubly =
+      foldl g (unsafePrint " . . . identifying regional synergies . . ." singly)
+        $ sortBy
+          (
+            compare `on`
+              (
+                \((c0, l0, _), (c1, l1, _)) ->
+                  (
+                     - c1
+                   , maybe inf pathLength $ (l0, l1) `M.lookup` paths network
+                   , - c0
+                  )
+              )
+          )
+        $ liftA2 (,) locations locations
   in
     (
       supply
