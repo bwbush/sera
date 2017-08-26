@@ -57,8 +57,8 @@ instance FromJSON NetworkFiles
 instance ToJSON NetworkFiles
 
 
-readNetwork :: (IsString e, MonadError e m, MonadIO m) => Double -> NetworkFiles ->  m Network
-readNetwork maximumPathLength NetworkFiles{..} =
+readNetwork :: (IsString e, MonadError e m, MonadIO m) => Bool -> Double -> NetworkFiles ->  m Network
+readNetwork singleLinkPaths maximumPathLength NetworkFiles{..} =
   do
     nodeCube <- readNodes nodeFiles
     linkCube <- readLinks linkFiles
@@ -67,7 +67,7 @@ readNetwork maximumPathLength NetworkFiles{..} =
     zoneCube <- readZones zoneFiles
     let
       adjacencies = adjacencyMatrix nodeCube linkCube
-      paths = shortestPaths maximumPathLength adjacencies
+      paths = shortestPaths singleLinkPaths maximumPathLength adjacencies
     return Network{..}
 
 

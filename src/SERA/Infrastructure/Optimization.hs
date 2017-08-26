@@ -65,7 +65,8 @@ data GlobalContext =
   , discountRate       :: Double
   , escalationRate     :: Double
   , interpolate        :: Bool
-  , maximumPathLength  :: Maybe Double
+  , maximumPathLength  :: Double
+  , singleLinkPaths    :: Bool
   , extantConstruction :: [Construction]
   , extantFlow         :: [Flow]
   , extantCash         :: [Cash]

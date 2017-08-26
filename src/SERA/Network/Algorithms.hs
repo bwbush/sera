@@ -39,15 +39,23 @@ adjacencyMatrix nodeCube linkCube =
     ]
 
 
-shortestPaths :: Double -> AdjacencyMatrix -> ShortestPaths
-shortestPaths maximumPathLength adjacencies =
+shortestPaths :: Bool -> Double -> AdjacencyMatrix -> ShortestPaths
+shortestPaths False maximumPathLength adjacencies =
   M.unions
     [
       shortestPathTree maximumPathLength adjacencies root
     |
       root <- M.keys adjacencies
     ]
-      
+shortestPaths True maximumPathLength adjacencies =
+  M.fromList
+    [
+      ((src, dst), GenericPath src [(link, distance)] dst)
+    |
+      (src, dsts) <- M.toList adjacencies
+    , (dst, (link, distance)) <- M.toList dsts
+    , distance < maximumPathLength
+    ]
 
 shortestPathTree :: Double -> AdjacencyMatrix -> Location -> ShortestPaths
 shortestPathTree maximumPathLength adjacencies root =

@@ -72,6 +72,7 @@ data ConfigProduction =
   , escalationRate      :: Double
   , interpolate         :: Bool
   , maximumPathLength   :: Maybe Double
+  , singleLinkPaths     :: Maybe Bool
   , priceFiles          :: [FilePath]
   , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
@@ -132,7 +133,7 @@ productionMain ConfigProduction{..} =
 
     liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading network . . ."
-    network@Network{..} <- readNetwork (fromMaybe inf maximumPathLength) networkFiles
+    network@Network{..} <- readNetwork (fromMaybe False singleLinkPaths) (fromMaybe inf maximumPathLength) networkFiles
     count "node"      nodeCube
     count "link"      linkCube
     count "existing"  existingCube
@@ -185,13 +186,14 @@ productionMain ConfigProduction{..} =
           discountRate
           escalationRate
           interpolate
-          maximumPathLength
+          (fromMaybe inf maximumPathLength)
+          (fromMaybe False singleLinkPaths)
           []
           []
           []
           []
 
-    GlobalContext _ _ _ _ _ _ _ _ _ _ _ _ constructions flows cashes impacts <-
+    GlobalContext _ _ _ _ _ _ _ _ _ _ _ _ _ constructions flows cashes impacts <-
       foldlM compute globalContext [firstYear, (firstYear+timeWindow) .. lastYear]
 
     let
