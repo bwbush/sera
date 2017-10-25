@@ -201,7 +201,14 @@ data Optimum =
   , optimalCash         :: [Cash]
   , optimalImpact       :: [Impact]
   }
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Show)
+
+instance Ord Optimum where
+  compare x y =
+    let
+      capacity z = fNameplate <: z * fDutyCycle <: z
+    in
+      compare (sum . fmap capacity $ optimalConstruction y) (sum . fmap capacity $ optimalConstruction x)
 
 instance Monoid Optimum where
   mempty      = Optimum
