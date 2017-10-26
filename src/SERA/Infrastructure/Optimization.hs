@@ -19,12 +19,12 @@ import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Default (Default(def))
 import Data.Default.Util (inf)
 import Data.Function (on)
-import Data.List (sortBy)
+import Data.List (sortBy, unzip4)
 import Data.Map.Strict (Map)
 import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Set (Set, toList)
-import Data.Tuple.Util (snd3, trd3)
+import Data.Tuple.Util (fst3, snd3, trd3)
 import Data.Vinyl.Derived (ElField(..), FieldRec)
 import Data.Vinyl.Lens (type (∈), rput)
 import SERA (unsafePrint)
@@ -42,11 +42,11 @@ import SERA.Types.TH (makeField)
 import qualified Data.Map.Strict as M ((!), elems, empty, filter, filterWithKey, findMin, fromList, fromListWith, lookup, map, member, null, singleton, toList, union, unionWith)
 
 
-type CostedOptimum = (Sum Double, Optimum)
+type CostedOptimum = (Sum Double, Optimum, [(Location, Double)])
 
 
 emptyCandidate :: CostedOptimum
-emptyCandidate = (0, mempty)
+emptyCandidate = (0, mempty, [])
 
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FConsumption, FArea]
@@ -116,7 +116,7 @@ productionCandidates reifyTechnology techs =
     [
       do
         (construction, operate) <- reifyTechnology tech
-        return (tech, ([construction], \y c -> let (f, cs, is) = operate y c in ([f], cs, is)))
+        return (tech, ([construction], \y c -> let (f, cs, is, e) = operate y c in ([f], cs, is, e)))
     |
       tech <- techs
     ]
@@ -137,10 +137,10 @@ referenceYear :: Year
 referenceYear = 2000
 
 
-costCandidate :: Double -> Year -> ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Sum Double, Optimum)
+costCandidate :: Double -> Year -> ([Construction], PathwayOperation) -> [FieldRec '[FLocation, FYear, FConsumption, FArea]] -> (Sum Double, Optimum, (Location, Double))
 costCandidate discount year (construction, operate) demands =
   let
-    (flows, cashes, impacts) = unzip3 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
+    (flows, cashes, impacts, residues) = unzip4 $ (\rec -> operate (fYear <: rec) (fConsumption <: rec)) <$> demands
   in
     (
       Sum
@@ -153,6 +153,7 @@ costCandidate discount year (construction, operate) demands =
         <$> filter (\rec -> fYear <: rec <= year)
         (concat flows)
     , Optimum construction (concat flows) (concat cashes) (concat impacts)
+    , (fLocation <: head demands, maximum residues)
     )
 
 
@@ -162,12 +163,15 @@ costedCandidates :: (Default a, Ord a)
                  -> ([a] -> [(a, ([Construction], PathwayOperation))])
                  -> Set a
                  -> [FieldRec '[FLocation, FYear, FConsumption, FArea]]
-                 -> Map a (Sum Double, Optimum)
+                 -> Map a (Sum Double, Optimum, [(Location, Double)])
 costedCandidates _ _ _ _ [] = M.singleton def emptyCandidate
 costedCandidates discount year makeCandidates xs demands =
   M.fromList
     [
-      (x, costCandidate discount year candidate demands)
+      let
+        (y1, y2, y3) = costCandidate discount year candidate demands
+      in
+        (x, (y1, y2, [y3]))
     |
       (x, candidate) <- makeCandidates $ toList xs
     ]
@@ -272,7 +276,7 @@ optimize globalContext@GlobalContext{..} year =
       globalContext
       {
         demandCube =
-          π (\_ rec -> fConsumption =: minimum [fConsumption <: rec, fProduction <: rec] <+> fArea =: fArea <: rec)
+          π (\_ rec -> fConsumption =: minimum [fConsumption <: rec] <+> fArea =: fArea <: rec)
             $ demandCube ⋈ π (\_ rec -> fProduction =: fConsumption <: rec) supply
       }
     locations :: [(Double, Location, Productive)]
@@ -300,15 +304,15 @@ optimize globalContext@GlobalContext{..} year =
         let
           (previousSourceContext, previousSource) = fromMaybe (toLocalContext globalContext' year (snd3 locSource) (trd3 locSource), noCandidate) $ snd3 locSource `M.lookup` previous
           (previousSinkContext  , previousSink)   = fromMaybe (toLocalContext globalContext' year (snd3 locSink  ) (trd3 locSink  ), noCandidate) $ snd3 locSink   `M.lookup` previous
-          previousCost = fst $ previousSource <> previousSink
-          capacitySource = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSource
-          capacitySink   = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd $ previousSink
+          previousCost = fst3 $ previousSource <> previousSink
+          capacitySource = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd3 $ previousSource
+          capacitySink   = sum $ fmap (\rec -> fNameplate <: rec * fDutyCycle <: rec) $ filter ((/= No) . (fProductive <:)) $ optimalConstruction $ snd3 $ previousSink
           revisions =
             cheapestRemotely
               globalContext'
               (capacitySource, previousSourceContext)
               (capacitySink  , previousSinkContext  )
-          revisedCost  = mconcat $ fst . snd . snd <$> revisions
+          revisedCost  = mconcat $ fst3. snd . snd <$> revisions
         in {- unsafePrint (show (
                                localLocation previousSourceContext
                              , localLocation previousSinkContext
@@ -335,17 +339,19 @@ optimize globalContext@GlobalContext{..} year =
               )
           )
         $ liftA2 (,) locations locations
-    result = mconcat $ fmap (snd . snd) $ M.elems doubly
   in
     (
-      M.fromListWith (\xx yy -> fConsumption =: fConsumption <: xx + fConsumption <: yy)
+      M.fromList
         [
-          (fLocation =: fLocation <: x, fConsumption =: fNameplate <: x * fDutyCycle <: x)
+          (
+            fLocation =: l
+          ,
+            fConsumption =: c
+          )
         |
-          x <- optimalConstruction result
-        , fProductive <: x /= No
+          (l, c) <- concat $ fmap (trd3 . snd) $ M.elems doubly
         ]
-    , doSalvage lastYear result
+    , doSalvage lastYear $ mconcat $ fmap (snd3 . snd) $ M.elems doubly
     )
 
 
@@ -439,7 +445,7 @@ toLocalContext' GlobalContext{..} previous@LocalContext{..} minimumCapacity dema
 
 
 noCandidate :: CostedOptimum
-noCandidate = (Sum inf, mempty)
+noCandidate = (Sum inf, mempty, [])
 
 
 cheapestLocally :: LocalContext -> [(Location, (LocalContext, CostedOptimum))]
@@ -482,7 +488,7 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
     M.fromList
       [
         let
-          (flows, cashes, impacts) = unzip3 $ map (uncurry operate) $ M.toList $ localDemands localContextSink
+          (flows, cashes, impacts, residues) = unzip4 $ map (uncurry operate) $ M.toList $ localDemands localContextSink
           year = last $ localYears localContextSink
         in
           (
@@ -498,6 +504,7 @@ costedDeliveryCandidates GlobalContext{..} localContextSource localContextSink =
                 <$> filter (\rec -> fYear <: rec <= year)
                 (concat flows)
             , Optimum construction (concat flows) (concat cashes) (concat impacts)
+            , [(localLocation localContextSink, maximum residues)]
             )
           )
       |

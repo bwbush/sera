@@ -20,7 +20,7 @@ import SERA.Process.Types -- FIXME
 import SERA.Types (Year)
 
 
-type PathwayOperation = Year -> Double -> ([Flow], [Cash], [Impact])
+type PathwayOperation = Year -> Double -> ([Flow], [Cash], [Impact], Double)
 
 
 type PathwayReifier = Year -> Double -> Double -> (Infrastructure, Path) -> Pathway -> Maybe ([Construction], PathwayOperation)
@@ -74,11 +74,16 @@ pathwayReifier candidate ProcessLibrary{..} reifyTechnology built capacity dista
     return
       (
         fst <$> constructions
-      , \year flow ->
+      , \year flow' ->
         let
+--        flow = minimum $ flow' : [fDutyCycle <: rec * fNameplate <: rec | rec <- fst <$> constructions]
+          flow = minimum [flow', capacity]
           results =
             [
-              operate year flow -- FIXME: include losses
+              let
+                (x, y, z, _) = operate year flow -- FIXME: include losses
+              in
+                (x, y, z)
             |
               operate <- snd <$> constructions
             ]
@@ -87,5 +92,6 @@ pathwayReifier candidate ProcessLibrary{..} reifyTechnology built capacity dista
             fst3 <$> results
           , concat $ snd3 <$> results
           , concat $ trd3 <$> results
+          , flow
           )
       )

@@ -28,7 +28,7 @@ import SERA.Types (Year, FYear, fYear)
 import qualified Data.Set as S (findMax, findMin, null, toList)
 
 
-type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact])
+type TechnologyOperation = Year -> Double -> (Flow, [Cash], [Impact], Double)
 
 
 type TechnologyReifier = FieldRec '[FInfrastructure, FLocation] -> Year -> Double -> Double -> Technology -> Maybe (Construction, TechnologyOperation)
@@ -186,8 +186,9 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand
     return
       (
         construction
-      , \year output ->
+      , \year output' ->
         let
+          output = minimum [output', fDutyCycle <: construction * fNameplate <: construction]
           specifics' = fInfrastructure =: fInfrastructure <: specifics <+> fYear =: year
           lifetime = fLifetime <: costs
           salvage = maximum [0, fCapitalCost <: construction * fromIntegral (built + lifetime - year) / fromIntegral lifetime]
@@ -263,6 +264,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand
             <+> fSalvage    =: salvage
           , cash
           , impacts
+          , output
           )
       )
 
