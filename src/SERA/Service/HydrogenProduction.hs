@@ -302,7 +302,7 @@ compute globalContext@GlobalContext{..} year =
     return
       globalContext
       {
-        G.demandCube         = π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (supply `evaluate` τ key)] <+> fArea =: fArea <: rec) demandCube
+        G.demandCube         = σ (\_ rec -> fConsumption <: rec > 0) $ π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (supply `evaluate` τ key)] <+> fArea =: fArea <: rec) demandCube
       , G.extantConstruction = extantConstruction <> optimalConstruction
       , G.extantFlow         = extantFlow         <> optimalFlow
       , G.extantCash         = extantCash         <> optimalCash

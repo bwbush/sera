@@ -39,7 +39,7 @@ import SERA.Types
 import SERA.Types.TH (makeField)
 
 
-import qualified Data.Map.Strict as M ((!), elems, empty, filter, filterWithKey, findMin, fromList, lookup, map, member, null, singleton, toList, union, unionWith)
+import qualified Data.Map.Strict as M ((!), elems, empty, filter, filterWithKey, findMin, fromList, fromListWith, lookup, map, member, null, singleton, toList, union, unionWith)
 
 
 type CostedOptimum = (Sum Double, Optimum)
@@ -335,10 +335,17 @@ optimize globalContext@GlobalContext{..} year =
               )
           )
         $ liftA2 (,) locations locations
+    result = mconcat $ fmap (snd . snd) $ M.elems doubly
   in
     (
-      supply
-    , doSalvage lastYear $ mconcat $ fmap (snd . snd) $ M.elems doubly
+      M.fromListWith (\xx yy -> fConsumption =: fConsumption <: xx + fConsumption <: yy)
+        [
+          (fLocation =: fLocation <: x, fConsumption =: fNameplate <: x * fDutyCycle <: x)
+        |
+          x <- optimalConstruction result
+        , fProductive <: x /= No
+        ]
+    , doSalvage lastYear result
     )
 
 
