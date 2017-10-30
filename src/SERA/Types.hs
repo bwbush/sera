@@ -46,9 +46,15 @@ module SERA.Types (
 , fFraction
 -- * Configuration
 , quotedStringTypes
+
+, Cluster(..)
+, FCluster
+, fCluster
+
 ) where
 
 
+import Control.Arrow (first)
 import Data.Daft.Vinyl.FieldCube (τ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Vinyl.Derived (FieldRec)
@@ -97,3 +103,20 @@ $(makeStringField "UrbanName" "Census Urban Area Name")
 
 
 $(makeField "Fraction" "Fraction" ''Double)
+
+
+newtype Cluster = Cluster {cluster :: Maybe Int}
+  deriving (Eq, Ord)
+
+instance Read Cluster where
+  readsPrec n x =
+    case first (Cluster . Just) <$> readsPrec n x of
+      [] -> [(Cluster Nothing, x)]
+      x  -> x
+
+instance Show Cluster where
+  show (Cluster Nothing ) = ""
+  show (Cluster (Just x)) = show x
+
+
+$(makeField "Cluster" "Cluster ID" ''Cluster)

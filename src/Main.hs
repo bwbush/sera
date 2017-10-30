@@ -36,6 +36,7 @@ import SERA (inform, stringVersion)
 import SERA.Service.Finance (financeMain)
 import SERA.Service.HydrogenProduction (productionMain)
 import SERA.Service.HydrogenSizing (hydrogenSizingMain)
+import SERA.Service.Intraurban (intraurbanMain)
 import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
 import SERA.Service.Regionalization (regionalizationMain)
@@ -85,6 +86,10 @@ data SERA =
     {
       configuration :: FilePath
     }
+  | IntraurbanPipelines
+    {
+      configuration :: FilePath
+    }
     deriving (Data, Show, Typeable)
 
 
@@ -102,6 +107,7 @@ sera =
     , hydrogenSizing
     , hydrogenFinance
     , hydrogenProduction
+    , intraurbanPipelines
     ]
       &= summary ("SERA command-Line, Version " ++ stringVersion ++ ", National Renewable Energy Laboratory")
       &= program "sera"
@@ -213,6 +219,17 @@ hydrogenProduction =
     &= details []
 
 
+-- | Mode for computing optimal hydrogen production.
+intraurbanPipelines :: SERA
+intraurbanPipelines =
+  IntraurbanPipelines
+  {
+  }
+    &= name "intraurban-pipelines"
+    &= help "Optimize construction of pipelines within a city."
+    &= details []
+
+
 -- | Main action.
 main :: IO ()
 main =
@@ -263,14 +280,15 @@ dispatch CombineScenarios{..} =
       |
         (scenario, file) <- zip scenarios files
       ]
-dispatch s@VehicleStock{}       = dispatch' s stockMain
-dispatch s@InvertVehicleStock{} = dispatch' s stockInvertMain
-dispatch s@Logistic{}           = dispatch' s logisticMain
-dispatch s@Introduction{}       = dispatch' s introductionsMain
-dispatch s@Regionalization{}    = dispatch' s regionalizationMain
-dispatch s@HydrogenSizing{}     = dispatch' s hydrogenSizingMain
-dispatch s@HydrogenFinance{}    = dispatch' s financeMain
-dispatch s@HydrogenProduction{} = dispatch' s productionMain
+dispatch s@VehicleStock{}        = dispatch' s stockMain
+dispatch s@InvertVehicleStock{}  = dispatch' s stockInvertMain
+dispatch s@Logistic{}            = dispatch' s logisticMain
+dispatch s@Introduction{}        = dispatch' s introductionsMain
+dispatch s@Regionalization{}     = dispatch' s regionalizationMain
+dispatch s@HydrogenSizing{}      = dispatch' s hydrogenSizingMain
+dispatch s@HydrogenFinance{}     = dispatch' s financeMain
+dispatch s@HydrogenProduction{}  = dispatch' s productionMain
+dispatch s@IntraurbanPipelines{} = dispatch' s intraurbanMain
 
 
 -- | Help dispatch an operation.
