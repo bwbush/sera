@@ -52,6 +52,7 @@ import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Infrastructure.Types (Position(Position), FPosition, fPosition)
 import SERA.Network.Types (FLength, fLength, Location(..), FLocation, fLocation, FFrom, fFrom, FTo, fTo, FX, fX, FY, fY)
+import SERA.Process.Types (FFixedCost, fFixedCost)
 import SERA.Refueling.Types (FNewCapacity, fNewCapacity)
 import SERA.Service ()
 import SERA.Types (Cluster(cluster), FCluster, fCluster, Geometry(Geometry), FGeometry, fGeometry, Year, FYear, fYear)
@@ -68,6 +69,9 @@ data ConfigIntraurban =
     pipelineThreshold     :: Double          -- units: kg/day/mile
   , measureX              :: Double
   , measureY              :: Double
+  , detourIndex              :: Double
+  , pipelineInstalledCost :: Double
+  , capitalRecoveryFactor    :: Double
   , stationLocationFile :: FilePath -- ^ Source for station details.
   , stationLocationOutputFile :: FilePath
   , pipelineFile        :: FilePath
@@ -94,7 +98,7 @@ intraurbanMain ConfigIntraurban{..} =
           x' = fX <: station'
           y' = fY <: station'
           two = 2 :: Int
-          distance = sqrt $ (measureX * (x - x'))^two + (measureY * (y - y'))^two
+          distance = (detourIndex *) $ sqrt $ (measureX * (x - x'))^two + (measureY * (y - y'))^two
           score' = fNewCapacity <: station / distance
         in
           do
@@ -111,6 +115,7 @@ intraurbanMain ConfigIntraurban{..} =
     writeFieldRecFile pipelineFile
       [
             pipeline
+        <+> fFixedCost =: capitalRecoveryFactor * pipelineInstalledCost * fLength <: pipeline
         <+> fGeometry =: Geometry ("LINESTRING( " ++ positions M.! station ++ " , " ++ positions M.! station' ++ " )")
       |
         let positions = M.fromList [(fLocation <: station, show (fX <: station) ++ " " ++ show (fY <: station)) | station <- stations]
