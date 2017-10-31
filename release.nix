@@ -11,11 +11,11 @@ let
               sera =
                 haskellPackagesNew.callPackage ./default.nix { };
               daft =
-                haskellPackagesNew.callPackage ../daft/default.nix { };
+                haskellPackagesNew.callPackage ../../code.functionally.io/daft/default.nix { };
               singletons =
-                haskellPackagesNew.callPackage ../daft/singletons.nix { };
+                haskellPackagesNew.callPackage ../../code.functionally.io/daft/singletons.nix { };
               raft =
-                haskellPackagesNew.callPackage ../raft/default.nix { };
+                haskellPackagesNew.callPackage ../../code.functionally.io/raft/default.nix { };
             };
           };
         };

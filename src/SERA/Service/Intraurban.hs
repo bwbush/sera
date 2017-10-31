@@ -50,12 +50,13 @@ import Data.Void (Void)
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
+import SERA.Infrastructure.Types (Position(Position), FPosition, fPosition)
 import SERA.Network.Types (FLength, fLength, Location(..), FLocation, fLocation, FFrom, fFrom, FTo, fTo, FX, fX, FY, fY)
 import SERA.Refueling.Types (FNewCapacity, fNewCapacity)
 import SERA.Service ()
-import SERA.Types (Cluster(cluster), FCluster, fCluster, Year, FYear, fYear)
+import SERA.Types (Cluster(cluster), FCluster, fCluster, Geometry(Geometry), FGeometry, fGeometry, Year, FYear, fYear)
 
-import qualified Data.Map.Strict as M (elems, empty, fromList, insert, size, union)
+import qualified Data.Map.Strict as M ((!), elems, empty, fromList, insert, size, union)
 import qualified Data.PQueue.Prio.Max as Q (empty, deleteFindMax, filter, fromList, null, size, union, unions)
 import qualified Data.Set as S (delete, elems, empty, fromList, insert, size, union)
 
@@ -70,6 +71,7 @@ data ConfigIntraurban =
   , stationLocationFile :: FilePath -- ^ Source for station details.
   , stationLocationOutputFile :: FilePath
   , pipelineFile        :: FilePath
+  , geometryFile        :: FilePath
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -99,9 +101,45 @@ intraurbanMain ConfigIntraurban{..} =
             guard $ score' >= pipelineThreshold
             return (score', distance)
       (stations, pipelines) = buildPipelines score stationLocations
-    writeFieldRecFile stationLocationOutputFile stations
-    writeFieldRecFile pipelineFile              pipelines
-
+    writeFieldRecFile stationLocationOutputFile
+      [
+            station
+        <+> fGeometry =: Geometry ("POINT( " ++ show(fX <: station) ++ " " ++ show(fY <: station) ++ " )")
+      |
+        station <- stations
+      ]
+    writeFieldRecFile pipelineFile
+      [
+            pipeline
+        <+> fGeometry =: Geometry ("LINESTRING( " ++ positions M.! station ++ " , " ++ positions M.! station' ++ " )")
+      |
+        let positions = M.fromList [(fLocation <: station, show (fX <: station) ++ " " ++ show (fY <: station)) | station <- stations]
+        , pipeline <- pipelines
+        , let station  = fFrom <: pipeline
+        , let station' = fTo   <: pipeline
+      ]
+    writeFieldRecFile geometryFile
+      $ concat
+      $ [
+              fLocation =: fLocation <: station
+          <+> fPosition =: Position "center"
+          <+> fX        =: fX        <: station
+          <+> fY        =: fY        <: station
+        |
+          station <- stations
+        ]
+      :
+        [
+          [
+            fLocation =: fLocation <: pipeline <+> fPosition =: Position "from" <+> positions M.! station
+          , fLocation =: fLocation <: pipeline <+> fPosition =: Position "to"   <+> positions M.! station'
+          ]
+        |
+          let positions = M.fromList [(fLocation <: station, fX =: fX <: station <+> fY =: fY <: station) | station <- stations]
+        , pipeline <- pipelines
+        , let station  = fFrom <: pipeline
+        , let station' = fTo   <: pipeline
+        ]
 
 type Score = (FX ∈ rs, FY ∈ rs, FNewCapacity ∈ rs) => FieldRec rs -> FieldRec rs -> Maybe (Double, Double)
 

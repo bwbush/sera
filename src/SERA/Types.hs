@@ -51,6 +51,9 @@ module SERA.Types (
 , FCluster
 , fCluster
 
+, Geometry(..)
+, FGeometry
+, fGeometry
 ) where
 
 
@@ -120,3 +123,5 @@ instance Show Cluster where
 
 
 $(makeField "Cluster" "Cluster ID" ''Cluster)
+
+$(makeStringField "Geometry" "Geometry [WKT]")

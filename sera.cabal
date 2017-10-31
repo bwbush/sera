@@ -1,5 +1,5 @@
 name: sera
-version: 3.0.1.0
+version: 3.0.1.1
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -151,7 +151,7 @@ library
   if os(windows)
     ghc-options   : -Wall -fno-warn-deprecations
   else
-    ghc-options   : -Wall -fno-warn-deprecations -O2
+    ghc-options   : -Wall -fno-warn-deprecations
 
 executable sera
   hs-source-dirs  : src
@@ -185,4 +185,4 @@ executable sera
   if os(windows)
     ghc-options   : -threaded -rtsopts -Wall -fno-warn-deprecations
   else
-    ghc-options   : -threaded -rtsopts -Wall -fno-warn-deprecations -O2
+    ghc-options   : -threaded -rtsopts -Wall -fno-warn-deprecations
