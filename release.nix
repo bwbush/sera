@@ -8,14 +8,10 @@ let
         packages = pkgs.haskell.packages // {
           "${compiler}" = pkgs.haskell.packages."${compiler}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
-              sera =
-                haskellPackagesNew.callPackage ./default.nix { };
-              daft =
-                haskellPackagesNew.callPackage ../../code.functionally.io/daft/default.nix { };
-              singletons =
-                haskellPackagesNew.callPackage ../../code.functionally.io/daft/singletons.nix { };
-              raft =
-                haskellPackagesNew.callPackage ../../code.functionally.io/raft/default.nix { };
+              sera       = haskellPackagesNew.callPackage ./default.nix    { };
+              daft       = haskellPackagesNew.callPackage ./daft.nix       { };
+              raft       = haskellPackagesNew.callPackage ./raft.nix       { };
+              singletons = haskellPackagesNew.callPackage ./singletons.nix { };
             };
           };
         };

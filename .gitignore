@@ -5,3 +5,5 @@ tmp/
 cabal.sandbox.config
 dist/
 data/
+raft.nix
+daft.nix
