@@ -14,8 +14,8 @@ let
                 haskellPackagesNew.callPackage ../../code.functionally.io/daft/default.nix { };
               singletons =
                 haskellPackagesNew.callPackage ../../code.functionally.io/daft/singletons.nix { };
-              raft =
-                haskellPackagesNew.callPackage ../../code.functionally.io/raft/default.nix { };
+#             raft =
+#               haskellPackagesNew.callPackage ../../code.functionally.io/raft/default.nix { };
             };
           };
         };
