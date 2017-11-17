@@ -8,12 +8,9 @@ let
         packages = pkgs.haskell.packages // {
           "${compiler}" = pkgs.haskell.packages."${compiler}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
-              sera =
-                haskellPackagesNew.callPackage ./default.nix { };
-              daft =
-                haskellPackagesNew.callPackage ./daft.nix { };
-              singletons =
-                haskellPackagesNew.callPackage ./singletons.nix { };
+              sera       = haskellPackagesNew.callPackage ./default.nix    { };
+              daft       = haskellPackagesNew.callPackage ./daft.nix       { };
+              singletons = haskellPackagesNew.callPackage ./singletons.nix { };
             };
           };
         };
