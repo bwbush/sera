@@ -22,6 +22,7 @@ mkDerivation {
     regex-posix split statistics template-haskell text tostring vinyl
     void yaml zip-archive
   ];
+  enableSharedExecutables = false;
   doHaddock = false;
   homepage = "https://github.nrel.gov/haskell/sera";
   description = "the synopsis";
