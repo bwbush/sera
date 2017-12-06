@@ -37,7 +37,7 @@ import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import SERA.Scenario.Regionalization (SalesOnlyCube, TravelReductionCube, fTravelReduction)
-import SERA.Types (FRegion, Year, FYear, fYear)
+import SERA.Types (Region, FRegion, fRegion, Year, FYear, fYear)
 import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, RegionalStockCube, SalesCube, StockCube, SurvivalCube, SurvivalFunction, asSurvivalFunction)
 import SERA.Vehicle.Types (FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, ModelYear, FModelYear, fModelYear, Sales, FSales, fSales, Stock, FStock, fStock, fSurvival, fTravel, FVehicle, Vocation, FVocation, fVocation)
 
@@ -242,6 +242,7 @@ inferSales {- FIXME: Implement padding. -} padding survival regionalStock = -- F
             fSalesList =:
               inverseSurvivalFunction
                 (asSurvivalFunction survival)
+                (fRegion <: key)
                 (fVocation <: key)
                 (((fYear <:) &&& (fStock <:)) <$> recs)
     sales =
@@ -269,16 +270,17 @@ inferSales {- FIXME: Implement padding. -} padding survival regionalStock = -- F
 
 -- | Invert a survival function, using back substitution.
 inverseSurvivalFunction :: SurvivalFunction     -- ^ The survival function.
+                        -> Region
                         -> Vocation             -- ^ The vehicles being classified.
                         -> [(Year, Stock)]      -- ^ The vehicle stock to be inverted.
                         -> [(ModelYear, Sales)] -- ^ The vehicle sales.
-inverseSurvivalFunction survival vocation stocks =
+inverseSurvivalFunction survival region vocation stocks =
   let
     (year0, year1) = (minimum &&& maximum) $ fst <$> stocks
     years = [year0..year1]
     stocks' = map (\y -> fromMaybe (read "NaN") (y `lookup` stocks)) years
     dot = (sum .) . zipWith (*)
-    s0 : ss = map (survival vocation) [0..]
+    s0 : ss = map (survival region vocation) [0..]
     invert sales []                = sales
     invert sales (stock : stockss) = invert ((stock - ss `dot` sales) / s0 : sales) stockss
     invert _     _                 = undefined

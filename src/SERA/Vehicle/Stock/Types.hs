@@ -44,7 +44,7 @@ import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldCube (type (↝))
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Maybe (fromMaybe)
-import SERA.Types (FRegion, FYear)
+import SERA.Types (Region, FRegion, fRegion, FYear)
 import SERA.Vehicle.Types (Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FSales, FStock, Survival, FSurvival, fSurvival, FTravel, FVehicle, Vocation, FVocation, fVocation)
 
 
@@ -60,7 +60,7 @@ type MarketShareCube    = '[       FRegion, FVocation, FVehicle      , FModelYea
 
 
 -- | Fraction of vehicles surviving to a given age, as a function of vocation.
-type SurvivalCube       = '[                FVocation          , FAge                               ] ↝ '[FSurvival      ]
+type SurvivalCube       = '[       FRegion, FVocation          , FAge                               ] ↝ '[FSurvival      ]
 
 
 -- | Annual distance traveled as a function of vocation and age.
@@ -100,12 +100,12 @@ type RegionalStockCube  = '[FYear, FRegion, FVocation, FVehicle                 
 
 
 -- | Survival function.
-type SurvivalFunction = Vocation -> Age -> Survival
+type SurvivalFunction = Region -> Vocation -> Age -> Survival
 
 
 -- | Convert a survival cube to a survival function.
 asSurvivalFunction :: SurvivalCube -> SurvivalFunction
-asSurvivalFunction cube vocation age =
+asSurvivalFunction cube region vocation age =
   fromMaybe 0
     $   (fSurvival <:)
-    <$> evaluate cube (fVocation =: vocation <+> fAge =: age)
+    <$> evaluate cube (fRegion =: region <+> fVocation =: vocation <+> fAge =: age)
