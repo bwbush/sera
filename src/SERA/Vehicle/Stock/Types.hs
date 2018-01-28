@@ -64,7 +64,7 @@ type SurvivalCube       = '[       FRegion, FVocation          , FAge           
 
 
 -- | Annual distance traveled as a function of vocation and age.
-type AnnualTravelCube   = '[                FVocation          , FAge                               ] ↝ '[FAnnualTravel  ]
+type AnnualTravelCube   = '[       FRegion, FVocation          , FAge                               ] ↝ '[FAnnualTravel  ]
 
 
 -- | Fraction of fuel consumed as a function of vocation and vehicle type.
