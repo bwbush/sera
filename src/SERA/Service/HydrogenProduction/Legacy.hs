@@ -21,7 +21,7 @@
 {-# LANGUAGE TypeOperators    #-}
 
 
-module SERA.Service.HydrogenProduction (
+module SERA.Service.HydrogenProduction.Legacy (
 -- * Configuration
   ConfigProduction(..)
 -- * Computation
