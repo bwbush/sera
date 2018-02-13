@@ -150,9 +150,9 @@ productionMain ConfigProduction{..} =
       $ do
         putStrLn ""
         putStrLn "Optimization parameters:"
-        putStrLn $ "  First Year:            " ++ show 2030 -- firstYear
-        putStrLn $ "  Last Year:             " ++ show 2030 -- lastYear
-        putStrLn $ "  Time Window:           " ++ show 1 -- timeWindow
+        putStrLn $ "  First Year:            " ++ show firstYear
+        putStrLn $ "  Last Year:             " ++ show lastYear
+        putStrLn $ "  Time Window:           " ++ show timeWindow
         putStrLn $ "  Discount Rate [/yr]:   " ++ show discountRate
         putStrLn $ "  Escalation Rate [/yr]: " ++ show escalationRate
         putStrLn $ "  Interpolate?           " ++ show interpolate
@@ -165,7 +165,7 @@ productionMain ConfigProduction{..} =
     let
       Optimum constructions flows cashes impacts =
         optimize
-          2030
+          firstYear
           network
           demandCube'
           (rezoneIntensities intensityCube' zoneCube)

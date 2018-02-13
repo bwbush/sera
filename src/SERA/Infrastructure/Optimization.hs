@@ -214,7 +214,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              {
                                                                builder    = Nothing
                                                              , capacity   = fCapacity <: existing
-                                                             , nameplate  = 0
+                                                             , nameplate  = fCapacity <: existing
                                                              , reserved   = 0
                                                              , fixed      = [
                                                                                 TechnologyContext
@@ -224,7 +224,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                                  <+> fTechnology     =: Technology "Existing or Planned"
                                                                                                  <+> fProductive     =: Central
                                                                                                  <+> fYear           =: fYear <: existing
-                                                                                                 <+> fLifetime       =: maxBound
+                                                                                                 <+> fLifetime       =: 1000
                                                                                                  <+> fNameplate      =: fCapacity <: existing
                                                                                                  <+> fDutyCycle      =: 1
                                                                                                  <+> fLength         =: 0
@@ -242,9 +242,9 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                                   <+> fSalvage        =: 0
                                                                                                 , [
                                                                                                       fInfrastructure =: infrastructure
-                                                                                                    <+> fYear           =: year'
-                                                                                                    <+> fCostCategory   =: Variable
-                                                                                                    <+> fSale           =: flow * fCost <: existing
+                                                                                                    <+> fYear         =: year'
+                                                                                                    <+> fCostCategory =: Variable
+                                                                                                    <+> fSale         =: flow * fCost <: existing
                                                                                                   ]
                                                                                                 , []
                                                                                                 , flow
@@ -304,40 +304,40 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , cashes     = []
                                                            , impacts    = []
                                                            }
-              PathwayForwardEdge location pathway stage -> EdgeContext
-                                                           {
-                                                             builder    = let
-                                                                            technology = fTechnology <: (pathwayCube ! (fPathway =: pathway <+> fStage =: stage))
-                                                                            (from, distance) =
-                                                                              if linkCube `evaluable` (fLocation =: location)
-                                                                                then let
-                                                                                       link = linkCube ! (fLocation =: location)
-                                                                                     in
-                                                                                       (fFrom <: link, fLength <: link)
-                                                                                else (location, 0)
-                                                                          in
-                                                                            Just
+              PathwayForwardEdge location pathway stage -> let
+                                                             technology = fTechnology <: (pathwayCube ! (fPathway =: pathway <+> fStage =: stage))
+                                                             (from, distance) =
+                                                               if linkCube `evaluable` (fLocation =: location)
+                                                                 then let
+                                                                        link = linkCube ! (fLocation =: location)
+                                                                      in
+                                                                        (fFrom <: link, fLength <: link)
+                                                                 else (location, 0)
+                                                           in
+                                                             EdgeContext
+                                                             {
+                                                               builder    = Just
                                                                               $ \i year' demand ->
                                                                                 uncurry TechnologyContext
                                                                                 . fromJust
                                                                                 $ technologyReifier
                                                                                     processLibrary
                                                                                     (localize intensityCube location)
-                                                                                    (makePricer priceCube location)
-                                                                                    (fInfrastructure =: Infrastructure (show identifier ++ "/" ++ show year' ++ "/" ++ show i) <+> fLocation =: from)
+                                                                                    (makePricer priceCube from)
+                                                                                    (fInfrastructure =: Infrastructure (show identifier ++ "/" ++ show year' ++ "/" ++ show i) <+> fLocation =: location)
                                                                                     year'
                                                                                     demand
                                                                                     distance
                                                                                     technology
-                                                           , capacity   = inf
-                                                           , nameplate  = 0
-                                                           , reserved   = 0
-                                                           , fixed      = []
-                                                           , adjustable = Nothing
-                                                           , flows      = []
-                                                           , cashes     = []
-                                                           , impacts    = []
-                                                           }
+                                                             , capacity   = inf
+                                                             , nameplate  = 0
+                                                             , reserved   = 0
+                                                             , fixed      = []
+                                                             , adjustable = Nothing
+                                                             , flows      = []
+                                                             , cashes     = []
+                                                             , impacts    = []
+                                                             }
               PathwayReverseEdge location pathway stage -> EdgeReverseContext $ PathwayForwardEdge location pathway stage
           )
         |
@@ -348,47 +348,61 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
 
 
 costEdge :: Year -> Double -> EdgeContext -> Double
-costEdge year flow  =
+costEdge year delta =
   sum
     . fmap (fSale <:)
     . fst3
-    . costEdge' year flow -- FIXME: Handle salvage.
+    . costEdge' year delta -- FIXME: Handle salvage.
 
 
 costEdge' :: Year -> Double -> EdgeContext -> ([Flow], [Cash], [Impact])
-costEdge' year flow EdgeContext{..} =
+costEdge' year delta EdgeContext{..} =
   let
     (flows', cashes', impacts', _) =
       unzip4
-        . fmap (flip ($ year) flow . operation)
+        . fmap (flip ($ year) (abs $ reserved + delta) . operation) -- FIXME: Check for negative flows everywhere.
         $ (maybe id (:) adjustable) fixed
   in
     (flows', concat cashes', concat impacts')
-costEdge' _ _ _ = error "costEdge: edge is reversed."
+costEdge' _ _ _ = error "costEdge': edge is reversed."
+
+
+marginalCost :: Year -> Double -> EdgeContext -> Double
+marginalCost year delta edgeContext =
+  let
+    oldCost = costEdge year 0                         edgeContext
+    newCost = costEdge year 0 $ adjustEdge year delta edgeContext
+  in
+    (newCost - oldCost) / abs delta
 
 
 adjustEdge :: Year -> Double -> EdgeContext -> EdgeContext
-adjustEdge year flow edgeContext@EdgeContext{..} =
-  if abs flow <= nameplate -- TODO: Check this.
-    then edgeContext
-    else let
-           increment = abs flow - nameplate
-           adjustable'@TechnologyContext{..} = (fromJust builder) (length fixed + 1) year increment
-           increment' = fNameplate <: construction * fDutyCycle <: construction
-           edgeContext' =
-             edgeContext
+adjustEdge year delta edgeContext@EdgeContext{..} =
+  let
+    edgeContext' =
+      if abs (delta + reserved) <= nameplate -- FIXME: Rewrite this.
+        then edgeContext
              {
-               nameplate = nameplate + increment'
-             , adjustable = Just adjustable'
+               reserved = reserved + delta
              }
-           (flows', cashes', impacts') = costEdge' year flow edgeContext'
-         in
-           edgeContext'
-           {
-             flows = flows'
-           , cashes = cashes'
-           , impacts = impacts'
-           }
+        else let
+               flow = abs (delta + reserved)
+               adjustable'@TechnologyContext{..} = (fromJust builder) (length fixed + 1) year flow
+             in
+               edgeContext
+               {
+                 nameplate = fNameplate <: construction * fDutyCycle <: construction
+               , reserved = reserved + delta
+               , adjustable = Just adjustable'
+               }
+    (flows', cashes', impacts') = costEdge' year 0 edgeContext'
+  in
+    edgeContext'
+    {
+      flows = flows'
+    , cashes = cashes'
+    , impacts = impacts'
+    }
 adjustEdge _ _ _ = error "adjustCapacity: edge is reversed."
 
 
@@ -415,7 +429,7 @@ costFunction year (Capacity flow) context edge =
           DemandEdge _                              -> Sum 0
           ExistingEdge _                            -> Sum . (fVariableCost <:) . construction . head $ fixed edgeContext
           PathwayReverseEdge location pathway stage -> fst . fromJust . costFunction year (Capacity (- flow)) context $ PathwayForwardEdge location pathway stage
-          _                                         -> Sum . costEdge year flow $ adjustEdge year flow edgeContext
+          _                                         -> Sum $ marginalCost year flow edgeContext
       , context
       )
 costFunction _ _ _ _ = error "costFunction: no flow."
