@@ -14,7 +14,7 @@ where
 import Data.Daft.Vinyl.FieldCube (type (*↝))
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Material.Types (Material, FMaterial)
-import SERA.Network.Types (FLength, FLocation, FSale, FTerritory, FX, FY)
+import SERA.Network.Types (FLength, FInfrastructure, FLocation, FSale, FTerritory, FX, FY)
 import SERA.Process.Types (FNameplate, FCapitalCost, FCost, FDutyCycle, FFixedCost, FLifetime, FProductive, FTechnology, FVariableCost)
 import SERA.Types (FYear)
 import SERA.Types.TH (makeField, makeStringField)
@@ -37,7 +37,6 @@ data ImpactCategory =
     deriving (Eq, Ord, Read, Show)
 
  
-$(makeStringField "Infrastructure" "Infrastructure ID"                 )
 $(makeField       "Production"     "Production [kg]"   ''Double        )
 $(makeField       "Flow"           "Flow [kg]"         ''Double        )
 $(makeField       "Loss"           "Loss [kg]"         ''Double        )

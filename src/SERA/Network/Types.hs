@@ -13,6 +13,7 @@ module SERA.Network.Types (
 , Path(..)
 , Node
 , Link
+, Infrastructure(..)
 , AdjacencyMatrix
 , ShortestPaths
 -- * Field types
@@ -27,6 +28,7 @@ module SERA.Network.Types (
 , FTo
 , FLength
 , FTerritory
+, FInfrastructure
 -- * Field accessors
 , fLocation
 , fZone
@@ -39,6 +41,7 @@ module SERA.Network.Types (
 , fTo
 , fLength
 , fTerritory
+, fInfrastructure
 -- * Types
 , Network(..)
 -- * Data cubes
@@ -71,6 +74,7 @@ $(makeField       "Sale"        "Cost [$]"         ''Double  )
 $(makeField       "Rent"        "Cost [$/yr]"      ''Double  )
 $(makeStringField "Territory"   "Territory"                  )
 $(makeStringField "Zone"        "Zone"                       )
+$(makeStringField "Infrastructure" "Infrastructure ID"                 )
 
 
 data Network =
@@ -93,7 +97,7 @@ type NodeCube = '[FLocation] *↝ '[FX, FY, FArea, FProductive, FSale, FRent]
 type LinkCube = '[FLocation] *↝ '[FFrom, FTo, FLength, FSale, FRent, FTransmission, FDelivery]
 
 
-type ExistingCube = '[FLocation] *↝ '[FYear, FCapacity, FYield, FCost]
+type ExistingCube = '[FInfrastructure] *↝ '[FLocation, FYear, FCapacity, FYield, FCost]
 
 
 type TerritoryCube = '[FTerritory, FLocation] *↝ '[FFraction]

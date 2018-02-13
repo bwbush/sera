@@ -131,6 +131,7 @@ library
                   , daft
                   , data-default
                   , file-embed
+                  , graft
                   , MonadRandom
                   , monoid-extras
                   , mtl
@@ -168,6 +169,7 @@ executable sera
                   , directory
                   , file-embed
                   , filepath
+                  , graft
                   , monoid-extras
                   , mtl
                   , pqueue

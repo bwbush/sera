@@ -45,7 +45,8 @@ import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
-import SERA.Infrastructure.Optimization.Legacy hiding (GlobalContext, deliveries)
+import SERA.Infrastructure.Optimization (optimize)
+import SERA.Infrastructure.Optimization.Legacy hiding (GlobalContext, deliveries, optimize)
 import SERA.Infrastructure.Optimization.Legacy (GlobalContext(GlobalContext))
 import SERA.Infrastructure.Types 
 import SERA.Material.IO (readIntensities, readPrices)
@@ -141,18 +142,6 @@ productionMain ConfigProduction{..} =
     count "zone"      zoneCube
 
     liftIO $ putStrLn ""
-    liftIO . putStrLn $ "Computing shortest paths . . ."
-    liftIO . putStrLn $ " . . . " ++ show (length paths) ++ " paths."
---  liftIO
---    $ sequence_
---    [
---      print [show (i :: Int), show sourceId, show sinkId, show (j :: Int), show linkId, show distance]
---    |
---      (i, GenericPath{..}) <- zip [1..] $ M.elems paths
---    , (j, (linkId, distance)) <- zip [1..] linkIds
---    ]
-
-    liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading demands " ++ show demandFiles ++ " . . ."
     demandCube' <- readDemands demandFiles
     count "demand" demandCube'
@@ -161,9 +150,9 @@ productionMain ConfigProduction{..} =
       $ do
         putStrLn ""
         putStrLn "Optimization parameters:"
-        putStrLn $ "  First Year:            " ++ show firstYear
-        putStrLn $ "  Last Year:             " ++ show lastYear
-        putStrLn $ "  Time Window:           " ++ show timeWindow
+        putStrLn $ "  First Year:            " ++ show 2030 -- firstYear
+        putStrLn $ "  Last Year:             " ++ show 2030 -- lastYear
+        putStrLn $ "  Time Window:           " ++ show 1 -- timeWindow
         putStrLn $ "  Discount Rate [/yr]:   " ++ show discountRate
         putStrLn $ "  Escalation Rate [/yr]: " ++ show escalationRate
         putStrLn $ "  Interpolate?           " ++ show interpolate
@@ -173,30 +162,15 @@ productionMain ConfigProduction{..} =
       priceCube = rezonePrices priceCube' zoneCube
       intensityCube = rezoneIntensities intensityCube' zoneCube
       demandCube = demandCube' ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandCube'
-      globalContext =
-        GlobalContext
-          priceCube
-          processLibrary
-          intensityCube
-          network
-          (σ (\k _ -> fYear <: k <= lastYear) demandCube)
-          firstYear
-          lastYear
-          timeWindow
-          discountRate
-          escalationRate
-          interpolate
-          (fromMaybe inf maximumPathLength)
-          (fromMaybe False singleLinkPaths)
-          []
-          []
-          []
-          []
-
-    GlobalContext _ _ _ _ _ _ _ _ _ _ _ _ _ constructions flows cashes impacts <-
-      foldlM compute globalContext [firstYear, (firstYear+timeWindow) .. lastYear]
-
     let
+      Optimum constructions flows cashes impacts =
+        optimize
+          2030
+          network
+          demandCube'
+          (rezoneIntensities intensityCube' zoneCube)
+          processLibrary
+          (rezonePrices priceCube' zoneCube)
       saleCube =
         fromListWithKey
           (
@@ -278,34 +252,3 @@ productionMain ConfigProduction{..} =
     writeFieldCubeFile geometryFile     (geometryCube              :: GeometryCube    )
 
     liftIO $ putStrLn ""
-
-
-compute :: (IsString e, MonadError e m, MonadIO m)
-        => GlobalContext
-        -> Year
-        -> m GlobalContext
-compute globalContext@GlobalContext{..} year =
-  do
-    let
-      (supply, Optimum{..}) = optimize globalContext year
-    liftIO $ putStrLn ""
-    liftIO $ putStrLn ""
-    liftIO . putStrLn $ "***** Years " ++ show year ++ "-" ++ show (year + timeWindow - 1) ++ " *****"
-    liftIO $ putStrLn ""
-    liftIO $ putStrLn "Satisfying new demands locally . . ."
---  liftIO $ putStrLn "Identifying regional synergies . . ."
-    liftIO . putStrLn $ " . . . " ++ show (length optimalConstruction) ++ " facilities constructed."
---  liftIO $ putStrLn ""
---  liftIO $ putStrLn "Searching for synergies between demand centers . . ."
---  liftIO $ putStrLn ""
---  liftIO $ putStrLn "Searching for component upgrades . . ."
-    return
-      globalContext
-      {
-        G.demandCube         = σ (\_ rec -> fConsumption <: rec > 0)
-                              $ π (\key rec -> fConsumption =: maximum [0, fConsumption <: rec - maybe 0 (fConsumption <:) (supply `evaluate` τ key)] <+> fArea =: fArea <: rec) demandCube
-      , G.extantConstruction = extantConstruction <> optimalConstruction
-      , G.extantFlow         = extantFlow         <> optimalFlow
-      , G.extantCash         = extantCash         <> optimalCash
-      , G.extantImpact       = extantImpact       <> optimalImpact
-      }
