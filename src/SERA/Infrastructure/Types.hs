@@ -41,6 +41,8 @@ $(makeField       "Production"     "Production [kg]"   ''Double        )
 $(makeField       "Flow"           "Flow [kg]"         ''Double        )
 $(makeField       "Loss"           "Loss [kg]"         ''Double        )
 $(makeField       "Consumption"    "Consumption [kg]"  ''Double        )
+$(makeField       "FuelConsumption"    "Fuel Consumption [kg]"  ''Double        )
+$(makeField       "NonFuelConsumption"    "Non-Fuel Consumption [kg]"  ''Double        )
 $(makeField       "TotalCost"      "Cost [kg]"         ''Double        )
 $(makeField       "Salvage"        "Salvage Value [$]" ''Double        )
 $(makeField       "Sales"          "Sales [$]"         ''Double        )
@@ -51,7 +53,7 @@ $(makeField       "ImpactCategory" "Disposition"       ''ImpactCategory)
 $(makeStringField "Position"       "Position"                          )
 
 
-type DemandCube = '[FLocation, FYear] *↝ '[FConsumption]
+type DemandCube = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption]
 
 
 type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost]

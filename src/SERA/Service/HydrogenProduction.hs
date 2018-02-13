@@ -30,14 +30,12 @@ module SERA.Service.HydrogenProduction (
 
 
 import Control.Monad.Except (MonadError, MonadIO, liftIO)
-import Data.Monoid ((<>))
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.DataCube (evaluable, evaluate, knownSize)
+import Data.Daft.DataCube (evaluable, knownSize)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldCube.IO (writeFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec
 import Data.Default.Util (inf)
-import Data.Foldable (foldlM)
 import Data.Map.Strict (fromListWithKey)
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
@@ -45,9 +43,7 @@ import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
 import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
-import SERA.Infrastructure.Optimization (optimize)
-import SERA.Infrastructure.Optimization.Legacy hiding (GlobalContext, deliveries, optimize)
-import SERA.Infrastructure.Optimization.Legacy (GlobalContext(GlobalContext))
+import SERA.Infrastructure.Optimization (Optimum(..), optimize)
 import SERA.Infrastructure.Types 
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices
@@ -59,7 +55,8 @@ import SERA.Process.Types -- FIXME
 import SERA.Service ()
 import SERA.Types
 
-import qualified SERA.Infrastructure.Optimization.Legacy as G (GlobalContext(..))
+type DemandCube' = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption, FArea]
+
 
 
 -- | Configuration for hydrogen station sizing.
@@ -168,9 +165,9 @@ productionMain ConfigProduction{..} =
           firstYear
           network
           demandCube'
-          (rezoneIntensities intensityCube' zoneCube)
+          intensityCube
           processLibrary
-          (rezonePrices priceCube' zoneCube)
+          priceCube
       saleCube =
         fromListWithKey
           (
@@ -199,7 +196,7 @@ productionMain ConfigProduction{..} =
                 <+> fYear        =: fYear <: rec
               ,     fProduction  =: 0
                 <+> fSale        =: 0
-                <+> fConsumption =: fConsumption <: rec
+                <+> fConsumption =: fFuelConsumption <: rec + fNonFuelConsumption <: rec
                 <+> fSales       =: 0
               )
             |

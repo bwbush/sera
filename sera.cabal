@@ -1,5 +1,5 @@
 name: sera
-version: 3.1.0.1
+version: 3.1.1.0
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -77,7 +77,6 @@ library
                     SERA.Finance.Types
                     SERA.Infrastructure.IO
                     SERA.Infrastructure.Optimization
-                    SERA.Infrastructure.Optimization.Legacy
                     SERA.Infrastructure.Types
                     SERA.Material
                     SERA.Material.IO
@@ -105,7 +104,6 @@ library
                     SERA.Service.Finance
                     SERA.Service.HydrogenSizing
                     SERA.Service.HydrogenProduction
-                    SERA.Service.HydrogenProduction.Legacy
                     SERA.Service.Intraurban
                     SERA.Service.Logistic
                     SERA.Service.Regionalization

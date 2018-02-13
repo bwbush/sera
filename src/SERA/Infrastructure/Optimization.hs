@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
 
@@ -12,6 +13,7 @@ module SERA.Infrastructure.Optimization (
 , EdgeContext(..)
 , TechnologyContext(..)
 , TechnologyBuilder
+, Optimum(..)
 , optimize
 ) where
 
@@ -26,11 +28,9 @@ import Data.Graph.Types (Capacity(..), Graph(..), makeGraph)
 import Data.List (find, nub, unzip4)
 import Data.Map (Map)
 import Data.Maybe (fromJust, isJust)
-import Data.Monoid (Sum(..))
+import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (fst3)
-import Debug.Trace (trace)
-import SERA.Infrastructure.Optimization.Legacy (Optimum(..))
-import SERA.Infrastructure.Types (Cash, Construction, fConsumption, CostCategory(..), fCostCategory, DemandCube, Flow, fFlow, Impact, fLoss, fProduction, fSalvage)
+import SERA.Infrastructure.Types (Cash, Construction, CostCategory(..), fCostCategory, DemandCube, Flow, fFlow, fFuelConsumption, Impact, fLoss, fNonFuelConsumption, fProduction, fSalvage)
 import SERA.Material.Prices (localize)
 import SERA.Material.Types (IntensityCube, fMaterial, fPrice, PriceCube, Pricer)
 import SERA.Network.Types (fFrom, Infrastructure(..), fInfrastructure, fLength, Location, FLocation, fLocation, fSale, fTo, Network(..))
@@ -41,6 +41,39 @@ import SERA.Types (Year, fYear)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+
+data Optimum =
+  Optimum
+  {
+    optimalConstruction :: [Construction]
+  , optimalFlow         :: [Flow]
+  , optimalCash         :: [Cash]
+  , optimalImpact       :: [Impact]
+  }
+    deriving (Eq, Show)
+
+instance Ord Optimum where
+  compare x y =
+    let
+      capacity z = fNameplate <: z * fDutyCycle <: z
+    in
+      compare (sum . fmap capacity $ optimalConstruction y) (sum . fmap capacity $ optimalConstruction x)
+
+instance Monoid Optimum where
+  mempty      = Optimum
+                {
+                  optimalConstruction = []
+                , optimalFlow         = []
+                , optimalCash         = []
+                , optimalImpact       = []
+                }
+  mappend x y = Optimum
+                {
+                  optimalConstruction = optimalConstruction x <> optimalConstruction y
+                , optimalFlow         = optimalFlow         x <> optimalFlow         y
+                , optimalCash         = optimalCash         x <> optimalCash         y
+                , optimalImpact       = optimalImpact       x <> optimalImpact       y
+                }
 
 type NetworkGraph = Graph Vertex Edge
 
@@ -198,7 +231,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
               DemandEdge location                       -> EdgeContext
                                                            {
                                                              builder    = Nothing
-                                                           , capacity   = maybe 0 (fConsumption <:) $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
+                                                           , capacity   = maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec) $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
                                                            , nameplate  = 0
                                                            , reserved   = 0
                                                            , fixed      = []
