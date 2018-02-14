@@ -299,7 +299,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                   processLibrary
                                                                                   (localize intensityCube location)
                                                                                   (makePricer priceCube location)
-                                                                                  (fInfrastructure =: Infrastructure (show identifier ++ "/" ++ show year' ++ "/" ++ show i) <+> fLocation =: location)
+                                                                                  (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show year' ++ "-" ++ show i) <+> fLocation =: location)
                                                                                   year'
                                                                                   demand
                                                                                   0
@@ -323,7 +323,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                   processLibrary
                                                                                   (localize intensityCube location)
                                                                                   (makePricer priceCube location)
-                                                                                  (fInfrastructure =: Infrastructure (show identifier ++ "/" ++ show year' ++ "/" ++ show i) <+> fLocation =: location)
+                                                                                  (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show year' ++ "-" ++ show i) <+> fLocation =: location)
                                                                                   year'
                                                                                   demand
                                                                                   0
@@ -357,7 +357,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                     processLibrary
                                                                                     (localize intensityCube location)
                                                                                     (makePricer priceCube from)
-                                                                                    (fInfrastructure =: Infrastructure (show identifier ++ "/" ++ show year' ++ "/" ++ show i) <+> fLocation =: location)
+                                                                                    (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show year' ++ "-" ++ show i) <+> fLocation =: location)
                                                                                     year'
                                                                                     demand
                                                                                     distance
