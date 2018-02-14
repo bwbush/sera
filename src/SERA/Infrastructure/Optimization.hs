@@ -30,6 +30,7 @@ import Data.Map (Map)
 import Data.Maybe (fromJust, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (fst3)
+import Debug.Trace (trace)
 import SERA.Infrastructure.Types (Cash, Construction, CostCategory(..), fCostCategory, DemandCube, Flow, fFlow, fFuelConsumption, Impact, fLoss, fNonFuelConsumption, fProduction, fSalvage)
 import SERA.Material.Prices (localize)
 import SERA.Material.Types (IntensityCube, fMaterial, fPrice, PriceCube, Pricer)
@@ -497,7 +498,16 @@ flowFunction year (Capacity flow) context edge =
     return
       $ case edge of
         DemandEdge _                              -> update $ edgeContext { capacity = capacity' - flow }
-        ExistingEdge _                            -> update $ edgeContext { capacity = capacity' - flow }
+        ExistingEdge _                            -> update $ let
+                                                                (flow', cashes', impacts', _) = operation (head $ fixed edgeContext) year flow
+                                                              in
+                                                                edgeContext
+                                                                {
+                                                                  capacity = capacity' - flow
+                                                                , flows    = [flow']
+                                                                , cashes   = cashes'
+                                                                , impacts  = impacts'
+                                                                }
         PathwayReverseEdge location pathway stage -> fromJust . flowFunction year (Capacity (- flow)) context $ PathwayForwardEdge location pathway stage
         _                                         -> update $ adjustEdge year flow edgeContext
 flowFunction _ _ _ _ = error "flowFunction: no flow."
