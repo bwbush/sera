@@ -21,6 +21,7 @@ module SERA.Types.Cubes (
 -- * Data cubes
   CashCube
 , ConstructionCube
+, DemandAreaCube
 , DemandCube
 , FlowCube
 , GeometryCube
@@ -31,7 +32,7 @@ module SERA.Types.Cubes (
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
 import SERA.Material.Types (FMaterial)
-import SERA.Network.Types (FLength, FInfrastructure, FLocation, FSale, FTerritory, FX, FY)
+import SERA.Network.Types (FArea, FLength, FInfrastructure, FLocation, FSale, FTerritory, FX, FY)
 import SERA.Process.Types (FNameplate, FCapitalCost, FCost, FDutyCycle, FFixedCost, FLifetime, FProductive, FTechnology, FVariableCost)
 import SERA.Types (FYear)
 import SERA.Types.Fields -- FIXME: Import explicityly.
@@ -41,6 +42,9 @@ type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FSale]
 
 
 type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost]
+
+
+type DemandAreaCube = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption, FArea]
 
 
 type DemandCube = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption]

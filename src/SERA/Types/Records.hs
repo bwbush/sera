@@ -20,6 +20,7 @@ module SERA.Types.Records (
 -- * Data records
   Cash
 , Construction
+, DemandRec
 , Flow
 , Geometry
 , Impact
@@ -38,6 +39,9 @@ type Cash = FieldRec '[FInfrastructure, FYear, FCostCategory, FSale]
 
 
 type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost]
+
+
+type DemandRec = FieldRec '[FLocation, FYear, FFuelConsumption, FNonFuelConsumption]
 
 
 type Flow = FieldRec '[FInfrastructure, FYear, FProduction, FFlow, FLoss, FSale, FSalvage]

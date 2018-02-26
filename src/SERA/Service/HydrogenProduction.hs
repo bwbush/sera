@@ -57,9 +57,6 @@ import SERA.Types
 import SERA.Types.Cubes
 import SERA.Types.Fields
 
-type DemandCube' = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption, FArea]
-
-
 
 -- | Configuration for hydrogen station sizing.
 data ConfigProduction =
@@ -142,7 +139,7 @@ productionMain ConfigProduction{..} =
 
     liftIO $ putStrLn ""
     liftIO . putStrLn $ "Reading demands " ++ show demandFiles ++ " . . ."
-    demandCube' <- readDemands demandFiles
+    demandCube' <- readDemands True demandFiles
     count "demand" demandCube'
 
     liftIO
@@ -160,7 +157,7 @@ productionMain ConfigProduction{..} =
       InfrastructureFiles{..} = infrastructureFiles
       priceCube = rezonePrices priceCube' zoneCube
       intensityCube = rezoneIntensities intensityCube' zoneCube
-      demandCube = demandCube' ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandCube'
+      demandCube = demandCube' ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandAreaCube
     let
       Optimum constructions flows cashes impacts =
         optimize
