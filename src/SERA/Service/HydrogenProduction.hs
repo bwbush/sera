@@ -42,9 +42,9 @@ import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
-import SERA.Infrastructure.IO (InfrastructureFiles(..), readDemands)
+import SERA.Demand (readDemands)
+import SERA.Infrastructure (InfrastructureFiles(..))
 import SERA.Infrastructure.Optimization (Optimum(..), optimize)
-import SERA.Infrastructure.Types 
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices
 import SERA.Material.Types -- FIXME
@@ -53,7 +53,9 @@ import SERA.Network.Types -- FIXME
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Process.Types -- FIXME
 import SERA.Service ()
-import SERA.Types
+import SERA.Types 
+import SERA.Types.Cubes
+import SERA.Types.Fields
 
 type DemandCube' = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption, FArea]
 

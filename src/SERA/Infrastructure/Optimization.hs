@@ -30,14 +30,15 @@ import Data.Map (Map)
 import Data.Maybe (fromJust, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (fst3)
-import Debug.Trace (trace)
-import SERA.Infrastructure.Types (Cash, Construction, CostCategory(..), fCostCategory, DemandCube, Flow, fFlow, fFuelConsumption, Impact, fLoss, fNonFuelConsumption, fProduction, fSalvage)
 import SERA.Material.Prices (localize)
 import SERA.Material.Types (IntensityCube, fMaterial, fPrice, PriceCube, Pricer)
 import SERA.Network.Types (fFrom, Infrastructure(..), fInfrastructure, fLength, Location, FLocation, fLocation, fSale, fTo, Network(..))
 import SERA.Process.Reification.Technology (TechnologyOperation, technologyReifier)
 import SERA.Process.Types (fCapacity, fCapitalCost, fCost, fDutyCycle, fExtended, fFixedCost, fLifetime, fNameplate, Pathway(..), fPathway, ProcessLibrary(..), Productive(..), fProductive, fStage, Technology(..), fTechnology, isProduction, fTransmission, fVariableCost)
 import SERA.Types (Year, fYear)
+import SERA.Types.Cubes (DemandCube)
+import SERA.Types.Fields (CostCategory(..), fCostCategory, fFlow, fFuelConsumption, fLoss, fNonFuelConsumption, fProduction, fSalvage)
+import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
 import qualified Data.Set as S

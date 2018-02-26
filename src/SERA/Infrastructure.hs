@@ -1,36 +1,43 @@
 -----------------------------------------------------------------------------
 --
--- Module      :  SERA.Energy.Prices
--- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- Module      :  $Header$
+-- Copyright   :  (c) 2018 National Renewable Energy Laboratory
 -- License     :  All Rights Reserved
 --
 -- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
 -- Stability   :  Stable
 -- Portability :  Portable
 --
--- | Energy prices.
+-- | Types for infrastructure networks.
 --
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 
-module SERA.Infrastructure.IO (
-  InfrastructureFiles(..)
-, readDemands
+module SERA.Infrastructure (
+-- * Types
+  InfrastructureCubes(..)
+, InfrastructureFiles(..)
 ) where
 
 
-import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
-import Data.String (IsString)
 import GHC.Generics (Generic)
-import SERA.Infrastructure.Types (DemandCube)
+import SERA.Types.Cubes (CashCube, ConstructionCube, FlowCube, ImpactCube, SaleCube)
+
+
+data InfrastructureCubes =
+  InfrastructureCubes
+  {
+    constructionCube :: ConstructionCube
+  , flowCube         :: FlowCube
+  , cashCube         :: CashCube
+  , impactCube       :: ImpactCube
+  , saleCube         :: SaleCube
+  }
+    deriving (Eq, Ord, Show)
 
 
 data InfrastructureFiles =
@@ -48,7 +55,3 @@ data InfrastructureFiles =
 instance FromJSON InfrastructureFiles
 
 instance ToJSON InfrastructureFiles
-
-
-readDemands :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m DemandCube
-readDemands = (mconcat <$>) . mapM readFieldCubeFile
