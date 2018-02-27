@@ -34,10 +34,14 @@ module SERA (
 -- * I/O
 , verboseReadFieldCubeSource
 , verboseWriteFieldCubeSource
+
+, checkPresent
+, checkDisjoint
+, checkDuplicates
 ) where
 
 
-import Control.Monad (unless, void)
+import Control.Monad (guard, unless, void)
 import Control.Monad.Except (MonadError, MonadIO, liftIO, throwError)
 import Control.Monad.Log (MonadLog, LoggingT, Severity(..), WithSeverity(..), renderWithSeverity, runLoggingT)
 import Data.Daft.Source (DataSource(..), withSource)
@@ -47,6 +51,9 @@ import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
 import Data.Daft.Vinyl.FieldRec (Labeled)
 import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, ShowFieldRec)
 import Data.Daft.Vinyl.FieldRec.Instances ()
+import Data.Function.MapReduce (groupReduceByKey)
+import Data.Maybe (catMaybes)
+import Data.Set (Set, (\\))
 import Data.String (IsString(..))
 import Data.Version (Version(..), showVersion)
 import Data.Vinyl.Derived (FieldRec)
@@ -57,6 +64,7 @@ import Paths_sera (version)
 import System.IO (hPrint, hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
+import qualified Data.Set as S (intersection, toList)
 
 -- | Report the numeric version.
 numericVersion :: [Int]
@@ -112,7 +120,7 @@ withSeraLog f =
     (
       \message ->
         unless ( msgSeverity message >= Debug)
-          $ if msgSeverity message >= Critical
+          $ if msgSeverity message > Critical
               then liftIO . hPrint stderr $ renderWithSeverity fromString message
               else throwError . fromString $ discardSeverity message
     )
@@ -130,3 +138,37 @@ verboseWriteFieldCubeSource label source table =
     withSource source $ \source' -> do
       inform $ "Writing " ++ label ++ " to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source' table
+
+checkPresent :: (Ord a, Show a, SeraLog m) => (String -> m ()) -> String -> Set a -> String -> Set a -> m ()
+checkPresent logMessage label records label' records' =
+  sequence_
+    [
+      logMessage $ label ++ " references \"" ++ show value ++ "\" not present in " ++ label' ++ "."
+    |
+      value <- S.toList $ records \\ records'
+    ]
+
+
+checkDisjoint :: (Ord a, Show a, SeraLog m) => (String -> m ()) -> String -> Set a -> Set a -> m ()
+checkDisjoint logMessage message records records' =
+  sequence_
+    [
+      logMessage $ message ++ " \"" ++ show value ++ "\"."
+    |
+      value <- S.toList $ records `S.intersection` records'
+    ]
+
+
+checkDuplicates :: (SeraLog m, Ord b, Show b) => (String -> m ()) -> String -> (a -> b) -> [a] -> m ()
+checkDuplicates logMessage label field records =
+  sequence_
+    [
+      logMessage $ "Duplicate " ++ label ++ " \"" ++ show location ++ "\"."
+    |
+      location <-
+        catMaybes
+          $ groupReduceByKey
+            field
+            (flip ((>>) . guard . (> 1) . length) . return)
+            records
+    ]

@@ -50,7 +50,7 @@ import SERA.Infrastructure.Optimization (Optimum(..), optimize)
 import SERA.Material.IO (readIntensities, readPrices)
 import SERA.Material.Prices
 import SERA.Material.Types -- FIXME
-import SERA.Network.IO (NetworkFiles(..), readNetwork)
+import SERA.Network.IO (NetworkFiles(..), checkNetwork, readNetwork)
 import SERA.Network.Types -- FIXME
 import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
 import SERA.Process.Types -- FIXME
@@ -150,6 +150,7 @@ productionMain ConfigProduction{..} =
     logInfo $ "  Interpolate?           " ++ show interpolate
 
     logInfo ""
+    checkNetwork network
     checkDemands nodeCube demandCube'
     logInfo ". . . checks complete."
     logInfo ""

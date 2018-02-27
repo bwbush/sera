@@ -29,13 +29,14 @@ module SERA.Network.IO (
 , readExistings
 , readTerritories
 , readZones
+, checkNetwork
 ) where
 
 
 import Control.Applicative (liftA2)
 import Control.Monad (guard)
 import Control.Monad.Except (MonadError, MonadIO)
-import Control.Monad.Log (logDebug, logInfo, logError, logWarning)
+import Control.Monad.Log (logCritical, logDebug, logInfo, logError, logWarning)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Vinyl.FieldCube (fromRecords)
 import Data.Daft.Vinyl.FieldRec (Labeled(..), (<:))
@@ -47,10 +48,13 @@ import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
-import SERA (SeraLog)
+import SERA (SeraLog, checkDisjoint, checkDuplicates, checkPresent)
 import SERA.Network.Algorithms
+import SERA.Util (extractKey, extractValue)
 import SERA.Network.Types (ExistingCube, LinkCube, fFrom, fInfrastructure, FLocation, fLocation, Network(..), NodeCube, TerritoryCube, fTerritory, fTo, ZoneCube, fZone)
 import SERA.Types (FFraction, fFraction)
+
+import qualified Data.Set as S (union)
 
 
 data NetworkFiles =
@@ -93,21 +97,6 @@ readConcat message files =
         readFieldRecFile file
     |
       file <- files
-    ]
-
-
-checkDuplicates :: (SeraLog m, Ord b, Show b) => (String -> m ()) -> String -> (a -> b) -> [a] -> m ()
-checkDuplicates logMessage label field records =
-  sequence_
-    [
-      logMessage $ "Duplicate " ++ label ++ " \"" ++ show location ++ "\"."
-    |
-      location <-
-        catMaybes
-          $ groupReduceByKey
-            field
-            (flip ((>>) . guard . (> 1) . length) . return)
-            records
     ]
 
 
@@ -176,3 +165,40 @@ readZones files =
     checkDuplicates logError "zone location" key records
     checkFractions "zone" key records
     return $ fromRecords records
+
+
+checkNetwork :: SeraLog m => Network -> m ()
+checkNetwork Network{..} =
+  do
+    logInfo "Checking network . . ."
+    let
+      nodes = extractKey (fLocation <:) nodeCube
+    checkPresent
+      logError
+      "Network link"
+      ((extractValue (fFrom <:) linkCube) `S.union` (extractValue (fTo <:) linkCube))
+      "network nodes"
+      nodes
+    checkPresent
+      logError
+      "Existing infrastructure"
+      (extractValue (fLocation <:) existingCube)
+      "network nodes"
+      nodes
+    checkPresent
+      logError
+      "Network territory"
+      (extractKey (fLocation <:) territoryCube)
+      "network nodes"
+      nodes
+    checkPresent
+      logError
+      "Network zone"
+      (extractKey (fLocation <:) zoneCube)
+      "network nodes"
+      nodes
+    checkDisjoint
+      logCritical
+      "Network link has the same location as network node at"
+      (extractKey (fLocation <:) linkCube)
+      nodes
