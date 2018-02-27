@@ -13,6 +13,7 @@
 -----------------------------------------------------------------------------
 
 
+{-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
@@ -23,6 +24,8 @@ module SERA (
   numericVersion
 , stringVersion
 -- * Logging
+, SeraLog
+, withSeraLog
 , debug
 , trace'
 , inform
@@ -34,8 +37,9 @@ module SERA (
 ) where
 
 
-import Control.Monad (void)
-import Control.Monad.Except (MonadError, MonadIO, liftIO)
+import Control.Monad (when, void)
+import Control.Monad.Except (MonadError, MonadIO, liftIO, throwError)
+import Control.Monad.Log (MonadLog, LoggingT, Severity(..), WithSeverity(..), renderWithSeverity, runLoggingT)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.TypeLevel (Union)
 import Data.Daft.Vinyl.FieldCube (type (↝), ε)
@@ -50,7 +54,7 @@ import Data.Vinyl.Lens (type (⊆))
 import Data.Vinyl.TypeLevel (type (++))
 import Debug.Trace (trace)
 import Paths_sera (version)
-import System.IO (hPutStrLn, stderr)
+import System.IO (hPrint, hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
 
@@ -96,6 +100,26 @@ unsafePrint s x =
     $ do
       putStrLn s
       return x
+
+
+type SeraLog = MonadLog (WithSeverity String)
+
+
+withSeraLog :: (IsString e, MonadError e m, MonadIO m) => LoggingT (WithSeverity String) m a -> m a
+withSeraLog f =
+  runLoggingT
+    f
+    (
+      \message ->
+        if msgSeverity message >= Debug
+          then return ()
+          else do
+                 liftIO . hPrint stderr $ renderWithSeverity fromString message
+                 when (msgSeverity message <= Critical)
+                   . throwError
+                   . fromString
+                   $ discardSeverity message
+    )
 
 
 verboseReadFieldCubeSource :: forall ks vs e m a . (Show a, ks ⊆ Union ks vs, vs ⊆ Union ks vs, Ord (FieldRec ks), IsString e, MonadError e m, MonadIO m, Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> DataSource a -> m (ks ↝ vs)

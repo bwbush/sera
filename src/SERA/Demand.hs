@@ -21,20 +21,28 @@ module SERA.Demand (
   DemandCube
 -- * Input/output
 , readDemands
+-- * Testing
+, checkDemands
 ) where
 
 
 import Control.Monad.Except (MonadError, MonadIO)
+import Control.Monad.Log (logDebug, logError, logInfo)
 import Data.Function (on)
+import Data.Daft.DataCube (knownKeys)
 import Data.Daft.Vinyl.FieldCube (τ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Daft.Vinyl.FieldRec.IO (readFieldRecFile)
+import Data.Set ((\\))
 import Data.String (IsString)
+import SERA (SeraLog)
+import SERA.Network.Types (NodeCube, fLocation)
 import SERA.Types.Cubes (DemandCube)
 import SERA.Types.Fields (fFuelConsumption, fNonFuelConsumption)
 import SERA.Types.Records (DemandRec)
 
 import qualified Data.Map.Strict as M (fromListWith)
+import qualified Data.Set as S (map)
 
 
 -- FIXME: Move to 'daft' package.
@@ -55,3 +63,20 @@ readDemands removeZeroDemand =
         . mconcat
     )
     . mapM readFieldRecFile
+
+
+checkDemands :: SeraLog m => NodeCube -> DemandCube -> m ()
+checkDemands nodeCube demandCube =
+  do
+    let
+      networkNodes = S.map (fLocation <:) $ knownKeys nodeCube
+      demandNodes  = S.map (fLocation <:) $ knownKeys demandCube
+    logInfo "Checking demands . . ."
+    foldr
+      (\x y -> y >> logError ("Demand location \"" ++ show x ++ "\" not in network."))
+      (return ())
+      $ demandNodes \\ networkNodes
+    foldr
+      (\x y -> y >> logDebug ("Network location \"" ++ show x ++ "\" has no demand."))
+      (return ())
+      $ networkNodes \\ demandNodes

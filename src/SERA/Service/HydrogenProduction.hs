@@ -29,7 +29,8 @@ module SERA.Service.HydrogenProduction (
 ) where
 
 
-import Control.Monad.Except (MonadError, MonadIO, liftIO)
+import Control.Monad.Except (MonadError, MonadIO)
+import Control.Monad.Log (logInfo)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (evaluable, knownSize)
 import Data.Daft.Vinyl.FieldCube
@@ -42,7 +43,8 @@ import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
-import SERA.Demand (readDemands)
+import SERA (SeraLog)
+import SERA.Demand (checkDemands, readDemands)
 import SERA.Infrastructure (InfrastructureFiles(..))
 import SERA.Infrastructure.Optimization (Optimum(..), optimize)
 import SERA.Material.IO (readIntensities, readPrices)
@@ -86,7 +88,7 @@ instance ToJSON ConfigProduction
 
 
 -- | Compute hydrogen station sizes.
-productionMain :: (IsString e, MonadError e m, MonadIO m)
+productionMain :: (IsString e, MonadError e m, MonadIO m, SeraLog m)
                        => ConfigProduction -- ^ Configuration data.
                        -> m ()                 -- ^ Action to compute the station sizes.
 productionMain ConfigProduction{..} =
@@ -94,30 +96,28 @@ productionMain ConfigProduction{..} =
   do
     let
       count label content =
-        liftIO
-          . putStrLn
+        logInfo
           $ " . . . " ++ show (knownSize content) ++ (if null label then "" else ' ' : label) ++ " records."
       list label content =
-        liftIO
-          $ do
-            putStrLn $ label ++ ":"
-            mapM_ (putStrLn . ("  " ++) . show) content
+        do
+          logInfo $ label ++ ":"
+          mapM_ (logInfo . ("  " ++) . show) content
 
-    liftIO $ putStrLn ""
-    liftIO . putStrLn $ "Reading price files " ++ show priceFiles ++ " . . ."
+    logInfo ""
+    logInfo $ "Reading price files " ++ show priceFiles ++ " . . ."
     priceCube' <- readPrices priceFiles
     count "price" priceCube'
     list "Materials" $ materials priceCube'
 
-    liftIO $ putStrLn ""
-    liftIO . putStrLn $ "Reading upstream emission intensities " ++ show intensityFiles ++ " . . ."
+    logInfo ""
+    logInfo $ "Reading upstream emission intensities " ++ show intensityFiles ++ " . . ."
     intensityCube' <- readIntensities intensityFiles
     count "intensity" intensityCube'
     list "Materials" $ materials intensityCube'
     list "Upstream materials" $ upstreamMaterials intensityCube'
 
-    liftIO $ putStrLn ""
-    liftIO . putStrLn $ "Reading process components and pathways . . ."
+    logInfo ""
+    logInfo $ "Reading process components and pathways . . ."
     processLibrary@ProcessLibrary{..} <- readProcessLibrary processLibraryFiles pathwayFiles
     count "cost"    processCostCube
     count "input"   processInputCube
@@ -128,8 +128,8 @@ productionMain ConfigProduction{..} =
     list  "Transmission Pathway" $ transmissionPathways processLibrary
     list  "Local Pathway"        $ localPathways        processLibrary
 
-    liftIO $ putStrLn ""
-    liftIO . putStrLn $ "Reading network . . ."
+    logInfo ""
+    logInfo $ "Reading network . . ."
     network@Network{..} <- readNetwork (fromMaybe False singleLinkPaths) (fromMaybe inf maximumPathLength) networkFiles
     count "node"      nodeCube
     count "link"      linkCube
@@ -137,21 +137,24 @@ productionMain ConfigProduction{..} =
     count "territory" territoryCube
     count "zone"      zoneCube
 
-    liftIO $ putStrLn ""
-    liftIO . putStrLn $ "Reading demands " ++ show demandFiles ++ " . . ."
+    logInfo ""
+    logInfo $ "Reading demands " ++ show demandFiles ++ " . . ."
     demandCube' <- readDemands True demandFiles
     count "demand" demandCube'
 
-    liftIO
-      $ do
-        putStrLn ""
-        putStrLn "Optimization parameters:"
-        putStrLn $ "  First Year:            " ++ show firstYear
-        putStrLn $ "  Last Year:             " ++ show lastYear
-        putStrLn $ "  Time Window:           " ++ show timeWindow
-        putStrLn $ "  Discount Rate [/yr]:   " ++ show discountRate
-        putStrLn $ "  Escalation Rate [/yr]: " ++ show escalationRate
-        putStrLn $ "  Interpolate?           " ++ show interpolate
+    logInfo ""
+    logInfo "Optimization parameters:"
+    logInfo $ "  First Year:            " ++ show firstYear
+    logInfo $ "  Last Year:             " ++ show lastYear
+    logInfo $ "  Time Window:           " ++ show timeWindow
+    logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate
+    logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate
+    logInfo $ "  Interpolate?           " ++ show interpolate
+
+    logInfo ""
+    checkDemands nodeCube demandCube'
+    logInfo ". . . checks complete."
+    logInfo ""
 
     let
       InfrastructureFiles{..} = infrastructureFiles
@@ -240,11 +243,24 @@ productionMain ConfigProduction{..} =
             , nodeCube `evaluable` n
             ]
 
+    logInfo $ "Writing constructions to " ++ show constructionFile ++ "."
     writeFieldCubeFile constructionFile (fromRecords constructions :: ConstructionCube)
+
+    logInfo $ "Writing flows to " ++ show flowFile ++ "."
     writeFieldCubeFile flowFile         (fromRecords flows         :: FlowCube        )
+
+    logInfo $ "Writing cash to " ++ show cashFile ++ "."
     writeFieldCubeFile cashFile         (fromRecords cashes        :: CashCube        )
+
+    logInfo $ "Writing impacts to " ++ show impactFile ++ "."
     writeFieldCubeFile impactFile       (fromRecords impacts       :: ImpactCube      )
+
+    logInfo $ "Writing sales to " ++ show saleFile ++ "."
     writeFieldCubeFile saleFile         (saleCube'                 :: SaleCube        )
+
+    logInfo $ "Writing geometries to " ++ show geometryFile ++ "."
     writeFieldCubeFile geometryFile     (geometryCube              :: GeometryCube    )
 
-    liftIO $ putStrLn ""
+    logInfo ""
+    logInfo "Success."
+    logInfo ""

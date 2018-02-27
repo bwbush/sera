@@ -13,11 +13,13 @@ where
 import Data.Daft.Vinyl.FieldCube (σ, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Tuple.Util (fst3, snd3, trd3)
-import SERA.Infrastructure.Types -- FIXME
 import SERA.Network.Types -- FIXME
 import SERA.Process.Reification.Technology (TechnologyReifier)
 import SERA.Process.Types -- FIXME
 import SERA.Types (Year)
+import SERA.Types.Cubes -- FIXME
+import SERA.Types.Fields -- FIXME
+import SERA.Types.Records -- FIXME
 
 
 type PathwayOperation = Year -> Double -> ([Flow], [Cash], [Impact], Double)

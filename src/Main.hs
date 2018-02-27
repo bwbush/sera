@@ -14,6 +14,7 @@
 
 
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE RecordWildCards    #-}
 
 {-# OPTIONS_GHC -fno-warn-missing-fields #-}
@@ -27,12 +28,13 @@ module Main (
 
 import Control.Exception.Base (displayException)
 import Control.Monad.Except (MonadError, MonadIO, liftIO, runExceptT, throwError)
+import Control.Monad.Log (logInfo)
 import Data.Aeson.Types (FromJSON)
 import Data.Data (Data)
 import Data.List (nub)
 import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
-import SERA (inform, stringVersion)
+import SERA (SeraLog, stringVersion, withSeraLog)
 import SERA.Service.Finance (financeMain)
 import SERA.Service.HydrogenProduction (productionMain)
 import SERA.Service.HydrogenSizing (hydrogenSizingMain)
@@ -242,10 +244,10 @@ main =
         | otherwise                                  = arguments
     withArgs arguments' $ do
       command <- cmdArgs sera
-      r <- runExceptT $ dispatch command
+      r <- runExceptT . withSeraLog $ dispatch command
       case r :: Either String () of
         Right () -> return ()
-        Left  e  -> die e
+        Left  e  -> die $ "[Critical] " ++ e
 
 
 -- | Decode a YAML file.
@@ -259,7 +261,7 @@ decodeYaml =
 
 
 -- | Dispatch a computation.
-dispatch :: (IsString e, MonadError e m, MonadIO m)
+dispatch :: (IsString e, MonadError e m, MonadIO m, SeraLog m)
          => SERA -- ^ The command-line parameters.
          -> m () -- ^ Action to run SERA using the command-line parameters.
 dispatch CombineScenarios{..} =
@@ -292,7 +294,7 @@ dispatch s@IntraurbanPipelines{} = dispatch' s intraurbanMain
 
 
 -- | Help dispatch an operation.
-dispatch' :: (IsString e, MonadError e m, MonadIO m, FromJSON a)
+dispatch' :: (IsString e, MonadError e m, MonadIO m, SeraLog m, FromJSON a)
           => SERA        -- ^ Command-line parameters.
           -> (a -> m ()) -- ^ Operation to perform.
           -> m ()        -- ^ Action to perform the operation using the command-line parameters.
@@ -301,6 +303,6 @@ dispatch' s operation =
     let
       path = configuration s
     configuration' <- decodeYaml path
-    inform $ "Setting working directory to \"" ++ takeDirectory path ++ "\"."
+    logInfo $ "Setting working directory to \"" ++ takeDirectory path ++ "\"."
     liftIO . setCurrentDirectory $ takeDirectory path
     operation configuration'
