@@ -112,7 +112,7 @@ withSeraLog f =
     (
       \message ->
         unless ( msgSeverity message >= Debug)
-          $ if msgSeverity message <= Critical
+          $ if msgSeverity message >= Critical
               then liftIO . hPrint stderr $ renderWithSeverity fromString message
               else throwError . fromString $ discardSeverity message
     )
