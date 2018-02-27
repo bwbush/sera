@@ -6,7 +6,7 @@ mkDerivation {
   pname = "daft";
   version = "0.4.14.3";
   src = fetchgit {
-    url = "https://github.nrel.gov/haskell/daft.git";
+    url = "git://localhost/";
     rev = "ebcc5e955beef198a6dd56f62cdf7caebc0ed56e";
     sha256 = "0b5zvgpf1fsiljy7c9fkygakvp8249cvx6hyza3mnham7zixkxi7";
   };

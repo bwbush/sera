@@ -10,7 +10,9 @@ let
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
               sera       = haskellPackagesNew.callPackage ./default.nix    { };
               daft       = haskellPackagesNew.callPackage ./daft.nix       { };
+              graft      = haskellPackagesNew.callPackage ./graft.nix      { };
               singletons = haskellPackagesNew.callPackage ./singletons.nix { };
+              heaps      = haskellPackagesNew.callPackage ./heaps.nix      { };
             };
           };
         };

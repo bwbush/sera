@@ -1,5 +1,5 @@
 { mkDerivation, aeson, base, bytestring, cmdargs, containers, daft
-, data-default, directory, file-embed, filepath, logging-effect, MonadRandom
+, data-default, directory, file-embed, filepath, graft, logging-effect, MonadRandom
 , monoid-extras, mtl, parallel, pqueue, raft, regex-posix, split
 , statistics, stdenv, template-haskell, text, tostring, vinyl, void
 , yaml, zip-archive
@@ -11,14 +11,14 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring containers daft data-default file-embed logging-effect
+    aeson base bytestring containers daft data-default file-embed graft logging-effect
     MonadRandom monoid-extras mtl parallel pqueue raft regex-posix
     split statistics template-haskell text tostring vinyl void yaml
     zip-archive
   ];
   executableHaskellDepends = [
     aeson base bytestring cmdargs containers daft data-default
-    directory file-embed filepath logging-effect monoid-extras mtl pqueue raft
+    directory file-embed filepath graft logging-effect monoid-extras mtl pqueue raft
     regex-posix split statistics template-haskell text tostring vinyl
     void yaml zip-archive
   ];
