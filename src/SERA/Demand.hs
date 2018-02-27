@@ -13,7 +13,7 @@
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts    #-}
 
 
 module SERA.Demand (
@@ -27,11 +27,10 @@ module SERA.Demand (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
-import Control.Monad.Log (logDebug, logError, logInfo)
-import Data.Function (on)
+import Control.Monad.Log (logDebug, logInfo, logWarning)
 import Data.Daft.DataCube (knownKeys)
 import Data.Daft.Vinyl.FieldCube (τ)
-import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Daft.Vinyl.FieldRec ((<:), (<+>))
 import Data.Daft.Vinyl.FieldRec.IO (readFieldRecFile)
 import Data.Set ((\\))
 import Data.String (IsString)
@@ -40,13 +39,10 @@ import SERA.Network.Types (NodeCube, fLocation)
 import SERA.Types.Cubes (DemandCube)
 import SERA.Types.Fields (fFuelConsumption, fNonFuelConsumption)
 import SERA.Types.Records (DemandRec)
+import SERA.Util (combineRecs)
 
 import qualified Data.Map.Strict as M (fromListWith)
-import qualified Data.Set as S (map)
-
-
--- FIXME: Move to 'daft' package.
-combineRecs field operation x y = field =: on operation (field <:) x y
+import qualified Data.Set as S (map, toList)
 
 
 -- | Read demand data into a cube.
@@ -65,18 +61,26 @@ readDemands removeZeroDemand =
     . mapM readFieldRecFile
 
 
-checkDemands :: SeraLog m => NodeCube -> DemandCube -> m ()
+-- | Check the validity of the demands.
+checkDemands :: SeraLog m
+             => NodeCube   -- ^ The network nodes.
+             -> DemandCube -- ^ The demands.
+             -> m ()       -- ^ Action for checking the demands.
 checkDemands nodeCube demandCube =
   do
     let
       networkNodes = S.map (fLocation <:) $ knownKeys nodeCube
       demandNodes  = S.map (fLocation <:) $ knownKeys demandCube
     logInfo "Checking demands . . ."
-    foldr
-      (\x y -> y >> logError ("Demand location \"" ++ show x ++ "\" not in network."))
-      (return ())
-      $ demandNodes \\ networkNodes
-    foldr
-      (\x y -> y >> logDebug ("Network location \"" ++ show x ++ "\" has no demand."))
-      (return ())
-      $ networkNodes \\ demandNodes
+    sequence_
+      [
+        logWarning ("Demand location \"" ++ show location ++ "\" not in network.")
+      |
+        location <- S.toList $ demandNodes \\ networkNodes
+      ]
+    sequence_
+      [
+        logDebug ("Network location \"" ++ show location ++ "\" has no demand.")
+      |
+        location <- S.toList $ networkNodes \\ demandNodes
+      ]

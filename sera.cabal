@@ -1,5 +1,5 @@
 name: sera
-version: 3.1.1.5
+version: 3.1.1.6
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -113,6 +113,7 @@ library
                     SERA.Types.Fields
                     SERA.Types.Records
                     SERA.Types.TH
+                    SERA.Util
                     SERA.Util.Summarization
                     SERA.Util.Time
                     SERA.Util.Units
