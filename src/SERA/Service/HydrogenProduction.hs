@@ -129,7 +129,6 @@ productionMain ConfigProduction{..} =
     list  "Local Pathway"        $ localPathways        processLibrary
 
     logInfo ""
-    logInfo $ "Reading network . . ."
     network@Network{..} <- readNetwork (fromMaybe False singleLinkPaths) (fromMaybe inf maximumPathLength) networkFiles
     count "node"      nodeCube
     count "link"      linkCube
@@ -139,7 +138,6 @@ productionMain ConfigProduction{..} =
 
     logInfo ""
     demandCube' <- readDemands True demandFiles
-    checkDemands nodeCube demandCube'
     count "demand" demandCube'
 
     logInfo ""
@@ -150,6 +148,11 @@ productionMain ConfigProduction{..} =
     logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate
     logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate
     logInfo $ "  Interpolate?           " ++ show interpolate
+
+    logInfo ""
+    checkDemands nodeCube demandCube'
+    logInfo ". . . checks complete."
+    logInfo ""
 
     let
       InfrastructureFiles{..} = infrastructureFiles
