@@ -46,19 +46,25 @@ import qualified Data.Set as S (map, toList)
 
 
 -- | Read demand data into a cube.
-readDemands :: (IsString e, MonadError e m, MonadIO m)
+readDemands :: (IsString e, MonadError e m, MonadIO m, SeraLog m)
             => Bool                                    -- ^ Whether to remove records with zero demand.
             -> [FilePath]                              -- ^ The files.
             -> m DemandCube                            -- ^ Action for reading the files into a demand cube.
-readDemands removeZeroDemand =
-  fmap
-    (
-      M.fromListWith (\rec rec' -> combineRecs fFuelConsumption (+) rec rec' <+> combineRecs fNonFuelConsumption (+) rec rec')
-        . fmap (\rec -> (τ (rec :: DemandRec), τ rec))
-        . filter (\rec -> not removeZeroDemand || fFuelConsumption <: rec /= 0 || fNonFuelConsumption <: rec /= 0)
-        . mconcat
-    )
-    . mapM readFieldRecFile
+readDemands removeZeroDemand files =
+  (
+    M.fromListWith (\rec rec' -> combineRecs fFuelConsumption (+) rec rec' <+> combineRecs fNonFuelConsumption (+) rec rec')
+      . fmap (\rec -> (τ (rec :: DemandRec), τ rec))
+      . filter (\rec -> not removeZeroDemand || fFuelConsumption <: rec /= 0 || fNonFuelConsumption <: rec /= 0)
+      . mconcat
+  )
+  <$> sequence
+  [
+    do
+      logInfo $ "Reading demands from \"" ++ file ++ "\" . . ."
+      readFieldRecFile file
+  |
+    file <- files
+  ]
 
 
 -- | Check the validity of the demands.

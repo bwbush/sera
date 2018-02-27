@@ -138,8 +138,8 @@ productionMain ConfigProduction{..} =
     count "zone"      zoneCube
 
     logInfo ""
-    logInfo $ "Reading demands " ++ show demandFiles ++ " . . ."
     demandCube' <- readDemands True demandFiles
+    checkDemands nodeCube demandCube'
     count "demand" demandCube'
 
     logInfo ""
@@ -150,11 +150,6 @@ productionMain ConfigProduction{..} =
     logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate
     logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate
     logInfo $ "  Interpolate?           " ++ show interpolate
-
-    logInfo ""
-    checkDemands nodeCube demandCube'
-    logInfo ". . . checks complete."
-    logInfo ""
 
     let
       InfrastructureFiles{..} = infrastructureFiles
@@ -247,19 +242,19 @@ productionMain ConfigProduction{..} =
     writeFieldCubeFile constructionFile (fromRecords constructions :: ConstructionCube)
 
     logInfo $ "Writing flows to " ++ show flowFile ++ "."
-    writeFieldCubeFile flowFile         (fromRecords flows         :: FlowCube        )
+    writeFieldCubeFile flowFile (fromRecords flows :: FlowCube)
 
     logInfo $ "Writing cash to " ++ show cashFile ++ "."
-    writeFieldCubeFile cashFile         (fromRecords cashes        :: CashCube        )
+    writeFieldCubeFile cashFile (fromRecords cashes :: CashCube)
 
     logInfo $ "Writing impacts to " ++ show impactFile ++ "."
-    writeFieldCubeFile impactFile       (fromRecords impacts       :: ImpactCube      )
+    writeFieldCubeFile impactFile (fromRecords impacts :: ImpactCube)
 
     logInfo $ "Writing sales to " ++ show saleFile ++ "."
-    writeFieldCubeFile saleFile         (saleCube'                 :: SaleCube        )
+    writeFieldCubeFile saleFile (saleCube' :: SaleCube)
 
     logInfo $ "Writing geometries to " ++ show geometryFile ++ "."
-    writeFieldCubeFile geometryFile     (geometryCube              :: GeometryCube    )
+    writeFieldCubeFile geometryFile (geometryCube :: GeometryCube)
 
     logInfo ""
     logInfo "Success."
