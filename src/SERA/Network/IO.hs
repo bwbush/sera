@@ -32,22 +32,25 @@ module SERA.Network.IO (
 ) where
 
 
+import Control.Applicative (liftA2)
 import Control.Monad (guard)
 import Control.Monad.Except (MonadError, MonadIO)
 import Control.Monad.Log (logDebug, logInfo, logError, logWarning)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Vinyl.FieldCube (fromRecords)
-import Data.Daft.Vinyl.FieldRec ((<:))
-import Data.Daft.Vinyl.FieldRec.IO (readFieldRecFile)
+import Data.Daft.Vinyl.FieldRec (Labeled(..), (<:))
+import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, readFieldRecFile)
 import Data.Function.MapReduce (groupReduceByKey)
 import Data.List (sort)
 import Data.Maybe (catMaybes)
 import Data.String (IsString)
+import Data.Vinyl.Derived (FieldRec)
+import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
 import SERA (SeraLog)
 import SERA.Network.Algorithms
-import SERA.Network.Types (ExistingCube, LinkCube, fFrom, FLocation, fLocation, Network(..), NodeCube, TerritoryCube, fTerritory, fTo, ZoneCube, fZone)
-import SERA.Types (fFraction)
+import SERA.Network.Types (ExistingCube, LinkCube, fFrom, fInfrastructure, FLocation, fLocation, Network(..), NodeCube, TerritoryCube, fTerritory, fTo, ZoneCube, fZone)
+import SERA.Types (FFraction, fFraction)
 
 
 data NetworkFiles =
@@ -80,6 +83,7 @@ readNetwork singleLinkPaths maximumPathLength NetworkFiles{..} =
     return Network{..}
 
 
+readConcat :: (IsString e, MonadError e m, MonadIO m, SeraLog m, Labeled (FieldRec rs), ReadFieldRec rs) => String -> [FilePath] -> m [FieldRec rs]
 readConcat message files =
   mconcat
     <$> sequence
@@ -128,7 +132,7 @@ readExistings :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => [FilePath
 readExistings files =
   do
     records <- readConcat "existing facilitiess" files
-    checkDuplicates logError "existing infrastructure" (fLocation <:) records
+    checkDuplicates logError "existing infrastructure" (fInfrastructure <:) records
     checkDuplicates logDebug "existing endpoint" (fLocation <:) records
     return $ fromRecords records
 
@@ -137,6 +141,7 @@ epsilon :: Double
 epsilon = 1e-5
 
 
+checkFractions :: (Ord a, Show a, FFraction ∈ rs, SeraLog m) => String -> (FieldRec rs -> a) -> [FieldRec rs] -> m () 
 checkFractions label field records =
   sequence_
     [
@@ -156,9 +161,9 @@ readTerritories files =
   do
     records <- readConcat "territories" files
     let
-      key rec = (fTerritory <: rec, fLocation <: rec)
+      key = liftA2 (,) (fTerritory <:) (fLocation <:)
     checkDuplicates logError "territory location" key records
-    checkFractions "territories" key records
+    checkFractions "territory" key records
     return $ fromRecords records
 
 
@@ -167,7 +172,7 @@ readZones files =
   do
     records <- readConcat "zones" files
     let
-      key rec = (fZone <: rec, fLocation <: rec)
+      key = liftA2 (,) (fZone <:) (fLocation <:)
     checkDuplicates logError "zone location" key records
-    checkFractions "zones" key records
+    checkFractions "zone" key records
     return $ fromRecords records
