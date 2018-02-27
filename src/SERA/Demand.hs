@@ -75,5 +75,5 @@ checkDemands nodeCube demandCube =
       networkNodes = extractKey (fLocation <:) nodeCube
       demandNodes  = extractKey (fLocation <:) demandCube
     logInfo "Checking demands . . ."
-    checkPresent logWarning "Demand location" demandNodes  "network nodes"   networkNodes
-    checkPresent logDebug   "Network node"    networkNodes "demand location" demandNodes
+    checkPresent logWarning "Demand locations" demandNodes  "network nodes"   networkNodes
+    checkPresent logDebug   "Network nodes"    networkNodes "demand location" demandNodes

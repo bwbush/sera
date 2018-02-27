@@ -104,20 +104,17 @@ productionMain ConfigProduction{..} =
           mapM_ (logInfo . ("  " ++) . show) content
 
     logInfo ""
-    logInfo $ "Reading price files " ++ show priceFiles ++ " . . ."
     priceCube' <- readPrices priceFiles
     count "price" priceCube'
     list "Materials" $ materials priceCube'
 
     logInfo ""
-    logInfo $ "Reading upstream emission intensities " ++ show intensityFiles ++ " . . ."
     intensityCube' <- readIntensities intensityFiles
     count "intensity" intensityCube'
     list "Materials" $ materials intensityCube'
     list "Upstream materials" $ upstreamMaterials intensityCube'
 
     logInfo ""
-    logInfo $ "Reading process components and pathways . . ."
     processLibrary@ProcessLibrary{..} <- readProcessLibrary processLibraryFiles pathwayFiles
     count "cost"    processCostCube
     count "input"   processInputCube

@@ -14,9 +14,10 @@ module SERA.Process.IO (
 
 import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
+import Data.Maybe (fromMaybe)
 import Data.String (IsString)
 import GHC.Generics (Generic)
+import SERA (SeraLog, readConcat)
 import SERA.Process.Types -- FIXME
 
 
@@ -35,11 +36,11 @@ instance FromJSON ProcessLibraryFiles
 instance ToJSON ProcessLibraryFiles
 
 
-readProcessLibrary :: (IsString e, MonadError e m, MonadIO m) => [ProcessLibraryFiles] -> [FilePath] -> m ProcessLibrary
+readProcessLibrary :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => [ProcessLibraryFiles] -> [FilePath] -> m ProcessLibrary
 readProcessLibrary processLibraryFiles pathwayFiles =
   do 
-    processCostCube   <- mconcat <$> mapM (                      readFieldCubeFile . costsFile  ) processLibraryFiles
-    processInputCube  <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . inputsFile ) processLibraryFiles
-    processOutputCube <- mconcat <$> mapM (maybe (return mempty) readFieldCubeFile . outputsFile) processLibraryFiles
-    pathwayCube       <- mconcat <$> mapM                        readFieldCubeFile                pathwayFiles
+    processCostCube   <- readConcat "process costs"   "process cost key"   $                costsFile   <$> processLibraryFiles
+    processInputCube  <- readConcat "process inputs"  "process input key"  $ fromMaybe [] . inputsFile  <$> processLibraryFiles
+    processOutputCube <- readConcat "process outputs" "process output key" $ fromMaybe [] . outputsFile <$> processLibraryFiles
+    pathwayCube       <- readConcat "pathways"        "pathwya key"                                         pathwayFiles
     return ProcessLibrary{..}

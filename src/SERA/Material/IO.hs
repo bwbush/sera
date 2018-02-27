@@ -25,15 +25,15 @@ module SERA.Material.IO (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
-import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeFile)
 import Data.String (IsString)
+import SERA (SeraLog, readConcat)
 import SERA.Material.Types (IntensityCube, PriceCube)
 import SERA.Network.Types (FZone)
 
 
-readPrices :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (PriceCube '[FZone])
-readPrices = (mconcat <$>) . mapM readFieldCubeFile
+readPrices :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => [FilePath] ->  m (PriceCube '[FZone])
+readPrices = readConcat "prices" "price key"
 
 
-readIntensities :: (IsString e, MonadError e m, MonadIO m) => [FilePath] ->  m (IntensityCube '[FZone])
-readIntensities = (mconcat <$>) . mapM readFieldCubeFile
+readIntensities :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => [FilePath] ->  m (IntensityCube '[FZone])
+readIntensities = readConcat "upstream emission intensities" "intensity key"

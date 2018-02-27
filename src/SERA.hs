@@ -35,6 +35,8 @@ module SERA (
 , verboseReadFieldCubeSource
 , verboseWriteFieldCubeSource
 
+, readConcat
+, readFractionsConcat
 , checkPresent
 , checkDisjoint
 , checkDuplicates
@@ -43,13 +45,14 @@ module SERA (
 
 import Control.Monad (guard, unless, void)
 import Control.Monad.Except (MonadError, MonadIO, liftIO, throwError)
-import Control.Monad.Log (MonadLog, LoggingT, Severity(..), WithSeverity(..), renderWithSeverity, runLoggingT)
+import Control.Monad.Log (MonadLog, LoggingT, Severity(..), WithSeverity(..), logError, logInfo, renderWithSeverity, runLoggingT)
+import Data.Daft.DataCube.Table (fromTable)
 import Data.Daft.Source (DataSource(..), withSource)
 import Data.Daft.TypeLevel (Union)
-import Data.Daft.Vinyl.FieldCube (type (↝), ε)
+import Data.Daft.Vinyl.FieldCube (type (↝), type (*↝), ε, τ)
 import Data.Daft.Vinyl.FieldCube.IO (readFieldCubeSource, writeFieldCubeSource)
-import Data.Daft.Vinyl.FieldRec (Labeled)
-import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, ShowFieldRec)
+import Data.Daft.Vinyl.FieldRec (Labeled, (<:))
+import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, ShowFieldRec, readFieldRecFile)
 import Data.Daft.Vinyl.FieldRec.Instances ()
 import Data.Function.MapReduce (groupReduceByKey)
 import Data.Maybe (catMaybes)
@@ -57,10 +60,12 @@ import Data.Set (Set, (\\))
 import Data.String (IsString(..))
 import Data.Version (Version(..), showVersion)
 import Data.Vinyl.Derived (FieldRec)
-import Data.Vinyl.Lens (type (⊆))
+import Data.Vinyl.Lens (type (∈), type (⊆))
 import Data.Vinyl.TypeLevel (type (++))
 import Debug.Trace (trace)
 import Paths_sera (version)
+import SERA.Network.Types (FLocation, fLocation)
+import SERA.Types (FFraction, fFraction)
 import System.IO (hPrint, hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -139,11 +144,66 @@ verboseWriteFieldCubeSource label source table =
       inform $ "Writing " ++ label ++ " to " ++ show source ++ " . . ."
       void $ writeFieldCubeSource source' table
 
+
+readConcat :: forall e m ks vs . (IsString e, MonadError e m, MonadIO m, SeraLog m, Show (FieldRec ks), ks ⊆ (Union ks vs), vs ⊆ (Union ks vs), Ord (FieldRec ks), Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> String -> [FilePath] -> m (ks *↝ vs)
+readConcat message message' files =
+  do
+    records <-
+      mconcat
+        <$> sequence
+        [
+          do
+            logInfo $ "Reading " ++ message ++ " from \"" ++ file ++ "\" . . ."
+            readFieldRecFile file
+        |
+          file <- files
+        ]
+    checkDuplicates logError message' (τ :: FieldRec (Union ks vs) -> FieldRec ks) records
+    return
+      $ (fromTable (τ :: FieldRec (Union ks vs) -> FieldRec ks) (τ :: FieldRec (Union ks vs) -> FieldRec vs)) 
+        records
+
+
+epsilon :: Double
+epsilon = 1e-5
+
+
+readFractionsConcat :: forall e m ks vs . (FLocation ∈ Union ks vs, FFraction ∈ Union ks vs, IsString e, MonadError e m, MonadIO m, SeraLog m, Show (FieldRec ks), ks ⊆ (Union ks vs), vs ⊆ (Union ks vs), Ord (FieldRec ks), Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> String -> [FilePath] -> m (ks *↝ vs)
+readFractionsConcat message message' files =
+  do
+    records <-
+      mconcat
+        <$> sequence
+        [
+          do
+            logInfo $ "Reading " ++ message ++ " from \"" ++ file ++ "\" . . ."
+            records' <- readFieldRecFile file
+            sequence_
+              [
+                logError $ "Fractions do not sum to one for location \"" ++ show location ++ "\"."
+              |
+                location <-
+                  catMaybes
+                    $ groupReduceByKey
+                      (fLocation <:)
+                      (flip ((>>) . guard . (>= epsilon) . abs . (+) (-1) . sum . fmap (fFraction <:)) . return)
+                      records'
+              ]
+            return records'
+        |
+          file <- files
+        ]
+    checkDuplicates logError message' (τ :: FieldRec (Union ks vs) -> FieldRec ks) records
+    return
+      $ (fromTable (τ :: FieldRec (Union ks vs) -> FieldRec ks) (τ :: FieldRec (Union ks vs) -> FieldRec vs)) 
+      records
+
+
 checkPresent :: (Ord a, Show a, SeraLog m) => (String -> m ()) -> String -> Set a -> String -> Set a -> m ()
 checkPresent logMessage label records label' records' =
   sequence_
     [
-      logMessage $ label ++ " references \"" ++ show value ++ "\" not present in " ++ label' ++ "."
+      logMessage $ label ++ " reference \"" ++ show value ++ "\" which is not present in " ++ label' ++ "."
     |
       value <- S.toList $ records \\ records'
     ]
