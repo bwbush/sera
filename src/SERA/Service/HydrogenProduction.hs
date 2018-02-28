@@ -52,7 +52,7 @@ import SERA.Material.Prices
 import SERA.Material.Types -- FIXME
 import SERA.Network.IO (NetworkFiles(..), checkNetwork, readNetwork)
 import SERA.Network.Types -- FIXME
-import SERA.Process.IO (ProcessLibraryFiles, readProcessLibrary)
+import SERA.Process.IO (ProcessLibraryFiles, checkProcessLibrary, readProcessLibrary)
 import SERA.Process.Types -- FIXME
 import SERA.Service ()
 import SERA.Types 
@@ -94,48 +94,43 @@ productionMain :: (IsString e, MonadError e m, MonadIO m, SeraLog m)
 productionMain ConfigProduction{..} =
 
   do
+
+    logInfo ""
+    priceCube' <- readPrices priceFiles
+
+    logInfo ""
+    intensityCube' <- readIntensities intensityFiles
+
+    logInfo ""
+    processLibrary@ProcessLibrary{..} <- readProcessLibrary processLibraryFiles pathwayFiles
+    logInfo ""
+    network@Network{..} <- readNetwork (fromMaybe False singleLinkPaths) (fromMaybe inf maximumPathLength) networkFiles
+
+    logInfo ""
+    demandCube' <- readDemands True demandFiles
+
+    logInfo ""
+    checkNetwork network
+    checkProcessLibrary processLibrary
+    checkDemands nodeCube demandCube'
+    checkPrices network processLibrary intensityCube' priceCube'
+    checkIntensities network processLibrary intensityCube'
+    logInfo ". . . checks complete."
+
+    logInfo ""
     let
-      count label content =
-        logInfo
-          $ " . . . " ++ show (knownSize content) ++ (if null label then "" else ' ' : label) ++ " records."
       list label content =
         do
           logInfo $ label ++ ":"
           mapM_ (logInfo . ("  " ++) . show) content
-
-    logInfo ""
-    priceCube' <- readPrices priceFiles
-    count "price" priceCube'
-    list "Materials" $ materials priceCube'
-
-    logInfo ""
-    intensityCube' <- readIntensities intensityFiles
-    count "intensity" intensityCube'
-    list "Materials" $ materials intensityCube'
-    list "Upstream materials" $ upstreamMaterials intensityCube'
-
-    logInfo ""
-    processLibrary@ProcessLibrary{..} <- readProcessLibrary processLibraryFiles pathwayFiles
-    count "cost"    processCostCube
-    count "input"   processInputCube
-    count "output"  processOutputCube
-    count "pathway" pathwayCube
-    list  "Production"           $ productions          processLibrary
-    list  "Delivery"             $ deliveries           processLibrary
-    list  "Transmission Pathway" $ transmissionPathways processLibrary
-    list  "Local Pathway"        $ localPathways        processLibrary
-
-    logInfo ""
-    network@Network{..} <- readNetwork (fromMaybe False singleLinkPaths) (fromMaybe inf maximumPathLength) networkFiles
-    count "node"      nodeCube
-    count "link"      linkCube
-    count "existing"  existingCube
-    count "territory" territoryCube
-    count "zone"      zoneCube
-
-    logInfo ""
-    demandCube' <- readDemands True demandFiles
-    count "demand" demandCube'
+    list "Production"           $ productions          processLibrary
+    list "Delivery"             $ deliveries           processLibrary
+    list "Transmission Pathway" $ transmissionPathways processLibrary
+    list "Local Pathway"        $ localPathways        processLibrary
+    list "Input materials"      $ materials            processInputCube
+    list "Output materials"     $ materials            processOutputCube
+    list "Upstream materials"   $ upstreamMaterials    intensityCube'
+    list "Priced materials"     $ materials            priceCube'
 
     logInfo ""
     logInfo "Optimization parameters:"
@@ -145,14 +140,6 @@ productionMain ConfigProduction{..} =
     logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate
     logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate
     logInfo $ "  Interpolate?           " ++ show interpolate
-
-    logInfo ""
-    checkNetwork network
-    checkDemands nodeCube demandCube'
-    checkPrices network priceCube'
-    checkIntensities network intensityCube'
-    logInfo ". . . checks complete."
-    logInfo ""
 
     let
       InfrastructureFiles{..} = infrastructureFiles
@@ -241,23 +228,31 @@ productionMain ConfigProduction{..} =
             , nodeCube `evaluable` n
             ]
 
-    logInfo $ "Writing constructions to " ++ show constructionFile ++ "."
+    logInfo ""
+
+    logInfo $ "Optimizing and writing constructions to " ++ show constructionFile ++ ". . ."
     writeFieldCubeFile constructionFile (fromRecords constructions :: ConstructionCube)
+    logInfo $ " . . . " ++ show (length constructions) ++ " records written."
 
-    logInfo $ "Writing flows to " ++ show flowFile ++ "."
+    logInfo $ "Optimizing and writing flows to " ++ show flowFile ++ ". . ."
     writeFieldCubeFile flowFile (fromRecords flows :: FlowCube)
+    logInfo $ " . . . " ++ show (length flows) ++ " records written."
 
-    logInfo $ "Writing cash to " ++ show cashFile ++ "."
+    logInfo $ "Optimizing and writing cash to " ++ show cashFile ++ ". . ."
     writeFieldCubeFile cashFile (fromRecords cashes :: CashCube)
+    logInfo $ " . . . " ++ show (length cashes) ++ " records written."
 
-    logInfo $ "Writing impacts to " ++ show impactFile ++ "."
+    logInfo $ "Optimizing and writing impacts to " ++ show impactFile ++ ". . ."
     writeFieldCubeFile impactFile (fromRecords impacts :: ImpactCube)
+    logInfo $ " . . . " ++ show (length impacts) ++ " records written."
 
-    logInfo $ "Writing sales to " ++ show saleFile ++ "."
+    logInfo $ "Optimizing and writing sales to " ++ show saleFile ++ ". . ."
     writeFieldCubeFile saleFile (saleCube' :: SaleCube)
+    logInfo $ " . . . " ++ show (knownSize saleCube') ++ " records written."
 
-    logInfo $ "Writing geometries to " ++ show geometryFile ++ "."
+    logInfo $ "Optimizing and writing geometries to " ++ show geometryFile ++ ". . ."
     writeFieldCubeFile geometryFile (geometryCube :: GeometryCube)
+    logInfo $ " . . . " ++ show (knownSize geometryCube) ++ " records written."
 
     logInfo ""
     logInfo "Success."

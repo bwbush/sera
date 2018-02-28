@@ -154,10 +154,13 @@ readConcat message message' files =
         [
           do
             logInfo $ "Reading " ++ message ++ " from \"" ++ file ++ "\" . . ."
-            readFieldRecFile file
+            records' <- readFieldRecFile file
+            logInfo $ " . . . " ++ show (length records') ++ " records read."
+            return records'
         |
           file <- files
         ]
+    logInfo $ "Total of " ++ show (length records) ++ " records for " ++ message ++"."
     checkDuplicates logError message' (τ :: FieldRec (Union ks vs) -> FieldRec ks) records
     return
       $ (fromTable (τ :: FieldRec (Union ks vs) -> FieldRec ks) (τ :: FieldRec (Union ks vs) -> FieldRec vs)) 
@@ -178,6 +181,7 @@ readFractionsConcat message message' files =
           do
             logInfo $ "Reading " ++ message ++ " from \"" ++ file ++ "\" . . ."
             records' <- readFieldRecFile file
+            logInfo $ " . . . " ++ show (length records') ++ " records read."
             sequence_
               [
                 logError $ "Fractions do not sum to one for location \"" ++ show location ++ "\"."
@@ -193,6 +197,7 @@ readFractionsConcat message message' files =
         |
           file <- files
         ]
+    logInfo $ "Total of " ++ show (length records) ++ " records for " ++ message ++"."
     checkDuplicates logError message' (τ :: FieldRec (Union ks vs) -> FieldRec ks) records
     return
       $ (fromTable (τ :: FieldRec (Union ks vs) -> FieldRec ks) (τ :: FieldRec (Union ks vs) -> FieldRec vs)) 

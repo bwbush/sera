@@ -34,7 +34,7 @@ module SERA.Network.IO (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
-import Control.Monad.Log (logCritical, logDebug, logInfo, logError, logWarning)
+import Control.Monad.Log (logCritical, logNotice, logInfo, logError, logWarning)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.List (sort)
@@ -95,7 +95,7 @@ readExistings :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => [FilePath
 readExistings files =
   do
     records <- readConcat "existing facilitiess" "existing infrastructure" files
-    checkDuplicates logDebug "existing endpoint" (fLocation <:) $ M.elems records
+    checkDuplicates logNotice "existing endpoint" (fLocation <:) $ M.elems records
     return records
 
 
