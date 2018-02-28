@@ -38,15 +38,16 @@ import Control.Monad.Log (logCritical, logNotice, logInfo, logError, logWarning)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.List (sort)
+import Data.Set (Set)
 import Data.String (IsString)
 import GHC.Generics (Generic)
 import SERA (SeraLog, checkDisjoint, checkDuplicates, checkPresent, readConcat, readFractionsConcat)
 import SERA.Network.Algorithms
 import SERA.Util (extractKey, extractValue)
-import SERA.Network.Types (ExistingCube, LinkCube, fFrom, FLocation, fLocation, Network(..), NodeCube, TerritoryCube, fTo, ZoneCube)
+import SERA.Network.Types (ExistingCube, LinkCube, fFrom, Location, FLocation, fLocation, Network(..), NodeCube, TerritoryCube, fTo, ZoneCube)
 
-import qualified Data.Map.Strict as M (elems)
-import qualified Data.Set as S (unions)
+import qualified Data.Map.Strict as M (empty, elems)
+import qualified Data.Set as S (union, unions)
 
 
 data NetworkFiles =
@@ -55,7 +56,7 @@ data NetworkFiles =
     nodeFiles      :: [FilePath]
   , linkFiles      :: [FilePath]
   , existingFiles  :: [FilePath]
-  , territoryFiles :: [FilePath]
+  , territoryFile  :: Maybe FilePath
   , zoneFiles      :: [FilePath]
   }
     deriving (Eq, Generic, Ord, Read, Show)
@@ -70,9 +71,13 @@ readNetwork singleLinkPaths maximumPathLength NetworkFiles{..} =
   do
     nodeCube <- readNodes nodeFiles
     linkCube <- readLinks linkFiles
+    let
+      nodes = extractKey (fLocation <:) nodeCube
+      links = extractKey (fLocation <:) linkCube
+      locations = nodes `S.union` links
     existingCube <- readExistings existingFiles
-    territoryCube <- readTerritories territoryFiles
-    zoneCube <- readZones zoneFiles
+    territoryCube <- maybe (return M.empty) (readTerritories locations) territoryFile
+    zoneCube <- readZones locations zoneFiles
     let
       adjacencies = adjacencyMatrix nodeCube linkCube
       paths = shortestPaths singleLinkPaths maximumPathLength adjacencies
@@ -99,11 +104,11 @@ readExistings files =
     return records
 
 
-readTerritories :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => [FilePath] ->  m TerritoryCube
-readTerritories = readFractionsConcat "network territories" "territory location"
+readTerritories :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => Set Location -> FilePath ->  m TerritoryCube
+readTerritories locations file = readFractionsConcat "network territories" "territory location" locations [file]
 
 
-readZones :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => [FilePath] ->  m (ZoneCube '[FLocation])
+readZones :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => Set Location -> [FilePath] ->  m (ZoneCube '[FLocation])
 readZones = readFractionsConcat "network zones" "zone location"
 
 

@@ -16,8 +16,10 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 {-# OPTIONS_GHC -fno-warn-missing-fields #-}
+{-# OPTIONS_GHC -fno-warn-orphans        #-}
 
 
 module Main (
@@ -28,13 +30,13 @@ module Main (
 
 import Control.Exception.Base (displayException)
 import Control.Monad.Except (MonadError, MonadIO, liftIO, runExceptT, throwError)
-import Control.Monad.Log (logInfo)
+import Control.Monad.Log (Severity(..), logInfo)
 import Data.Aeson.Types (FromJSON)
 import Data.Data (Data)
 import Data.List (nub)
 import Data.String (IsString(..))
 import Data.Yaml (decodeFileEither)
-import SERA (SeraLog, stringVersion, withSeraLog)
+import SERA (SeraLog', stringVersion, withSeraLog)
 import SERA.Service.Finance (financeMain)
 import SERA.Service.HydrogenProduction (productionMain)
 import SERA.Service.HydrogenSizing (hydrogenSizingMain)
@@ -43,11 +45,18 @@ import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
 import SERA.Service.Regionalization (regionalizationMain)
 import SERA.Service.VehicleStock (stockMain, stockInvertMain)
-import System.Console.CmdArgs (Typeable, (&=), argPos, args, cmdArgs, def, details, help, modes, name, program, summary, typ, typFile)
+import System.Console.CmdArgs (Typeable, (&=), Default(..), argPos, args, cmdArgs, details, help, modes, name, program, summary, typ, typFile)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getArgs, withArgs)
 import System.Exit (die)
 import System.FilePath (takeDirectory)
+
+
+
+deriving instance Data Severity
+
+instance Default Severity where
+  def = Informational
 
 
 -- | Command-line parameters.
@@ -59,34 +68,42 @@ data SERA =
   | VehicleStock
     {
       configuration :: FilePath
+    , logging       :: Severity
     } 
   | InvertVehicleStock
     {
       configuration :: FilePath
+    , logging       :: Severity
     } 
   | Logistic
     {
       configuration :: FilePath
+    , logging       :: Severity
     } 
   | Introduction
     {
       configuration :: FilePath
+    , logging       :: Severity
     } 
   | Regionalization
     {
       configuration :: FilePath
+    , logging       :: Severity
     } 
   | HydrogenSizing
     {
       configuration :: FilePath
+    , logging       :: Severity
     } 
   | HydrogenFinance
     {
       configuration :: FilePath
+    , logging       :: Severity
     }
   | HydrogenProduction
     {
       configuration :: FilePath
+    , logging       :: Severity
     }
   | IntraurbanPipelines
     {
@@ -135,7 +152,9 @@ vehicleStock :: SERA
 vehicleStock =
   VehicleStock
   {
-    configuration  = def
+    logging  =  def
+             &= typ "Error|Warning|Notice|Informational|Debug"
+  , configuration  = def
                   &= typ "YAML_CONFIGURATION"
                   &= argPos 1
   }
@@ -244,7 +263,7 @@ main =
         | otherwise                                  = arguments
     withArgs arguments' $ do
       command <- cmdArgs sera
-      r <- runExceptT . withSeraLog $ dispatch command
+      r <- runExceptT $ dispatch command
       case r :: Either String () of
         Right () -> return ()
         Left  e  -> die $ "[Critical] " ++ e
@@ -261,7 +280,7 @@ decodeYaml =
 
 
 -- | Dispatch a computation.
-dispatch :: (IsString e, MonadError e m, MonadIO m, SeraLog m)
+dispatch :: (IsString e, MonadError e m, MonadIO m)
          => SERA -- ^ The command-line parameters.
          -> m () -- ^ Action to run SERA using the command-line parameters.
 dispatch CombineScenarios{..} =
@@ -294,15 +313,17 @@ dispatch s@IntraurbanPipelines{} = dispatch' s intraurbanMain
 
 
 -- | Help dispatch an operation.
-dispatch' :: (IsString e, MonadError e m, MonadIO m, SeraLog m, FromJSON a)
+dispatch' :: (IsString e, MonadError e m, MonadIO m, FromJSON a)
           => SERA        -- ^ Command-line parameters.
-          -> (a -> m ()) -- ^ Operation to perform.
+          -> (a -> SeraLog' m ()) -- ^ Operation to perform.
           -> m ()        -- ^ Action to perform the operation using the command-line parameters.
 dispatch' s operation =
   do
     let
       path = configuration s
     configuration' <- decodeYaml path
-    logInfo $ "Setting working directory to \"" ++ takeDirectory path ++ "\"."
-    liftIO . setCurrentDirectory $ takeDirectory path
-    operation configuration'
+    withSeraLog (logging s)
+      $ do
+      logInfo $ "Setting working directory to \"" ++ takeDirectory path ++ "\"."
+      liftIO . setCurrentDirectory $ takeDirectory path
+      operation configuration'

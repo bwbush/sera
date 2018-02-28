@@ -25,6 +25,7 @@ module SERA (
 , stringVersion
 -- * Logging
 , SeraLog
+, SeraLog'
 , withSeraLog
 , debug
 , trace'
@@ -64,12 +65,12 @@ import Data.Vinyl.Lens (type (∈), type (⊆))
 import Data.Vinyl.TypeLevel (type (++))
 import Debug.Trace (trace)
 import Paths_sera (version)
-import SERA.Network.Types (FLocation, fLocation)
+import SERA.Network.Types (Location, FLocation, fLocation)
 import SERA.Types (FFraction, fFraction)
 import System.IO (hPrint, hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import qualified Data.Set as S (intersection, toList)
+import qualified Data.Set as S (fromList, intersection, toList)
 
 -- | Report the numeric version.
 numericVersion :: [Int]
@@ -117,14 +118,17 @@ unsafePrint s x =
 
 type SeraLog = MonadLog (WithSeverity String)
 
+type SeraLog' = LoggingT (WithSeverity String)
 
-withSeraLog :: (IsString e, MonadError e m, MonadIO m) => LoggingT (WithSeverity String) m a -> m a
-withSeraLog f =
+
+withSeraLog :: (IsString e, MonadError e m, MonadIO m) => Severity -> SeraLog' m a -> m a
+withSeraLog severity f =
+  
   runLoggingT
     f
     (
       \message ->
-        unless ( msgSeverity message >= Debug)
+        unless ( msgSeverity message > severity)
           $ if msgSeverity message > Critical
               then liftIO . hPrint stderr $ renderWithSeverity fromString message
               else throwError . fromString $ discardSeverity message
@@ -171,8 +175,8 @@ epsilon :: Double
 epsilon = 1e-5
 
 
-readFractionsConcat :: forall e m ks vs . (FLocation ∈ Union ks vs, FFraction ∈ Union ks vs, IsString e, MonadError e m, MonadIO m, SeraLog m, Show (FieldRec ks), ks ⊆ (Union ks vs), vs ⊆ (Union ks vs), Ord (FieldRec ks), Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> String -> [FilePath] -> m (ks *↝ vs)
-readFractionsConcat message message' files =
+readFractionsConcat :: forall e m ks vs . (FLocation ∈ Union ks vs, FFraction ∈ Union ks vs, IsString e, MonadError e m, MonadIO m, SeraLog m, Show (FieldRec ks), ks ⊆ (Union ks vs), vs ⊆ (Union ks vs), Ord (FieldRec ks), Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> String -> Set Location -> [FilePath] -> m (ks *↝ vs)
+readFractionsConcat message message' locations files =
   do
     records <-
       mconcat
@@ -193,6 +197,12 @@ readFractionsConcat message message' files =
                       (flip ((>>) . guard . (>= epsilon) . abs . (+) (-1) . sum . fmap (fFraction <:)) . return)
                       records'
               ]
+            checkPresent
+              logError
+              "Network location"
+              locations
+              message
+              (S.fromList $ (fLocation <:) <$> records')
             return records'
         |
           file <- files

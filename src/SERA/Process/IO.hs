@@ -77,8 +77,8 @@ checkProcessLibrary ProcessLibrary{..} =
       logError
       "Pathways"
       pathwayTechnologies
-      "process costs"
-      costTechnologies
+      "non-production process costs"
+      deliveryTechnologies
     checkPresent
       logWarning
       "Process costs"
@@ -93,7 +93,7 @@ checkProcessLibrary ProcessLibrary{..} =
       outputTechnologies
     checkPresent
       logWarning
-      "Process costs"
+      "Non-production process costs"
       deliveryTechnologies
       "pathways"
       pathwayTechnologies
