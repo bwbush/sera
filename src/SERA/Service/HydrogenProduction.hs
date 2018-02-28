@@ -47,7 +47,7 @@ import SERA (SeraLog)
 import SERA.Demand (checkDemands, readDemands)
 import SERA.Infrastructure (InfrastructureFiles(..))
 import SERA.Infrastructure.Optimization (Optimum(..), optimize)
-import SERA.Material.IO (readIntensities, readPrices)
+import SERA.Material.IO (checkIntensities, checkPrices, readIntensities, readPrices)
 import SERA.Material.Prices
 import SERA.Material.Types -- FIXME
 import SERA.Network.IO (NetworkFiles(..), checkNetwork, readNetwork)
@@ -149,6 +149,8 @@ productionMain ConfigProduction{..} =
     logInfo ""
     checkNetwork network
     checkDemands nodeCube demandCube'
+    checkPrices network priceCube'
+    checkIntensities network intensityCube'
     logInfo ". . . checks complete."
     logInfo ""
 
