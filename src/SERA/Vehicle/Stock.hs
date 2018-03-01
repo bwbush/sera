@@ -37,7 +37,7 @@ import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import SERA.Scenario.Regionalization (SalesOnlyCube, TravelReductionCube, fTravelReduction)
-import SERA.Types (Region, FRegion, fRegion, Year, FYear, fYear)
+import SERA.Types.Fields (Region, FRegion, fRegion, Year, FYear, fYear)
 import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, RegionalStockCube, SalesCube, StockCube, SurvivalCube, SurvivalFunction, asSurvivalFunction)
 import SERA.Vehicle.Types (FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, ModelYear, FModelYear, fModelYear, Sales, FSales, fSales, Stock, FStock, fStock, fSurvival, fTravel, FVehicle, Vocation, FVocation, fVocation)
 

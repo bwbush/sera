@@ -19,10 +19,9 @@ import Data.List (nub, sortBy)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
-import SERA.Material.Types -- FIXME
-import SERA.Network.Types -- FIXME
-import SERA.Process.Types -- FIXME
-import SERA.Types (Year, FYear, fYear)
+import SERA.Material (Pricer)
+import SERA.Process (ProcessLibrary(..), isProduction)
+import SERA.Types.Cubes (IntensityCube)
 import SERA.Types.Fields -- FIXME
 import SERA.Types.Records -- FIXME
 

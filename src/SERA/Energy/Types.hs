@@ -51,7 +51,7 @@ module SERA.Energy.Types (
 
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import SERA.Service ()
-import SERA.Types
+import SERA.Types.Fields
 import SERA.Types.TH (makeField, makeStringField)
 
 

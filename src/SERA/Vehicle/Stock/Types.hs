@@ -44,8 +44,9 @@ import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldCube (type (↝))
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Maybe (fromMaybe)
-import SERA.Types (Region, FRegion, fRegion, FYear)
+import SERA.Types.Fields (Region, FRegion, fRegion, FYear)
 import SERA.Vehicle.Types (Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FSales, FStock, Survival, FSurvival, fSurvival, FTravel, FVehicle, Vocation, FVocation, fVocation)
+
 
 
 type ModelYearCube = '[FModelYear] ↝ '[]

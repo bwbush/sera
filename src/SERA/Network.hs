@@ -1,34 +1,41 @@
 -----------------------------------------------------------------------------
 --
--- Module      :  SERA.Energy.Prices
--- Copyright   :  (c) 2016 National Renewable Energy Laboratory
+-- Module      :  $Header$
+-- Copyright   :  (c) 2018 National Renewable Energy Laboratory
 -- License     :  All Rights Reserved
 --
 -- Maintainer  :  Brian W Bush <brian.bush@nrel.gov>
 -- Stability   :  Stable
 -- Portability :  Portable
 --
--- | Energy prices.
+-- | Regional and local etworks.
 --
 -----------------------------------------------------------------------------
 
 
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE RecordWildCards     #-}
 
 
-module SERA.Network.IO (
-  NetworkFiles(..)
+module SERA.Network (
+-- * Types
+  Network(..)
+-- * Regional networks
+, Path
+, AdjacencyMatrix
+, ShortestPaths
+, pathLength
+-- * Input/output
+, NetworkFiles(..)
 , readNetwork
 , readNodes
 , readLinks
 , readExistings
 , readTerritories
 , readZones
+-- * Quality assurance
 , checkNetwork
 ) where
 
@@ -42,12 +49,27 @@ import Data.Set (Set)
 import Data.String (IsString)
 import GHC.Generics (Generic)
 import SERA (SeraLog, checkDisjoint, checkDuplicates, checkPresent, readConcat, readFractionsConcat)
-import SERA.Network.Algorithms
+import SERA.Network.Algorithms (AdjacencyMatrix, Path, ShortestPaths, adjacencyMatrix, pathLength, shortestPaths)
+import SERA.Types.Cubes (ExistingCube, LinkCube, NodeCube, TerritoryCube, ZoneCube)
+import SERA.Types.Fields (fFrom, Location, FLocation, fLocation, fTo)
 import SERA.Util (extractKey, extractValue)
-import SERA.Network.Types (ExistingCube, LinkCube, fFrom, Location, FLocation, fLocation, Network(..), NodeCube, TerritoryCube, fTo, ZoneCube)
 
 import qualified Data.Map.Strict as M (empty, elems)
 import qualified Data.Set as S (union, unions)
+
+
+data Network =
+  Network
+  {
+    nodeCube :: NodeCube
+  , linkCube :: LinkCube
+  , existingCube :: ExistingCube
+  , territoryCube :: TerritoryCube
+  , zoneCube :: ZoneCube '[FLocation]
+  , adjacencies :: AdjacencyMatrix
+  , paths    :: ShortestPaths
+  }
+    deriving (Eq, Ord, Show)
 
 
 data NetworkFiles =

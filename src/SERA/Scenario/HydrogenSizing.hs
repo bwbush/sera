@@ -49,7 +49,7 @@ import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters, stationCapacit
 import SERA.Refueling.Types
 import SERA.Scenario.Types (RegionalIntroductionsCube, FFirstYear, fFirstYear, fIntroductionYear, FLastYear, fLastYear, FStationCount, fStationCount, hasStations)
 import SERA.Service ()
-import SERA.Types -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
+import SERA.Types.Fields hiding (FSales, fSales) -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
 import SERA.Vehicle.Stock.Types (StockCube)
 import SERA.Vehicle.Types
 

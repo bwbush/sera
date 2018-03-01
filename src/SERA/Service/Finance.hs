@@ -66,7 +66,7 @@ import SERA.Finance.Scenario (Scenario(..))
 import SERA.Finance.Solution (solveConstrained')
 import SERA.Refueling.Types
 import SERA.Service ()
-import SERA.Types
+import SERA.Types.Fields hiding (FSales)
 import SERA.Util.Summarization (summation)
 import SERA.Vehicle.Types
 import Text.Regex.Posix ((=~))

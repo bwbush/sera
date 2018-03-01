@@ -17,7 +17,7 @@ import Data.Vinyl.Derived (ElField(..), FieldRec)
 import Data.Vinyl.Lens (rput)
 import SERA.Refueling.Types -- (FNewCapitalCost, fNewCapitalCost, FNewCapitalIncentives, fNewCapitalIncentives, fNewProductionIncentives, FNewStations, fNewStations, StationDetailCube, FStationID, stationID)
 import SERA.Scenario.Types (Cohort(..), FCohort, fCohort, FAnnualGrant, fAnnualGrant, fGrants, FGrantDuration, fGrantDuration, FInitialGrant, fInitialGrant, GrantsCube, fRollover)
-import SERA.Types (fYear, FYear, FRegion, fRegion, region)
+import SERA.Types.Fields (fYear, FYear, FRegion, fRegion, region)
 import Text.Regex.Posix ((=~))
 
 

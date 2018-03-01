@@ -94,7 +94,7 @@ import Data.Daft.Vinyl.FieldCube (type (↝))
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
-import SERA.Types (FRegion, FUrbanCode, FUrbanName, FYear)
+import SERA.Types.Fields (FRegion, FUrbanCode, FUrbanName, FYear)
 import SERA.Types.TH (makeField, makeStringField)
 import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FVehicle, FVocation)
 

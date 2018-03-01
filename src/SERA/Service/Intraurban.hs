@@ -29,7 +29,6 @@ module SERA.Service.Intraurban (
 ) where
 
 
-
 import Control.Arrow ((&&&))
 import Control.Monad (guard)
 import Control.Monad.Except (MonadError, MonadIO)
@@ -46,12 +45,9 @@ import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
-import SERA.Network.Types (FLength, fLength, Location(..), FLocation, fLocation, FFrom, fFrom, FTo, fTo, FX, fX, FY, fY)
-import SERA.Process.Types (fFixedCost)
 import SERA.Refueling.Types (FNewCapacity, fNewCapacity)
 import SERA.Service ()
-import SERA.Types.Fields (Position(Position), fPosition)
-import SERA.Types (Cluster(cluster), FCluster, fCluster, Geometry(Geometry), fGeometry, Year, FYear, fYear)
+import SERA.Types.Fields (Cluster(cluster), FCluster, fCluster, fFixedCost, FFrom, fFrom, Geometry(Geometry), fGeometry, FLength, fLength, Location(..), FLocation, fLocation, Position(Position), fPosition, FTo, fTo, FX, fX, FY, fY, Year, FYear, fYear)
 
 import qualified Data.Map.Strict as M ((!), elems, empty, fromList, insert, union)
 import qualified Data.PQueue.Prio.Max as Q (empty, deleteFindMax, filter, fromList, null, union, unions)

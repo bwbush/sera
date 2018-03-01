@@ -8,7 +8,7 @@
 -- Stability   :  Stable
 -- Portability :  Portable
 --
--- | Services for SERA.
+-- | General-purpose SERA support functions.
 --
 -----------------------------------------------------------------------------
 
@@ -65,8 +65,7 @@ import Data.Vinyl.Lens (type (∈), type (⊆))
 import Data.Vinyl.TypeLevel (type (++))
 import Debug.Trace (trace)
 import Paths_sera (version)
-import SERA.Network.Types (Location, FLocation, fLocation)
-import SERA.Types (FFraction, fFraction)
+import SERA.Types.Fields (FFraction, fFraction, Location, FLocation, fLocation)
 import System.IO (hPrint, hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 

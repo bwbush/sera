@@ -1,5 +1,5 @@
 name: sera
-version: 3.1.1.16
+version: 3.1.1.17
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -42,6 +42,7 @@ library
   exposed-modules : AEO.Prices
                     AEO.Types
                     SERA
+                    SERA.Configuration.FileLocations
                     SERA.Configuration.RiskInputs
                     SERA.Configuration.ScenarioInputs
                     SERA.Constants
@@ -79,19 +80,18 @@ library
                     SERA.Infrastructure
                     SERA.Infrastructure.Optimization
                     SERA.Material
-                    SERA.Material.IO
-                    SERA.Material.Types
-                    SERA.Material.Prices
+                    SERA.Network
                     SERA.Network.Algorithms
-                    SERA.Network.IO
-                    SERA.Network.Types
                     SERA.Process
-                    SERA.Process.IO
-                    SERA.Process.Reification.Pathway
                     SERA.Process.Reification.Technology
-                    SERA.Process.Types
+                    SERA.Refueling.EVSE.Cost
+                    SERA.Refueling.EVSE.Cost.CostComp23
+                    SERA.Refueling.EVSE.Cost.CostComp25
                     SERA.Refueling.FCVSE.Cost
+                    SERA.Refueling.FCVSE.Cost.CostComp23
+                    SERA.Refueling.FCVSE.Cost.CostComp25
                     SERA.Refueling.FCVSE.Cost.NREL56412
+                    SERA.Refueling.FCVSE.Sizing
                     SERA.Refueling.Hydrogen.Sizing
                     SERA.Refueling.Types
                     SERA.Scenario.Grants
@@ -102,8 +102,8 @@ library
                     SERA.Scenario.Types
                     SERA.Service
                     SERA.Service.Finance
-                    SERA.Service.HydrogenSizing
                     SERA.Service.HydrogenProduction
+                    SERA.Service.HydrogenSizing
                     SERA.Service.Intraurban
                     SERA.Service.Logistic
                     SERA.Service.Regionalization
@@ -117,6 +117,7 @@ library
                     SERA.Util.Summarization
                     SERA.Util.Time
                     SERA.Util.Units
+                    SERA.Util.Version
                     SERA.Vehicle.MHD.Census2002
                     SERA.Vehicle.MHD.EMFAC2010
                     SERA.Vehicle.MHD.Mitchell20141106

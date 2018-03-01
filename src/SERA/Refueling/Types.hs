@@ -64,7 +64,7 @@ module SERA.Refueling.Types (
 
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import SERA.Service ()
-import SERA.Types -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
+import SERA.Types.Fields hiding (FSales)  -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
 import SERA.Types.TH (makeField, makeStringField)
 import SERA.Vehicle.Types
 

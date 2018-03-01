@@ -1,4 +1,3 @@
------------------------------------------------------------------------------
 --
 -- Module      :  SERA.Service.HydrogenSizing
 -- Copyright   :  (c) 2016 National Renewable Energy Laboratory
@@ -48,15 +47,10 @@ import SERA (SeraLog)
 import SERA.Demand (checkDemands, readDemands)
 import SERA.Infrastructure (InfrastructureFiles(..))
 import SERA.Infrastructure.Optimization (Optimum(..), optimize)
-import SERA.Material.IO (checkIntensities, checkPrices, readIntensities, readPrices)
-import SERA.Material.Prices
-import SERA.Material.Types -- FIXME
-import SERA.Network.IO (NetworkFiles(..), checkNetwork, readNetwork)
-import SERA.Network.Types -- FIXME
-import SERA.Process.IO (ProcessLibraryFiles, checkProcessLibrary, readProcessLibrary)
-import SERA.Process.Types -- FIXME
+import SERA.Material (checkIntensities, checkPrices, materials, readIntensities, readPrices, rezoneIntensities, rezonePrices, upstreamMaterials)
+import SERA.Network (Network(..), NetworkFiles(..), checkNetwork, readNetwork)
+import SERA.Process (ProcessLibrary(..), ProcessLibraryFiles, checkProcessLibrary, deliveries, localPathways, productions, readProcessLibrary, transmissionPathways)
 import SERA.Service ()
-import SERA.Types 
 import SERA.Types.Cubes
 import SERA.Types.Fields
 

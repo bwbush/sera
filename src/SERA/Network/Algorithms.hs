@@ -12,10 +12,53 @@ import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Default.Util (inf)
 import Data.Map.Strict (Map)
 import Data.PQueue.Min (MinQueue)
-import SERA.Network.Types
+import SERA.Types.Cubes
+import SERA.Types.Fields
 
 import qualified Data.Map.Strict as M ((!), empty, fromList, fromListWith, insert, lookup, keys, map, singleton, toList, union, unions)
 import qualified Data.PQueue.Min as Q (deleteFindMin, fromList, insert, null, union)
+
+
+data Path =
+    GenericPath -- FIXME: Enforce semantics.
+    {
+      sourceId        :: Location
+    , linkIds         :: [(Location, Double)]
+    , sinkId          :: Location
+    }
+{-
+  | TransmissionPath -- FIXME: Enforce semantics.
+    {
+      sourceId        :: Location
+    , transmissionIds :: [(Location, Double)]
+    , gateId          :: Location
+    }
+  | DeliveryPath -- FIXME: Enforce semantics.
+    {
+      gateId          :: Location
+    , deliveryIds     :: [(Location, Double)]
+    , sinkId          :: Location
+    }
+  | FullPath -- FIXME: Enforce semantics.
+    {
+      sourceId        :: Location
+    , transmissionIds :: [(Location, Double)]
+    , gateId          :: Location
+    , deliveryIds     :: [(Location, Double)]
+    , sinkId          :: Location
+    }
+-}
+    deriving (Eq, Ord, Read, Show)
+
+
+pathLength :: Path -> Double
+pathLength = sum . fmap snd . linkIds
+
+
+type AdjacencyMatrix = Map Location (Map Location (Location, Double))
+
+
+type ShortestPaths = Map (Location, Location) Path
 
 
 adjacencyMatrix :: NodeCube -> LinkCube -> AdjacencyMatrix
