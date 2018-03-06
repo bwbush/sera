@@ -44,7 +44,7 @@ module SERA (
 ) where
 
 
-import Control.Monad (guard, unless, void)
+import Control.Monad (guard, void, when)
 import Control.Monad.Except (MonadError, MonadIO, liftIO, throwError)
 import Control.Monad.Log (MonadLog, LoggingT, Severity(..), WithSeverity(..), logError, logInfo, renderWithSeverity, runLoggingT)
 import Data.Daft.DataCube.Table (fromTable)
@@ -127,7 +127,7 @@ withSeraLog severity f =
     f
     (
       \message ->
-        unless ( msgSeverity message > severity)
+        when (msgSeverity message <= severity || msgSeverity message == Informational)
           $ if msgSeverity message > Critical
               then liftIO . hPrint stderr $ renderWithSeverity fromString message
               else throwError . fromString $ discardSeverity message
