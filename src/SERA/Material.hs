@@ -96,7 +96,7 @@ checkPrices Network{..} ProcessLibrary{..} intensityCube priceCube =
       "network zones"
       (extractKey (fZone <:) zoneCube)
     checkPresent
-      logNotice
+      logWarning
       "Process inputs"
       inputMaterials
       "prices"

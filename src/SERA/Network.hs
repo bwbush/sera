@@ -165,13 +165,13 @@ checkNetwork Network{..} =
       "network nodes"
       nodes
     checkPresent
-      logError
+      logWarning
       "Network territories"
       (extractKey (fLocation <:) territoryCube)
       "network nodes"
       nodes
     checkPresent
-      logError
+      logWarning
       "Network zones"
       (extractKey (fLocation <:) zoneCube)
       "network nodes"
