@@ -183,7 +183,8 @@ productionMain ConfigProduction{..} =
               )
             |
               rec <- toKnownRecords demandCube
-            , lastYear >= fYear <: rec
+            , firstYear <= fYear <: rec
+            , lastYear  >= fYear <: rec
             ]
       saleCube' =
         κ
