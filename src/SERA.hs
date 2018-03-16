@@ -217,7 +217,7 @@ checkPresent :: (Ord a, Show a, SeraLog m) => (String -> m ()) -> String -> Set 
 checkPresent logMessage label records label' records' =
   sequence_
     [
-      logMessage $ label ++ " reference \"" ++ show value ++ "\" which is not present in " ++ label' ++ "."
+      logMessage $ label ++ " reference \"" ++ show value ++ "\" is not present in " ++ label' ++ "."
     |
       value <- S.toList $ records \\ records'
     ]

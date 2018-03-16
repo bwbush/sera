@@ -45,6 +45,7 @@ import Control.Monad.Log (logCritical, logNotice, logInfo, logError, logWarning)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.List (sort)
+import Data.Monoid ((<>))
 import Data.Set (Set)
 import Data.String (IsString)
 import GHC.Generics (Generic)
@@ -140,6 +141,8 @@ checkNetwork Network{..} =
     logInfo "Checking network . . ."
     let
       nodes = extractKey (fLocation <:) nodeCube
+      links = extractKey (fLocation <:) linkCube
+      locations = nodes <> links
       endpoints =
         S.unions
           [
@@ -163,19 +166,19 @@ checkNetwork Network{..} =
       "Existing infrastructures"
       (extractValue (fLocation <:) existingCube)
       "network nodes"
-      nodes
+      locations
     checkPresent
       logWarning
       "Network territories"
       (extractKey (fLocation <:) territoryCube)
       "network nodes"
-      nodes
+      locations
     checkPresent
       logWarning
       "Network zones"
       (extractKey (fLocation <:) zoneCube)
       "network nodes"
-      nodes
+      locations
     checkDisjoint
       logCritical
       "Network link has the same location as network node at"
