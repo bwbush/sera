@@ -137,11 +137,12 @@ productionMain ConfigProduction{..} =
     logInfo $ "  Interpolate?           " ++ show interpolate
 
     let
+
       InfrastructureFiles{..} = infrastructureFiles
       priceCube = rezonePrices priceCube' zoneCube
       intensityCube = rezoneIntensities intensityCube' zoneCube
       demandCube = demandCube' ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandAreaCube
-    let
+
       Optimum constructions flows cashes impacts =
         optimize
           firstYear
@@ -150,6 +151,7 @@ productionMain ConfigProduction{..} =
           intensityCube
           processLibrary
           priceCube
+
       saleCube =
         fromListWithKey
           (
@@ -161,7 +163,7 @@ productionMain ConfigProduction{..} =
           )
           $ [
               (
-                    fLocation    =: fLocation <: ((fromRecords constructions :: ConstructionCube) ! (fInfrastructure =: fInfrastructure <: rec))
+                    fLocation    =: fLocation <: ((fromRecords constructions' :: ConstructionCube) ! (fInfrastructure =: fInfrastructure <: rec))
                 <+> fYear        =: fYear <: rec
               ,     fProduction  =: fProduction <: rec
                 <+> fSale        =: fSale <: rec
@@ -224,23 +226,50 @@ productionMain ConfigProduction{..} =
             , nodeCube `evaluable` n
             ]
 
+      wktCube :: '[FLocation] *↝ '[FGeometry]
+      wktCube =
+        fromRecords
+          $ [
+                  fLocation =: fLocation <: rec
+              <+> fGeometry =: Geometry ("POINT(" ++ show (fX <: rec) ++ " " ++ show (fY <: rec) ++ ")")
+            |
+              rec <- toKnownRecords nodeCube
+            ]
+            ++
+            [
+                  fLocation =: fLocation <: rec
+              <+> fGeometry =: Geometry ("LINESTRING(" ++ show (fX <: nodeFrom) ++ " " ++ show (fY <: nodeFrom) ++ "," ++ show (fX <: nodeTo) ++ " " ++ show (fY <: nodeTo) ++ ")")
+            |
+              rec <- toKnownRecords linkCube
+            , let nodeFrom = nodeCube ! (fLocation =: fFrom <: rec)
+                  nodeTo   = nodeCube ! (fLocation =: fTo   <: rec)
+            ]
+
+      wktCube' :: '[FInfrastructure] *↝ '[FGeometry]
+      wktCube' = fromRecords $ τ <$> constructions'
+
+      constructions' = [ construction <+> wktCube  ! τ construction | construction <- constructions ]
+      flows'         = [ flow         <+> wktCube' ! τ flow         | flow         <- flows         ]
+      cashes'        = [ cash         <+> wktCube' ! τ cash         | cash         <- cashes        ]
+      impacts'       = [ impact       <+> wktCube' ! τ impact       | impact       <- impacts       ]
+
     logInfo ""
 
     logInfo $ "Optimizing and writing constructions to " ++ show constructionFile ++ ". . ."
-    writeFieldCubeFile constructionFile (fromRecords constructions :: ConstructionCube)
-    logInfo $ " . . . " ++ show (length constructions) ++ " records written."
+    writeFieldCubeFile constructionFile (fromRecords constructions' :: ConstructionCube)
+    logInfo $ " . . . " ++ show (length constructions') ++ " records written."
 
     logInfo $ "Optimizing and writing flows to " ++ show flowFile ++ ". . ."
-    writeFieldCubeFile flowFile (fromRecords flows :: FlowCube)
-    logInfo $ " . . . " ++ show (length flows) ++ " records written."
+    writeFieldCubeFile flowFile (fromRecords flows' :: FlowCube)
+    logInfo $ " . . . " ++ show (length flows') ++ " records written."
 
     logInfo $ "Optimizing and writing cash to " ++ show cashFile ++ ". . ."
-    writeFieldCubeFile cashFile (fromRecords cashes :: CashCube)
-    logInfo $ " . . . " ++ show (length cashes) ++ " records written."
+    writeFieldCubeFile cashFile (fromRecords cashes' :: CashCube)
+    logInfo $ " . . . " ++ show (length cashes') ++ " records written."
 
     logInfo $ "Optimizing and writing impacts to " ++ show impactFile ++ ". . ."
-    writeFieldCubeFile impactFile (fromRecords impacts :: ImpactCube)
-    logInfo $ " . . . " ++ show (length impacts) ++ " records written."
+    writeFieldCubeFile impactFile (fromRecords impacts' :: ImpactCube)
+    logInfo $ " . . . " ++ show (length impacts') ++ " records written."
 
     logInfo $ "Optimizing and writing sales to " ++ show saleFile ++ ". . ."
     writeFieldCubeFile saleFile (saleCube' :: SaleCube)
