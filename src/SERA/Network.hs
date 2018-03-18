@@ -56,7 +56,7 @@ import SERA.Types.Fields (fFrom, Location, FLocation, fLocation, fTo)
 import SERA.Util (extractKey, extractValue)
 
 import qualified Data.Map.Strict as M (elems)
-import qualified Data.Set as S (union, unions)
+import qualified Data.Set as S (unions)
 
 
 data Network =
@@ -97,7 +97,7 @@ readNetwork singleLinkPaths maximumPathLength NetworkFiles{..} =
     let
       nodes = extractKey (fLocation <:) nodeCube
       links = extractKey (fLocation <:) linkCube
-      locations = nodes `S.union` links
+      locations = (nodes, links)
     existingCube <- readExistings existingFiles
     territoryCube <- readTerritories locations territoryFiles
     zoneCube <- readZones locations zoneFiles
@@ -127,11 +127,11 @@ readExistings files =
     return records
 
 
-readTerritories :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => Set Location -> [FilePath] ->  m TerritoryCube
+readTerritories :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => (Set Location, Set Location) -> [FilePath] ->  m TerritoryCube
 readTerritories = readFractionsConcat "network territories" "territory location"
 
 
-readZones :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => Set Location -> [FilePath] ->  m (ZoneCube '[FLocation])
+readZones :: (IsString e, MonadError e m, MonadIO m, SeraLog m) => (Set Location, Set Location) -> [FilePath] ->  m (ZoneCube '[FLocation])
 readZones = readFractionsConcat "network zones" "zone location"
 
 

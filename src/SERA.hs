@@ -56,6 +56,7 @@ import Data.Daft.Vinyl.FieldRec (Labeled, (<:))
 import Data.Daft.Vinyl.FieldRec.IO (ReadFieldRec, ShowFieldRec, readFieldRecFile)
 import Data.Daft.Vinyl.FieldRec.Instances ()
 import Data.Function.MapReduce (groupReduceByKey)
+import Data.List (isInfixOf)
 import Data.Maybe (catMaybes)
 import Data.Set (Set, (\\))
 import Data.String (IsString(..))
@@ -69,7 +70,8 @@ import SERA.Types.Fields (FFraction, fFraction, Location, FLocation, fLocation)
 import System.IO (hPrint, hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import qualified Data.Set as S (fromList, intersection, toList)
+import qualified Data.Set as S (fromList, intersection, toList, union)
+
 
 -- | Report the numeric version.
 numericVersion :: [Int]
@@ -174,8 +176,8 @@ epsilon :: Double
 epsilon = 1e-5
 
 
-readFractionsConcat :: forall e m ks vs . (FLocation ∈ Union ks vs, FFraction ∈ Union ks vs, IsString e, MonadError e m, MonadIO m, SeraLog m, Show (FieldRec ks), ks ⊆ (Union ks vs), vs ⊆ (Union ks vs), Ord (FieldRec ks), Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> String -> Set Location -> [FilePath] -> m (ks *↝ vs)
-readFractionsConcat message message' locations files =
+readFractionsConcat :: forall e m ks vs . (FLocation ∈ Union ks vs, FFraction ∈ Union ks vs, IsString e, MonadError e m, MonadIO m, SeraLog m, Show (FieldRec ks), ks ⊆ (Union ks vs), vs ⊆ (Union ks vs), Ord (FieldRec ks), Labeled (FieldRec (Union ks vs)), ReadFieldRec (Union ks vs)) => String -> String -> (Set Location, Set Location) -> [FilePath] -> m (ks *↝ vs)
+readFractionsConcat message message' (nodes, links) files =
   do
     records <-
       mconcat
@@ -205,6 +207,10 @@ readFractionsConcat message message' locations files =
             return records'
         |
           file <- files
+        , let locations = case ("-nodes" `isInfixOf` file, "-links" `isInfixOf` file) of
+                            (True , False) -> nodes
+                            (False, True ) -> links
+                            _              -> nodes `S.union` links
         ]
     logInfo $ "Total of " ++ show (length records) ++ " records for " ++ message ++"."
     checkDuplicates logError message' (τ :: FieldRec (Union ks vs) -> FieldRec ks) records
