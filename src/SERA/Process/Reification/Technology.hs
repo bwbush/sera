@@ -38,7 +38,7 @@ selectTechnology :: (FTechnology ∈ rs, FYear ∈ rs, FNameplate ∈ rs, FDutyC
 selectTechnology tech built demand candidates =
   let
     eligible =
-      sortBy (compare `on` (\rec -> fNameplate <: rec * fDutyCycle <: rec))
+      sortBy (compare `on` (\rec -> (- fYear <: rec, fNameplate <: rec * fDutyCycle <: rec)))
         [
           candidate
         |
@@ -78,7 +78,7 @@ selectTechnology' message tech built capacity candidates =
     [
       let
         eligible =
-          sortBy (compare `on` (fNameplate <:))
+          sortBy (compare `on` (\rec -> (- fYear <: rec, fNameplate <: rec)))
             [
               candidate
             |
