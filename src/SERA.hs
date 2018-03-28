@@ -85,7 +85,7 @@ stringVersion = showVersion version ++ " (2018)"
 
 -- | Whether debugging is activated.
 debug :: Bool
-debug = True
+debug = False
 
 
 -- | Write to standard error during a computataon.

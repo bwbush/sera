@@ -22,7 +22,7 @@ import Control.Monad (guard)
 import Data.Daft.DataCube (evaluable, evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
-import Data.Default.Util (inf, nan)
+-- import Data.Default.Util (inf)
 import Data.Graph.Algorithms (minimumCostFlow)
 import Data.Graph.Types (Capacity(..), Graph(..), makeGraph)
 import Data.List (find, nub, unzip4)
@@ -30,6 +30,7 @@ import Data.Map (Map)
 import Data.Maybe (fromJust, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (fst3)
+import SERA (trace')
 import SERA.Material (Pricer, localize)
 import SERA.Network (Network(..))
 import SERA.Process.Reification.Technology (TechnologyOperation, technologyReifier)
@@ -40,6 +41,9 @@ import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+
+
+inf = 1e20
 
 
 data Optimum =
@@ -100,6 +104,7 @@ data Edge =
 networkGraph :: Network -> DemandCube -> ProcessLibrary -> NetworkGraph
 networkGraph Network{..} demandCube ProcessLibrary{..} =
   makeGraph
+    $ (\x -> trace' (unlines $ show <$> x) x)
     $ concat
     [
       case compare stage extendedStage of
@@ -144,7 +149,7 @@ networkGraph Network{..} demandCube ProcessLibrary{..} =
               , let location = fLocation <: node
               ]
     |
-      pathway <- S.toList $ S.map (fPathway <:) $ knownKeys pathwayCube
+      pathway <- (\x -> trace' ("PATHWAYS\t" ++ show x) x) $ S.toList $ S.map (fPathway <:) $ knownKeys pathwayCube
     , let stages = toKnownRecords $ σ (\key _ -> pathway == fPathway <: key) pathwayCube
           extendedStage' = find (\rec -> fExtended <: rec && fTransmission <: rec) stages
           firstStage = fStage <: minimum stages
@@ -271,13 +276,13 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                                   <+> fProduction     =: flow
                                                                                                   <+> fFlow           =: 0
                                                                                                   <+> fLoss           =: 0
-                                                                                                  <+> fSale           =: flow * fCost <: existing
+                                                                                                  <+> fSale           =: abs flow * fCost <: existing
                                                                                                   <+> fSalvage        =: 0
                                                                                                 , [
                                                                                                       fInfrastructure =: infrastructure
                                                                                                     <+> fYear         =: year'
                                                                                                     <+> fCostCategory =: Variable
-                                                                                                    <+> fSale         =: flow * fCost <: existing
+                                                                                                    <+> fSale         =: abs flow * fCost <: existing
                                                                                                   ]
                                                                                                 , []
                                                                                                 , flow
@@ -393,7 +398,7 @@ costEdge' year delta EdgeContext{..} =
   let
     (flows', cashes', impacts', _) =
       unzip4
-        . fmap (flip ($ year) (abs $ reserved + delta) . operation) -- FIXME: Check for negative flows everywhere.
+        . fmap (flip ($ year) (reserved + delta) . operation) -- FIXME: Check for negative flows everywhere.
         $ (maybe id (:) adjustable) fixed
   in
     (flows', concat cashes', concat impacts')
@@ -406,26 +411,28 @@ marginalCost year delta edgeContext =
     oldCost = costEdge year 0                         edgeContext
     newCost = costEdge year 0 $ adjustEdge year delta edgeContext
   in
-    (newCost - oldCost) / abs delta
+    (\x -> trace' ("MARGINAL\t" ++ show x) x) $ if False
+      then (newCost - oldCost) / abs delta
+      else newCost / abs (reserved edgeContext + delta)
 
 
 adjustEdge :: Year -> Double -> EdgeContext -> EdgeContext
 adjustEdge year delta edgeContext@EdgeContext{..} =
   let
+    reserved' = reserved + delta
     edgeContext' =
-      if abs (delta + reserved) <= nameplate -- FIXME: Rewrite this.
+      if abs reserved' <= nameplate -- FIXME: Rewrite this.
         then edgeContext
              {
-               reserved = reserved + delta
+               reserved = reserved'
              }
         else let
-               flow = abs (delta + reserved)
-               adjustable'@TechnologyContext{..} = (fromJust builder) (length fixed + 1) year flow
+               adjustable'@TechnologyContext{..} = (fromJust builder) (length fixed + 1) year reserved'
              in
                edgeContext
                {
                  nameplate = fNameplate <: construction * fDutyCycle <: construction
-               , reserved = reserved + delta
+               , reserved = reserved'
                , adjustable = Just adjustable'
                }
     (flows', cashes', impacts') = costEdge' year 0 edgeContext'
@@ -452,34 +459,30 @@ costFunction year (Capacity flow) context edge =
       edgeContext = edgeContexts context M.! edge
       capacity' =
         case edgeContext of
-          EdgeContext{..} -> capacity
-          _               -> nan
+          EdgeContext{..}          -> capacity
+          EdgeReverseContext edge' -> capacity $ edgeContexts context M.! edge'
     guard
       $ capacity' > 0
     return
       (
-        case edge of
+        (\x -> trace' ("COST\t" ++ show edge ++ "\t" ++ show x) x) $ case edge of
           DemandEdge _                              -> Sum 0
-          ExistingEdge _                            -> Sum . (fVariableCost <:) . construction . head $ fixed edgeContext
+          ExistingEdge _                            -> Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext
           PathwayReverseEdge location pathway stage -> fst . fromJust . costFunction year (Capacity (- flow)) context $ PathwayForwardEdge location pathway stage
           _                                         -> Sum $ marginalCost year flow edgeContext
       , context
       )
-costFunction _ _ _ _ = error "costFunction: no flow."
+costFunction _ _ _ edge = trace' ("NOTHING\t" ++ show edge) Nothing -- error "costFunction: no flow."
 
 
 capacityFunction :: NetworkContext -> Edge -> Maybe (Capacity Double, NetworkContext)
 capacityFunction context edge =
-  do
-    let
-      edgeContext = edgeContexts context M.! edge
-      capacity' =
-        case edgeContext of
-          EdgeContext{..} -> capacity
-          _               -> nan
-    guard
-      $ capacity' > 0
-    return (Capacity capacity', context)
+  case edgeContexts context M.! edge of
+    EdgeContext{..}          -> do
+                                  trace' ("CAPACITY\t" ++ show edge ++ "\t" ++ show capacity) $ guard
+                                    $ capacity > 0
+                                  return (Capacity capacity, context)
+    EdgeReverseContext edge' -> (\x -> trace' ("REVERSE\t" ++ show edge' ++ "\t" ++ show (fst <$> x)) x) $ capacityFunction context edge'
 
 
 flowFunction :: Year -> Capacity Double -> NetworkContext -> Edge -> Maybe NetworkContext
@@ -490,25 +493,26 @@ flowFunction year (Capacity flow) context edge =
       update edgeContext' = context { edgeContexts = M.insert edge edgeContext' $ edgeContexts context }
       capacity' =
         case edgeContext of
-          EdgeContext{..} -> capacity
-          _               -> nan
+          EdgeContext{..}          -> capacity
+          EdgeReverseContext edge' -> capacity $ edgeContexts context M.! edge'
     guard
       $ capacity' > 0
     return
       $ case edge of
-        DemandEdge _                              -> update $ edgeContext { capacity = capacity' - flow }
-        ExistingEdge _                            -> update $ let
-                                                                (flow', cashes', impacts', _) = operation (head $ fixed edgeContext) year flow
+        DemandEdge _                              -> (\x -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show (capacity $ edgeContexts context M.! edge) ++ "\t" ++ show (capacity $ edgeContexts x M.! edge) ++ "\t" ++ show (reserved $ edgeContexts context M.! edge) ++ "\t" ++ show (reserved $ edgeContexts x M.! edge)) x) $ update $ edgeContext { capacity = capacity' - flow , reserved = reserved edgeContext + flow}
+        ExistingEdge _                            -> (\x -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show (capacity $ edgeContexts context M.! edge) ++ "\t" ++ show (capacity $ edgeContexts x M.! edge) ++ "\t" ++ show (reserved $ edgeContexts context M.! edge) ++ "\t" ++ show (reserved $ edgeContexts x M.! edge)) x) $ update $ let
+                                                                (flow', cashes', impacts', _) = operation (head $ fixed edgeContext) year $ reserved edgeContext + flow -- FIXME: remove head.
                                                               in
                                                                 edgeContext
                                                                 {
-                                                                  capacity = capacity' - flow
+                                                                  capacity = capacity' - abs flow
+                                                                , reserved = reserved edgeContext + flow
                                                                 , flows    = [flow']
                                                                 , cashes   = cashes'
                                                                 , impacts  = impacts'
                                                                 }
-        PathwayReverseEdge location pathway stage -> fromJust . flowFunction year (Capacity (- flow)) context $ PathwayForwardEdge location pathway stage
-        _                                         -> update $ adjustEdge year flow edgeContext
+        PathwayReverseEdge location pathway stage -> trace' "RLOW" . fromJust . flowFunction year (Capacity (- flow)) context $ PathwayForwardEdge location pathway stage
+        _                                         -> (\x -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show (capacity $ edgeContexts context M.! edge) ++ "\t" ++ show (capacity $ edgeContexts x M.! edge) ++ "\t" ++ show (reserved $ edgeContexts context M.! edge) ++ "\t" ++ show (reserved $ edgeContexts x M.! edge)) x) $ update $ adjustEdge year flow edgeContext
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
@@ -534,12 +538,12 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
             EdgeContext{..}      -> [
                                       (
                                         construction <$> (maybe id (:) adjustable) fixed
-                                      , flows
+                                      , trace' (show ("F", flows)) flows
                                       , cashes
                                       , impacts
                                       )
                                     ] 
-            EdgeReverseContext _ -> [] 
+            EdgeReverseContext z -> trace' (show ("R", z)) [] 
         |
           (_, v) <- M.toList edgeContexts
         ]

@@ -188,7 +188,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand
         construction
       , \year output' ->
         let
-          output = minimum [output', fDutyCycle <: construction * fNameplate <: construction]
+          output = minimum [abs output', fDutyCycle <: construction * fNameplate <: construction] -- FIXME: Check this.
           specifics' = fInfrastructure =: fInfrastructure <: specifics <+> fYear =: year
           lifetime = fLifetime <: costs
           salvage = maximum [0, fCapitalCost <: construction * fromIntegral (built + lifetime - year) / fromIntegral lifetime]
@@ -257,14 +257,14 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand
         in
           (
                 specifics'
-            <+> fProduction =: (if isProduction (fProductive <: costs) then output else 0     )
-            <+> fFlow       =: (if isProduction (fProductive <: costs) then 0      else output)
+            <+> fProduction =: (if isProduction (fProductive <: costs) then output else 0      )
+            <+> fFlow       =: (if isProduction (fProductive <: costs) then 0      else output')
             <+> fLoss       =: 0
             <+> fSale       =: (sum $ (fSale <:) <$> cash)
             <+> fSalvage    =: salvage
           , cash
           , impacts
-          , output
+          , output'
           )
       )
 
