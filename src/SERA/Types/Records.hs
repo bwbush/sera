@@ -43,7 +43,7 @@ type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProduct
 type DemandRec = FieldRec '[FLocation, FYear, FFuelConsumption, FNonFuelConsumption]
 
 
-type Flow = FieldRec '[FInfrastructure, FYear, FProduction, FFlow, FLoss, FSale, FSalvage]
+type Flow = FieldRec '[FInfrastructure, FYear, FTechnology, FProduction, FFlow, FLoss, FSale, FSalvage]
 
 
 type Geometry = FieldRec '[FLocation, FPosition, FX, FY]

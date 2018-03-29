@@ -258,6 +258,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand
         in
           (
                 specifics'
+            <+> fTechnology =: tech
             <+> fProduction =: (if isProduction (fProductive <: costs) then output else 0      )
             <+> fFlow       =: (if isProduction (fProductive <: costs) then 0      else output')
             <+> fLoss       =: 0

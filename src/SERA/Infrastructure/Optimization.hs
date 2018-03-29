@@ -274,6 +274,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                                 (
                                                                                                       fInfrastructure =: infrastructure
                                                                                                   <+> fYear           =: year'
+                                                                                                  <+> fTechnology     =: Technology "Existing or Planned"
                                                                                                   <+> fProduction     =: flow
                                                                                                   <+> fFlow           =: 0
                                                                                                   <+> fLoss           =: 0
