@@ -1,5 +1,5 @@
 name: sera
-version: 3.1.1.32
+version: 3.1.1.33
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -83,7 +83,7 @@ library
                     SERA.Network
                     SERA.Network.Algorithms
                     SERA.Process
-                    SERA.Process.Reification.Technology
+                    SERA.Process.Reification
                     SERA.Refueling.EVSE.Cost
                     SERA.Refueling.EVSE.Cost.CostComp23
                     SERA.Refueling.EVSE.Cost.CostComp25
