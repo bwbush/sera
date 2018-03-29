@@ -194,7 +194,7 @@ technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand
           output = minimum [abs output', fDutyCycle <: construction * fNameplate <: construction] -- FIXME: Check this.
           specifics' = fInfrastructure =: fInfrastructure <: specifics <+> fYear =: year
           lifetime = fLifetime <: costs
-          salvage = maximum [0, fCapitalCost <: construction * fromIntegral (built + lifetime - year) / fromIntegral lifetime]
+          salvage = maximum [0, fCapitalCost <: construction * fromIntegral (built + lifetime - year - 1) / fromIntegral lifetime]
           capital = if built == year then fCapitalCost <: construction else 0
           fixed = fFixedCost <: construction
           variable = output * fVariableCost <: construction
