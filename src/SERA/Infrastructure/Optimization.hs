@@ -18,6 +18,7 @@ module SERA.Infrastructure.Optimization (
 ) where
 
 
+import Control.Arrow ((&&&))
 import Control.Monad (guard)
 import Data.Daft.DataCube (evaluable, evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
@@ -190,7 +191,7 @@ networkGraph Network{..} demandCube ProcessLibrary{..} =
     ]
 
 
-type TechnologyBuilder = Int -> Year -> Double {- Demand -} -> TechnologyContext
+type TechnologyBuilder = Int -> Year -> Double {- Demand -} -> Maybe TechnologyContext
 
 
 data TechnologyContext =
@@ -298,8 +299,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            {
                                                              builder    = Just
                                                                             $ \i year' demand ->
-                                                                              uncurry TechnologyContext
-                                                                              . fromJust
+                                                                              fmap (uncurry TechnologyContext)
                                                                               $ technologyReifier
                                                                                   processLibrary
                                                                                   (localize intensityCube location)
@@ -322,8 +322,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            {
                                                              builder    = Just
                                                                             $ \i year' demand ->
-                                                                              uncurry TechnologyContext
-                                                                              . fromJust
+                                                                              fmap (uncurry TechnologyContext)
                                                                               $ technologyReifier
                                                                                   processLibrary
                                                                                   (localize intensityCube location)
@@ -356,8 +355,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              {
                                                                builder    = Just
                                                                               $ \i year' demand ->
-                                                                                uncurry TechnologyContext
-                                                                                . fromJust
+                                                                                fmap (uncurry TechnologyContext)
                                                                                 $ technologyReifier
                                                                                     processLibrary
                                                                                     (localize intensityCube location)
@@ -427,7 +425,7 @@ adjustEdge year delta edgeContext@EdgeContext{..} =
                reserved = reserved'
              }
         else let
-               adjustable'@TechnologyContext{..} = (fromJust builder) (length fixed + 1) year reserved'
+               adjustable'@TechnologyContext{..} = fromJust $ (fromJust builder) (length fixed + 1) year reserved'
              in
                edgeContext
                {
@@ -457,12 +455,12 @@ costFunction year (Capacity flow) context edge =
   do
     let
       edgeContext = edgeContexts context M.! edge
-      capacity' =
+      (capacity', builder') =
         case edgeContext of
-          EdgeContext{..}          -> capacity
-          EdgeReverseContext edge' -> capacity $ edgeContexts context M.! edge'
+          EdgeContext{..}          -> (capacity, builder)
+          EdgeReverseContext edge' -> capacity &&& builder $ edgeContexts context M.! edge'
     guard
-      $ capacity' > 0
+      $ capacity' > 0 && maybe True (\b -> isJust $ b 0 year 0) builder'
     return
       (
         (\x -> trace' ("COST\t" ++ show edge ++ "\t" ++ show x) x) $ case edge of
@@ -475,14 +473,14 @@ costFunction year (Capacity flow) context edge =
 costFunction _ _ _ edge = trace' ("NOTHING\t" ++ show edge) Nothing -- error "costFunction: no flow."
 
 
-capacityFunction :: NetworkContext -> Edge -> Maybe (Capacity Double, NetworkContext)
-capacityFunction context edge =
+capacityFunction :: Year -> NetworkContext -> Edge -> Maybe (Capacity Double, NetworkContext)
+capacityFunction year context edge =
   case edgeContexts context M.! edge of
     EdgeContext{..}          -> do
                                   trace' ("CAPACITY\t" ++ show edge ++ "\t" ++ show capacity) $ guard
-                                    $ capacity > 0
+                                    $ capacity > 0 && maybe True (\b -> isJust $ b 0 year 0) builder
                                   return (Capacity capacity, context)
-    EdgeReverseContext edge' -> (\x -> trace' ("REVERSE\t" ++ show edge' ++ "\t" ++ show (fst <$> x)) x) $ capacityFunction context edge'
+    EdgeReverseContext edge' -> (\x -> trace' ("REVERSE\t" ++ show edge' ++ "\t" ++ show (fst <$> x)) x) $ capacityFunction year context edge'
 
 
 flowFunction :: Year -> Capacity Double -> NetworkContext -> Edge -> Maybe NetworkContext
@@ -524,7 +522,7 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
     NetworkContext{..} =
       minimumCostFlow
         (costFunction year')
-        capacityFunction
+        (capacityFunction year')
         (flowFunction year')
         graph
         context

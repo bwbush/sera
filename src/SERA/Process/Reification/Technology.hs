@@ -19,6 +19,7 @@ import Data.List (nub, sortBy)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
+import SERA (trace')
 import SERA.Material (Pricer)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (IntensityCube)
@@ -56,7 +57,7 @@ selectTechnology tech built demand candidates =
       , demand   >= fNameplate <: candidate * fDutyCycle <: candidate
       ]
   in
-    if null eligible
+    trace' (show ("A", tech, built, demand, length eligible, if null scalable then 0 else year, length scalable)) $ if null eligible
       then Nothing
       else Just $ if null scalable
         then head eligible
