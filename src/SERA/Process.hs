@@ -44,7 +44,7 @@ module SERA.Process (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
-import Control.Monad.Log (logError, logInfo, logWarning)
+import Control.Monad.Log (logCritical, logError, logInfo, logWarning)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.Vinyl.FieldCube (type (*↝), κ', σ, υ, ω)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
@@ -198,7 +198,7 @@ checkProcessLibrary ProcessLibrary{..} =
       "process costs"
       costTechnologies
     checkPresent
-      logError
+      logCritical
       "Pathways"
       pathwayTechnologies
       "non-production process costs"
