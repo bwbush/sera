@@ -141,8 +141,10 @@ selectIntensity year material intensities =
 
 
 technologyReifier :: ProcessLibrary -> IntensityCube '[] -> Pricer -> TechnologyReifier
-technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand distance' tech = 
+technologyReifier ProcessLibrary{..} intensityCube pricer specifics built demand' distance' tech = 
   do -- FIXME: Add interpolation
+    let
+      demand = abs demand'
     specification <- 
       selectTechnology
         tech
