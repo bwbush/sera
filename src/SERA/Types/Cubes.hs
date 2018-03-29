@@ -108,7 +108,7 @@ type ProcessOutputCube = ProductionCube ProcessKey'
 type ProductionCube key = (FMaterial ': key) *↝ '[FProductionRate, FProductionRateStretch]
 
 
-type SaleCube = '[FTerritory, FYear] *↝ '[FProduction, FSale, FCost, FConsumption, FSales, FNetPrice]
+type SaleCube = '[FTerritory, FYear] *↝ '[FProduction, FSale, FCost, FConsumption, FSales, FNetPrice, FGeometry]
 
 
 type TerritoryCube = '[FTerritory, FLocation] *↝ '[FFraction]

@@ -32,13 +32,14 @@ module SERA.Service.HydrogenProduction (
 import Control.Monad.Except (MonadError, MonadIO)
 import Control.Monad.Log (logInfo)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.DataCube (evaluable, knownSize)
+import Data.Daft.DataCube (evaluable, evaluate, knownSize)
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldCube.IO (writeFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec
 import Data.Default.Util (inf)
+import Data.List (intercalate)
 import Data.Map.Strict (fromListWithKey)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
@@ -189,10 +190,10 @@ productionMain ConfigProduction{..} =
             , lastYear  >= fYear <: rec
             ]
       saleCube' =
-        κ
+        κ'
           (undefined :: Set (FieldRec '[FLocation]))
           (
-            \_ recs ->
+            \recs ->
                   fProduction  =: sum (fmap (\rec -> fFraction <: rec * fProduction  <: rec) recs)
               <+> fSale        =: sum (fmap (\rec -> fFraction <: rec * fSale        <: rec) recs)
               <+> fCost        =: sum (fmap (\rec -> fFraction <: rec * fSale        <: rec) recs)
@@ -201,6 +202,21 @@ productionMain ConfigProduction{..} =
               <+> fSales       =: sum (fmap (\rec -> fFraction <: rec * fSales       <: rec) recs)
               <+> fNetPrice    =: sum (fmap (\rec -> fFraction <: rec * fSales       <: rec) recs)
                                 / sum (fmap (\rec -> fFraction <: rec * fConsumption <: rec) recs)
+              <+> fGeometry    =: Geometry
+                                    (
+                                      "MULTIPOINT("
+                                      ++ intercalate ","
+                                         [
+                                           show (fX <: loc) ++ " " ++ show (fY <: loc)
+                                         |
+                                           rec <- recs
+                                         , let loc' = nodeCube `evaluate` τ rec
+                                         , isJust loc'
+                                         , let Just loc = loc'
+                                         ]
+                                      ++ ")"
+                                    )
+                                  
           )
           $ territoryCube ⋈ saleCube
 
