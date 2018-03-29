@@ -46,7 +46,7 @@ module SERA.Process (
 import Control.Monad.Except (MonadError, MonadIO)
 import Control.Monad.Log (logCritical, logError, logInfo, logWarning)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.Vinyl.FieldCube (type (*↝), κ', σ, υ, ω)
+import Data.Daft.Vinyl.FieldCube (type (*↝), κ', σ, υ, ω, toKnownRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Function (on)
 import Data.List (sortBy)
@@ -55,9 +55,9 @@ import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
-import SERA (SeraLog, checkPresent, readConcat)
+import SERA (SeraLog, checkCondition, checkPresent, readConcat)
 import SERA.Types.Cubes (PathwayCube, ProcessCostCube, ProcessInputCube, ProcessOutputCube)
-import SERA.Types.Fields (FCondition, fCondition, fDelivery, fExtended, Pathway, FPathway, fPathway, Productive(..), fProductive, FStage, fStage, Technology, FTechnology, fTechnology, fTransmission)
+import SERA.Types.Fields (fNameplate, FCondition, fCondition, fDelivery, fExtended, Pathway, FPathway, fPathway, Productive(..), fProductive, FStage, fStage, Technology, FTechnology, fTechnology, fTransmission)
 import SERA.Util (extractKey, extractValue)
 
 import qualified Data.Set as S (map)
@@ -221,3 +221,21 @@ checkProcessLibrary ProcessLibrary{..} =
       deliveryTechnologies
       "pathways"
       pathwayTechnologies
+    checkCondition
+      logCritical
+      "Process costs"
+      ((> 0) . (fNameplate <:))
+      "non-posiitive nameplate capacity"
+      $ toKnownRecords processCostCube
+    checkCondition
+      logWarning
+      "Process inputs"
+      ((>= 0) . (fNameplate <:))
+      "negative nameplate capacity"
+      $ toKnownRecords processInputCube
+    checkCondition
+      logWarning
+      "Process outputs"
+      ((>= 0) . (fNameplate <:))
+      "negative nameplate capacity"
+      $ toKnownRecords processOutputCube

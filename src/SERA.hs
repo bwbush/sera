@@ -41,6 +41,7 @@ module SERA (
 , checkPresent
 , checkDisjoint
 , checkDuplicates
+, checkCondition
 ) where
 
 
@@ -251,4 +252,15 @@ checkDuplicates logMessage label field records =
             field
             (flip ((>>) . guard . (> 1) . length) . return)
             records
+    ]
+
+
+checkCondition :: (SeraLog m, Show a) => (String -> m ()) -> String -> (a -> Bool) -> String -> [a] -> m ()
+checkCondition logMessage label condition message records =
+  sequence_
+    [
+      logMessage $ label ++ " has " ++ message ++ ": " ++ show record ++ "."
+    |
+      record <- records
+    , not $ condition record
     ]
