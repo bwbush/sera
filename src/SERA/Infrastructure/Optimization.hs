@@ -204,7 +204,6 @@ data EdgeContext =
     {
       builder    :: Maybe TechnologyBuilder
     , capacity   :: Double
-    , nameplate  :: Double
     , reserved   :: Double
     , fixed      :: [TechnologyContext]
     , adjustable :: Maybe TechnologyContext
@@ -235,7 +234,6 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            {
                                                              builder    = Nothing
                                                            , capacity   = maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec) $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
-                                                           , nameplate  = 0
                                                            , reserved   = 0
                                                            , fixed      = []
                                                            , adjustable = Nothing
@@ -250,7 +248,6 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              {
                                                                builder    = Nothing
                                                              , capacity   = fCapacity <: existing
-                                                             , nameplate  = fCapacity <: existing
                                                              , reserved   = 0
                                                              , fixed      = [
                                                                                 TechnologyContext
@@ -307,8 +304,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                   demand
                                                                                   0
                                                                                   technology
-                                                           , capacity   = inf
-                                                           , nameplate  = 0
+                                                           , capacity   = 0
                                                            , reserved   = 0
                                                            , fixed      = []
                                                            , adjustable = Nothing
@@ -330,8 +326,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                   demand
                                                                                   0
                                                                                   technology
-                                                           , capacity   = inf
-                                                           , nameplate  = 0
+                                                           , capacity   = 0
                                                            , reserved   = 0
                                                            , fixed      = []
                                                            , adjustable = Nothing
@@ -363,8 +358,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                     demand
                                                                                     distance
                                                                                     technology
-                                                             , capacity   = inf
-                                                             , nameplate  = 0
+                                                             , capacity   = 0
                                                              , reserved   = 0
                                                              , fixed      = []
                                                              , adjustable = Nothing
@@ -417,7 +411,7 @@ adjustEdge year delta edgeContext@EdgeContext{..} =
   let
     reserved' = reserved + delta
     edgeContext' =
-      if abs reserved' <= nameplate -- FIXME: Rewrite this.
+      if abs reserved' <= capacity -- FIXME: Rewrite this.
         then edgeContext
              {
                reserved = reserved'
@@ -427,7 +421,7 @@ adjustEdge year delta edgeContext@EdgeContext{..} =
              in
                edgeContext
                {
-                 nameplate = fNameplate <: construction * fDutyCycle <: construction
+                 capacity = fNameplate <: construction * fDutyCycle <: construction
                , reserved = reserved'
                , adjustable = Just adjustable'
                }
@@ -455,10 +449,11 @@ costFunction year (Capacity flow) context edge =
       edgeContext = edgeContexts context M.! edge
       (capacity', builder') =
         case edgeContext of
-          EdgeContext{..}          -> (capacity, builder)
-          EdgeReverseContext edge' -> capacity &&& builder $ edgeContexts context M.! edge'
+          EdgeContext{..}          -> (capacity - abs reserved, builder)
+          EdgeReverseContext edge' -> (\z -> capacity z - abs (reserved z)) &&& builder $ edgeContexts context M.! edge'
+      canBuild =  maybe False (\b -> isJust $ b 0 year 0) builder'
     guard
-      $ capacity' > 0 && maybe True (\b -> isJust $ b 0 year 0) builder'
+      $ capacity' > 0 || canBuild
     return
       (
         case edge of
@@ -475,9 +470,17 @@ capacityFunction :: Year -> NetworkContext -> Edge -> Maybe (Capacity Double, Ne
 capacityFunction year context edge =
   case edgeContexts context M.! edge of
     EdgeContext{..}          -> do
+                                  let
+                                    canBuild =  maybe False (\b -> isJust $ b 0 year 0) builder
                                   guard
-                                    $ capacity > 0 && maybe True (\b -> isJust $ b 0 year 0) builder
-                                  return (Capacity capacity, context)
+                                    $ capacity > abs reserved || canBuild
+                                  return
+                                    (
+                                      if canBuild
+                                        then Capacity inf
+                                        else Capacity $ capacity - abs reserved
+                                    , context
+                                    )
     EdgeReverseContext edge' -> capacityFunction year context edge'
 
 
@@ -487,22 +490,22 @@ flowFunction year (Capacity flow) context edge =
     let
       edgeContext = edgeContexts context M.! edge
       update edgeContext' = context { edgeContexts = M.insert edge edgeContext' $ edgeContexts context }
-      capacity' =
+      (capacity', builder') =
         case edgeContext of
-          EdgeContext{..}          -> capacity
-          EdgeReverseContext edge' -> capacity $ edgeContexts context M.! edge'
+          EdgeContext{..}          -> (capacity - abs reserved, builder)
+          EdgeReverseContext edge' -> (\z -> capacity z - abs (reserved z)) &&& builder $ edgeContexts context M.! edge'
+      canBuild =  maybe False (\b -> isJust $ b 0 year 0) builder'
     guard
-      $ capacity' > 0
+      $ capacity' > 0 || canBuild
     return
       $ case edge of
-        DemandEdge _                              -> update $ edgeContext { capacity = capacity' - flow , reserved = reserved edgeContext + flow}
+        DemandEdge _                              -> update $ edgeContext { reserved = reserved edgeContext + flow}
         ExistingEdge _                            -> update $ let
                                                                 (flow', cashes', impacts', _) = operation (head $ fixed edgeContext) year $ reserved edgeContext + flow -- FIXME: remove head.
                                                               in
                                                                 edgeContext
                                                                 {
-                                                                  capacity = capacity' - abs flow
-                                                                , reserved = reserved edgeContext + flow
+                                                                  reserved = reserved edgeContext + flow
                                                                 , flows    = [flow']
                                                                 , cashes   = cashes'
                                                                 , impacts  = impacts'
@@ -549,8 +552,8 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
     sequence_
       [
         case k of
-          DemandEdge location -> if capacity v > 0
-                                   then logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v) ++ " kg/yr."
+          DemandEdge location -> if capacity v > reserved v
+                                   then logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
                                    else return ()
           _                   -> return ()
       |
