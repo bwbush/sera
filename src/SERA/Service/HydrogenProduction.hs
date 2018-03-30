@@ -144,14 +144,16 @@ productionMain ConfigProduction{..} =
       intensityCube = rezoneIntensities intensityCube' zoneCube
       demandCube = demandCube' ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandAreaCube
 
-      Optimum constructions flows cashes impacts =
-        optimize
-          firstYear
-          network
-          demandCube'
-          intensityCube
-          processLibrary
-          priceCube
+    Optimum constructions flows cashes impacts <-
+      optimize
+        firstYear
+        network
+        demandCube'
+        intensityCube
+        processLibrary
+        priceCube
+
+    let
 
       saleCube =
         fromListWithKey
@@ -271,27 +273,27 @@ productionMain ConfigProduction{..} =
 
     logInfo ""
 
-    logInfo $ "Optimizing and writing constructions to " ++ show constructionFile ++ ". . ."
+    logInfo $ "Writing constructions to " ++ show constructionFile ++ " . . ."
     writeFieldCubeFile constructionFile (fromRecords constructions' :: ConstructionCube)
     logInfo $ " . . . " ++ show (length constructions') ++ " records written."
 
-    logInfo $ "Optimizing and writing flows to " ++ show flowFile ++ ". . ."
+    logInfo $ "Writing flows to " ++ show flowFile ++ " . . ."
     writeFieldCubeFile flowFile (fromRecords flows' :: FlowCube)
     logInfo $ " . . . " ++ show (length flows') ++ " records written."
 
-    logInfo $ "Optimizing and writing cash to " ++ show cashFile ++ ". . ."
+    logInfo $ "Writing cash to " ++ show cashFile ++ " . . ."
     writeFieldCubeFile cashFile (fromRecords cashes' :: CashCube)
     logInfo $ " . . . " ++ show (length cashes') ++ " records written."
 
-    logInfo $ "Optimizing and writing impacts to " ++ show impactFile ++ ". . ."
+    logInfo $ "Writing impacts to " ++ show impactFile ++ " . . ."
     writeFieldCubeFile impactFile (fromRecords impacts' :: ImpactCube)
     logInfo $ " . . . " ++ show (length impacts') ++ " records written."
 
-    logInfo $ "Optimizing and writing sales to " ++ show saleFile ++ ". . ."
+    logInfo $ "Writing sales to " ++ show saleFile ++ " . . ."
     writeFieldCubeFile saleFile (saleCube' :: SaleCube)
     logInfo $ " . . . " ++ show (knownSize saleCube') ++ " records written."
 
-    logInfo $ "Optimizing and writing geometries to " ++ show geometryFile ++ ". . ."
+    logInfo $ "Writing geometries to " ++ show geometryFile ++ " . . ."
     writeFieldCubeFile geometryFile (geometryCube :: GeometryCube)
     logInfo $ " . . . " ++ show (knownSize geometryCube) ++ " records written."
 

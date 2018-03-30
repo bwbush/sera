@@ -6,7 +6,7 @@
 }:
 mkDerivation {
   pname = "sera";
-  version = "3.1.1.33";
+  version = "3.1.1.34";
   src = ./.;
   isLibrary = true;
   isExecutable = true;

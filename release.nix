@@ -9,8 +9,8 @@ let
           "${compiler}" = pkgs.haskell.packages."${compiler}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
               sera       = haskellPackagesNew.callPackage ./default.nix    { };
-              daft       = haskellPackagesNew.callPackage ./daft.nix       { };
-              graft      = haskellPackagesNew.callPackage ./graft.nix      { };
+              daft       = haskellPackagesNew.callPackage ../daft/default.nix       { };
+              graft      = haskellPackagesNew.callPackage ../graft/default.nix      { };
               singletons = haskellPackagesNew.callPackage ./singletons.nix { };
               heaps      = haskellPackagesNew.callPackage ./heaps.nix      { };
             };
