@@ -18,9 +18,9 @@ module SERA.Infrastructure.Optimization (
 ) where
 
 
-import Control.Arrow ((&&&))
-import Control.Monad (guard)
-import Control.Monad.Log (logError, logInfo)
+import Control.Arrow ((&&&), (***))
+import Control.Monad (guard, when)
+import Control.Monad.Log (logDebug, logError, logInfo, logNotice)
 import Data.Daft.DataCube (evaluable, evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
@@ -358,7 +358,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                     demand
                                                                                     distance
                                                                                     technology
-                                                             , capacity   = 0
+                                                             , capacity   = inf -- TEMP 0
                                                              , reserved   = 0
                                                              , fixed      = []
                                                              , adjustable = Nothing
@@ -549,13 +549,28 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
           ]
     logInfo ""
     logInfo $ "Optimizing and checking solution for year " ++ show year' ++ " . . ."
+    let
+      (existingSupply, totalDemand) =
+        (sum *** sum)
+          $ unzip
+          [
+            case k of
+              DemandEdge   _ -> (0         , capacity v)
+              ExistingEdge _ -> (capacity v, 0         )
+              _              -> (0         , 0         )
+          |
+            (k, v) <- M.toList edgeContexts
+          ]
+    logNotice $ "Total existing production capacity: " ++ show existingSupply ++ " kg/yr."
+    logNotice $ "Total demand: "                       ++ show totalDemand    ++ " kg/yr."
     sequence_
       [
         case k of
-          DemandEdge location -> if capacity v > reserved v
-                                   then logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
-                                   else return ()
-          _                   -> return ()
+          DemandEdge   location -> when (capacity v > reserved v)
+                                     . logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
+          ExistingEdge location -> when (capacity v > reserved v)
+                                     . logDebug $ "Underused existing production at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
+          _                     -> return ()
       |
         (k, v) <- M.toList edgeContexts
       ]
