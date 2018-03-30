@@ -117,8 +117,6 @@ networkGraph Network{..} demandCube ProcessLibrary{..} =
               |
                 node <- toKnownRecords nodeCube
               , let location = fLocation <: node
-                    productive = fProductive <: node
-              , productive == Central || productive == Yes
               ]
         EQ -> concat
               [
@@ -358,7 +356,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                     demand
                                                                                     distance
                                                                                     technology
-                                                             , capacity   = inf -- TEMP 0
+                                                             , capacity   = 0
                                                              , reserved   = 0
                                                              , fixed      = []
                                                              , adjustable = Nothing
