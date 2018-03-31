@@ -128,7 +128,7 @@ sera =
     , hydrogenProduction
     , intraurbanPipelines
     ]
-      &= summary ("SERA command-Line, Version " ++ stringVersion ++ " by National Renewable Energy Laboratory")
+      &= summary ("SERA command-line, Version " ++ stringVersion ++ " by National Renewable Energy Laboratory")
       &= program "sera"
       &= help "This tool provides a command-line interface to SERA functions."
 
@@ -324,7 +324,7 @@ dispatch' s operation =
     configuration' <- decodeYaml path
     withSeraLog (logging s)
       $ do
-      logInfo $ "SERA command-Line, Version " ++ stringVersion ++ " by National Renewable Energy Laboratory"
+      logInfo $ "SERA command-line, Version " ++ stringVersion ++ " by National Renewable Energy Laboratory"
       logInfo ""
       logInfo $ "Setting working directory to \"" ++ takeDirectory path ++ "\"."
       liftIO . setCurrentDirectory $ takeDirectory path
