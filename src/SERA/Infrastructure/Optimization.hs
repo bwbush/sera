@@ -559,8 +559,20 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
           |
             (k, v) <- M.toList edgeContexts
           ]
-    logNotice $ "Total existing production capacity: " ++ show existingSupply ++ " kg/yr."
-    logNotice $ "Total demand: "                       ++ show totalDemand    ++ " kg/yr."
+      totalCost =
+        sum
+          $ concat
+          [
+            case v of
+              EdgeContext{..}      -> (fSale <:) <$> flows
+              EdgeReverseContext{} -> []
+          |
+            (_, v) <- M.toList edgeContexts
+          ]
+    logNotice $ "Total existing production capacity: " ++ show existingSupply            ++ " kg/yr."
+    logNotice $ "Total demand: "                       ++ show totalDemand               ++ " kg."
+    logNotice $ "Total cost: "                         ++ show totalDemand               ++ " $."
+    logNotice $ "Average cost: "                       ++ show (totalCost / totalDemand) ++ " $/kg."
     failure <-
       or <$> sequence
         [
