@@ -571,8 +571,8 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
           ]
     logNotice $ "Total existing production capacity: " ++ show existingSupply            ++ " kg/yr."
     logNotice $ "Total demand: "                       ++ show totalDemand               ++ " kg."
-    logNotice $ "Total cost: "                         ++ show totalDemand               ++ " $."
-    logNotice $ "Average cost: "                       ++ show (totalCost / totalDemand) ++ " $/kg."
+    logNotice $ "Total cost: "                         ++ show totalDemand               ++ " USD."
+    logNotice $ "Average cost: "                       ++ show (totalCost / totalDemand) ++ " USD/kg."
     failure <-
       or <$> sequence
         [
