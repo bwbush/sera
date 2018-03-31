@@ -513,7 +513,7 @@ flowFunction year (Capacity flow) context edge =
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
-optimize :: SeraLog m => Year -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> m Optimum
+optimize :: SeraLog m => Year -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> m (Bool, Optimum)
 optimize year' network demandCube intensityCube processLibrary priceCube =
   do
     let
@@ -561,21 +561,30 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
           ]
     logNotice $ "Total existing production capacity: " ++ show existingSupply ++ " kg/yr."
     logNotice $ "Total demand: "                       ++ show totalDemand    ++ " kg/yr."
-    sequence_
-      [
-        case k of
-          DemandEdge   location -> when (capacity v > reserved v)
-                                     . logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
-          ExistingEdge location -> when (capacity v > reserved v)
-                                     . logDebug $ "Underused existing production at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
-          _                     -> return ()
-      |
-        (k, v) <- M.toList edgeContexts
-      ]
+    failure <-
+      or <$> sequence
+        [
+          case k of
+            DemandEdge   location -> if capacity v > reserved v
+                                       then do
+                                              logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
+                                              return True
+                                       else return False
+            ExistingEdge location -> do
+                                       when (capacity v > reserved v)
+                                         . logDebug $ "Underused existing production at \"" ++ show location ++ "\" of " ++ show (capacity v - reserved v) ++ " kg/yr."
+                                       return False
+            _                     -> return False
+        |
+          (k, v) <- M.toList edgeContexts
+        ]
     logInfo $ " . . . checks complete."
     return
-      $ Optimum
-        (concat constructions')
-        (concat flows')
-        (concat cashes')
-        (concat impacts')
+      (
+        failure
+      , Optimum
+          (concat constructions')
+          (concat flows')
+          (concat cashes')
+          (concat impacts')
+      )

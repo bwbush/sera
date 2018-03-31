@@ -30,7 +30,7 @@ module SERA.Service.HydrogenProduction (
 
 
 import Control.Monad.Except (MonadError, MonadIO)
-import Control.Monad.Log (logInfo)
+import Control.Monad.Log (logCritical, logInfo)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (evaluable, evaluate, knownSize)
 import Data.Daft.Vinyl.FieldCube
@@ -144,7 +144,7 @@ productionMain ConfigProduction{..} =
       intensityCube = rezoneIntensities intensityCube' zoneCube
       demandCube = demandCube' ⋈ π (\_ rec -> fArea =: fArea <: rec) nodeCube :: DemandAreaCube
 
-    Optimum constructions flows cashes impacts <-
+    (failure, Optimum constructions flows cashes impacts) <-
       optimize
         firstYear
         network
@@ -298,5 +298,6 @@ productionMain ConfigProduction{..} =
     logInfo $ " . . . " ++ show (knownSize geometryCube) ++ " records written."
 
     logInfo ""
-    logInfo "Success."
-    logInfo ""
+    if failure
+      then logCritical "Failure."
+      else logInfo "Success."
