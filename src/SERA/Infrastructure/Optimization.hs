@@ -575,7 +575,7 @@ flowFunction year (Capacity flow) context edge =
       $ case edge of
         DemandEdge _                              -> update $ edgeContext { reserved = reserved edgeContext .+. flow}
         ExistingEdge _                            -> update $ let
-                                                                (flows', cashes', impacts') = costEdge' year (reserved edgeContext .+. flow) edgeContext -- FIXME: remove head.
+                                                                (flows', cashes', impacts') = costEdge' year (const 0 <$> year) $ edgeContext { reserved = reserved edgeContext .+. flow }
                                                               in
                                                                 edgeContext
                                                                 {
