@@ -32,6 +32,7 @@ import Data.Map (Map)
 import Data.Maybe (catMaybes, fromJust, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (fst3)
+import Debug.Trace (trace)
 import SERA (SeraLog)
 import SERA.Material (Pricer, localize)
 import SERA.Network (Network(..))
@@ -215,13 +216,15 @@ data EdgeContext =
 data NetworkContext =
   NetworkContext
   {
-    edgeContexts :: Map Edge EdgeContext
+    edgeContexts  :: Map Edge EdgeContext
+  , referenceFlow :: [Double]
   }
 
 
 buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Year -> NetworkContext
 buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube year =
   let
+    referenceFlow = repeat inf
     edgeContexts =
       M.fromList
         [
@@ -428,13 +431,19 @@ sumAbs :: (Num a, Functor t, Foldable t) => t a -> a
 sumAbs = sum . fmap abs
 
 
+maximumAbs :: (Num a, Ord a, Functor t, Foldable t) => t a -> a
+maximumAbs = maximum . fmap abs
+
+
 marginalCost :: [Year] -> [Double] -> EdgeContext -> Double
 marginalCost year delta edgeContext =
   let
     oldCost = costEdge year (const 0 <$> year)                         edgeContext
     newCost = costEdge year (const 0 <$> year) $ adjustEdge year delta edgeContext
   in
-    (newCost - oldCost) / sumAbs delta
+    if True
+      then (newCost - oldCost) / sumAbs delta
+      else newCost / sumAbs (reserved edgeContext .+. delta)
 
 
 adjustEdge :: [Year] -> [Double] -> EdgeContext -> EdgeContext
@@ -471,10 +480,6 @@ makePricer :: PriceCube '[FLocation] -> Location -> Pricer
 makePricer priceCube location material year =
   maybe 0 (fPrice <:)
     $ priceCube `evaluate` (fMaterial =: material <+> fYear =: year <+> fLocation =: location) -- FIXME: extrapolate
-
-
-maximumAbs :: (Num a, Ord a, Functor t, Foldable t) => t a -> a
-maximumAbs = maximum . fmap abs
 
 
 mostExtreme :: (Num a, Ord a) => a -> a -> a
@@ -521,6 +526,14 @@ costFunction year (Capacity flow) context edge =
           EdgeContext{..}          -> (capacity - maximumAbs reserved, builder)
           EdgeReverseContext edge' -> (\z -> capacity z - maximumAbs (reserved z)) &&& builder $ edgeContexts context M.! edge'
       canBuild =  canBuild' year flow builder'
+      referenceFlow' =
+        [
+          if abs x > y
+            then signum x * y
+            else x
+        |
+          (x, y) <- zip flow $ referenceFlow context
+        ]
     guard
       $ capacity' > 0 || canBuild
     return
@@ -528,9 +541,10 @@ costFunction year (Capacity flow) context edge =
         case edge of
           DemandEdge _                              -> Sum 0
           ExistingEdge _                            -> Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext
-          PathwayReverseEdge location pathway stage -> fst . fromJust . costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-          _                                         -> Sum $ marginalCost year flow edgeContext
-      , context
+          PathwayReverseEdge location pathway stage -> (if False && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("REVERSE\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t\t" ++ show flow ++ "\t" ++ show x) x) else id) . fst . fromJust . costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
+          PathwayForwardEdge location pathway stage     -> (if False && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("FORWARD\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t" ++ show (reserved edgeContext) ++ "\t" ++ show flow ++ "\t" ++ show x) x) else id) . Sum $ marginalCost year referenceFlow' edgeContext
+          _                                         -> Sum $ marginalCost year referenceFlow' edgeContext
+      , context { referenceFlow = referenceFlow' }
       )
 costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
@@ -541,14 +555,16 @@ capacityFunction year context edge =
     EdgeContext{..}          -> do
                                   let
                                     canBuild =  canBuild' (take 1 year) [1] builder
+                                    capacity' =
+                                      if canBuild
+                                        then const inf <$> reserved
+                                        else (capacity -) . abs <$> reserved
                                   guard
                                     $ capacity > maximumAbs reserved || canBuild
                                   return
                                     (
-                                      if canBuild
-                                        then Capacity $ const inf <$> reserved
-                                        else Capacity $ (capacity -) . abs <$> reserved
-                                    , context
+                                      Capacity capacity'
+                                    , context { referenceFlow = zipWith ((minimum .) . (. return) . (:)) capacity' $ referenceFlow context }
                                     )
     EdgeReverseContext edge' -> capacityFunction year context edge'
 
@@ -563,7 +579,7 @@ flowFunction year (Capacity flow) context edge =
   do
     let
       edgeContext = edgeContexts context M.! edge
-      update edgeContext' = context { edgeContexts = M.insert edge edgeContext' $ edgeContexts context }
+      update edgeContext' = context { edgeContexts = M.insert edge edgeContext' $ edgeContexts context , referenceFlow = const inf <$> year }
       (capacity', builder') =
         case edgeContext of
           EdgeContext{..}          -> (capacity - maximumAbs reserved, builder)
@@ -647,7 +663,7 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
           ]
     logNotice $ "Total existing production capacity: " ++ show existingSupply            ++ " kg/yr."
     logNotice $ "Total demand: "                       ++ show totalDemand               ++ " kg."
-    logNotice $ "Total cost: "                         ++ show totalDemand               ++ " USD."
+    logNotice $ "Total cost: "                         ++ show totalCost                 ++ " USD."
     logNotice $ "Average cost: "                       ++ show (totalCost / totalDemand) ++ " USD/kg."
     failure <-
       or <$> sequence
