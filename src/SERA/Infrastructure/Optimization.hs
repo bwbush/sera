@@ -32,7 +32,6 @@ import Data.Map (Map)
 import Data.Maybe (catMaybes, fromJust, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (fst3)
-import Debug.Trace (trace)
 import SERA (SeraLog)
 import SERA.Material (Pricer, localize)
 import SERA.Network (Network(..))
@@ -45,6 +44,8 @@ import SERA.Types.Records (Cash, Construction, Flow, Impact)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+
+trace = const id
 
 data Optimum =
   Optimum
@@ -209,6 +210,7 @@ data EdgeContext =
     , flows      :: [Flow]
     , cashes     :: [Cash]
     , impacts    :: [Impact]
+    , reference  :: Maybe Double
     }
   | EdgeReverseContext Edge
 
@@ -216,15 +218,13 @@ data EdgeContext =
 data NetworkContext =
   NetworkContext
   {
-    edgeContexts  :: Map Edge EdgeContext
-  , referenceFlow :: [Double]
+    edgeContexts :: Map Edge EdgeContext
   }
 
 
 buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Year -> NetworkContext
 buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube year =
   let
-    referenceFlow = repeat inf
     edgeContexts =
       M.fromList
         [
@@ -241,6 +241,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , flows      = []
                                                            , cashes     = []
                                                            , impacts    = []
+                                                           , reference  = Nothing
                                                            }
               ExistingEdge infrastructure               -> let
                                                              existing = existingCube ! (fInfrastructure =: infrastructure)
@@ -290,6 +291,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              , flows      = []
                                                              , cashes     = []
                                                              , impacts    = []
+                                                             , reference  = Nothing
                                                              }
               CentralEdge location technology           -> EdgeContext
                                                            {
@@ -312,6 +314,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , flows      = []
                                                            , cashes     = []
                                                            , impacts    = []
+                                                           , reference  = Nothing
                                                            }
               OnsiteEdge location technology            -> EdgeContext
                                                            {
@@ -334,6 +337,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , flows      = []
                                                            , cashes     = []
                                                            , impacts    = []
+                                                           , reference  = Nothing
                                                            }
               PathwayForwardEdge location pathway stage -> let
                                                              technology = fTechnology <: (pathwayCube ! (fPathway =: pathway <+> fStage =: stage))
@@ -366,6 +370,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              , flows      = []
                                                              , cashes     = []
                                                              , impacts    = []
+                                                             , reference  = Nothing
                                                              }
               PathwayReverseEdge location pathway stage -> EdgeReverseContext $ PathwayForwardEdge location pathway stage
           )
@@ -437,13 +442,15 @@ maximumAbs = maximum . fmap abs
 
 marginalCost :: [Year] -> [Double] -> EdgeContext -> Double
 marginalCost year delta edgeContext =
-  let
-    oldCost = costEdge year (const 0 <$> year)                         edgeContext
-    newCost = costEdge year (const 0 <$> year) $ adjustEdge year delta edgeContext
-  in
-    if True
-      then (newCost - oldCost) / sumAbs delta
-      else newCost / sumAbs (reserved edgeContext .+. delta)
+  case reference edgeContext of
+    Just x  -> x
+    Nothing -> let
+                 oldCost = costEdge year (const 0 <$> year)                         edgeContext
+                 newCost = costEdge year (const 0 <$> year) $ adjustEdge year delta edgeContext
+               in
+                 if True
+                   then (newCost - oldCost) / sumAbs delta
+                   else newCost / sumAbs (reserved edgeContext .+. delta)
 
 
 adjustEdge :: [Year] -> [Double] -> EdgeContext -> EdgeContext
@@ -457,11 +464,11 @@ adjustEdge year delta edgeContext@EdgeContext{..} =
                reserved = reserved'
              }
         else let
-               adjustable'@TechnologyContext{..} = fromJust $ (fromJust builder) (length fixed + 1) year reserved'
+               adjustable' = fromJust $ (fromJust builder) (length fixed + 1) year reserved'
              in
                edgeContext
                {
-                 capacity = fNameplate <: construction * fDutyCycle <: construction
+                 capacity = sum [fNameplate <: fixed' * fDutyCycle <: fixed' | fixed' <- construction <$> adjustable' : fixed ]
                , reserved = reserved'
                , adjustable = Just adjustable'
                }
@@ -526,14 +533,6 @@ costFunction year (Capacity flow) context edge =
           EdgeContext{..}          -> (capacity - maximumAbs reserved, builder)
           EdgeReverseContext edge' -> (\z -> capacity z - maximumAbs (reserved z)) &&& builder $ edgeContexts context M.! edge'
       canBuild =  canBuild' year flow builder'
-      referenceFlow' =
-        [
-          if abs x > y
-            then signum x * y
-            else x
-        |
-          (x, y) <- zip flow $ referenceFlow context
-        ]
     guard
       $ capacity' > 0 || canBuild
     return
@@ -541,10 +540,10 @@ costFunction year (Capacity flow) context edge =
         case edge of
           DemandEdge _                              -> Sum 0
           ExistingEdge _                            -> Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext
-          PathwayReverseEdge location pathway stage -> (if False && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("REVERSE\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t\t" ++ show flow ++ "\t" ++ show x) x) else id) . fst . fromJust . costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-          PathwayForwardEdge location pathway stage     -> (if False && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("FORWARD\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t" ++ show (reserved edgeContext) ++ "\t" ++ show flow ++ "\t" ++ show x) x) else id) . Sum $ marginalCost year referenceFlow' edgeContext
-          _                                         -> Sum $ marginalCost year referenceFlow' edgeContext
-      , context { referenceFlow = referenceFlow' }
+          PathwayReverseEdge location pathway stage -> (if True && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("REVERSE\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t\t" ++ show flow ++ "\t\t" ++ show x) x) else id) . fst . fromJust . costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
+          PathwayForwardEdge location pathway stage     -> (if True && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("FORWARD\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t" ++ show (reserved edgeContext) ++ "\t" ++ show flow ++ "\t" ++ show (reference edgeContext) ++ "\t" ++ show x) x) else id) . Sum $ marginalCost year flow edgeContext
+          _                                         -> Sum $ marginalCost year flow edgeContext
+      , context
       )
 costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
@@ -555,16 +554,14 @@ capacityFunction year context edge =
     EdgeContext{..}          -> do
                                   let
                                     canBuild =  canBuild' (take 1 year) [1] builder
-                                    capacity' =
-                                      if canBuild
-                                        then const inf <$> reserved
-                                        else (capacity -) . abs <$> reserved
                                   guard
                                     $ capacity > maximumAbs reserved || canBuild
                                   return
                                     (
-                                      Capacity capacity'
-                                    , context { referenceFlow = zipWith ((minimum .) . (. return) . (:)) capacity' $ referenceFlow context }
+                                      if canBuild
+                                        then Capacity $ const inf <$> reserved
+                                        else Capacity $ (capacity -) . abs <$> reserved
+                                    , context
                                     )
     EdgeReverseContext edge' -> capacityFunction year context edge'
 
@@ -579,7 +576,7 @@ flowFunction year (Capacity flow) context edge =
   do
     let
       edgeContext = edgeContexts context M.! edge
-      update edgeContext' = context { edgeContexts = M.insert edge edgeContext' $ edgeContexts context , referenceFlow = const inf <$> year }
+      update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' {- reference = Nothing -} ) $ edgeContexts context }
       (capacity', builder') =
         case edgeContext of
           EdgeContext{..}          -> (capacity - maximumAbs reserved, builder)
@@ -611,13 +608,70 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
     let
       graph = networkGraph network demandCube processLibrary
       context = buildContext graph network processLibrary intensityCube priceCube demandCube year'
-      NetworkContext{..} =
+      NetworkContext edgeContexts' =
         minimumCostFlow
           (costFunction [year'])
           (capacityFunction [year'])
           (flowFunction [year'])
           graph
           context
+          SuperSource
+          SuperSink
+      references = (\x -> trace (show x) x) $
+        M.fromListWith (.+.)
+          [
+            (location, reserved edgeContext)
+          |
+            (edge, edgeContext) <- M.toList edgeContexts'
+          , let (okay, location) = case edge of
+                                     DemandEdge         _             -> (False, undefined)
+                                     ExistingEdge       _             -> (False, undefined)
+                                     CentralEdge        location' _   -> (True , location')
+                                     OnsiteEdge         location' _   -> (True , location')
+                                     PathwayForwardEdge location' _ _ -> (True , location')
+                                     PathwayReverseEdge _         _ _ -> (False, undefined)
+          , okay
+          ]
+      clear edgeContext@EdgeReverseContext{} = edgeContext
+      clear edgeContext                      = edgeContext
+                                               {
+                                                 capacity   = case builder edgeContext of
+                                                                Nothing -> capacity edgeContext
+                                                                Just _  -> sum [fNameplate <: fixed' * fDutyCycle <: fixed' | fixed' <- construction <$> fixed edgeContext ]
+                                               , reserved   = [0]
+                                               , adjustable = Nothing
+                                               , flows      = []
+                                               , cashes     = []
+                                               , impacts    = []
+                                               , reference  = Nothing
+                                               }
+      context'' =
+        NetworkContext $ M.mapWithKey f edgeContexts'
+          where
+            f (CentralEdge        location _  ) edgeContext = let
+                                                                edgeContext' = clear edgeContext
+                                                                flow = mostExtreme 1 <$> references M.! location
+                                                              in
+                                                                edgeContext' { reference = Just $ marginalCost [year'] flow edgeContext' }
+            f (OnsiteEdge         location _  ) edgeContext =  let
+                                                                edgeContext' = clear edgeContext
+                                                                flow = mostExtreme 1 <$> references M.! location
+                                                              in
+                                                                edgeContext' { reference = Just $ marginalCost [year'] flow edgeContext' }
+            f (PathwayForwardEdge location _ _) edgeContext =  let
+                                                                edgeContext' = clear edgeContext
+                                                                flow = mostExtreme 1 <$> references M.! location
+                                                              in
+                                                                edgeContext' { reference = Just $ marginalCost [year'] flow edgeContext' }
+            f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
+            f _                                 edgeContext = clear edgeContext
+      NetworkContext{..} =
+        minimumCostFlow
+          (costFunction [year'])
+          (capacityFunction [year'])
+          (flowFunction [year'])
+          graph
+          context''
           SuperSource
           SuperSink
       (constructions', flows', cashes', impacts') =
