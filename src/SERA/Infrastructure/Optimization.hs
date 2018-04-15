@@ -576,7 +576,7 @@ flowFunction year (Capacity flow) context edge =
   do
     let
       edgeContext = edgeContexts context M.! edge
-      update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' {- reference = Nothing -} ) $ edgeContexts context }
+      update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' { reference = Nothing } ) $ edgeContexts context }
       (capacity', builder') =
         case edgeContext of
           EdgeContext{..}          -> (capacity - maximumAbs reserved, builder)
