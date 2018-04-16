@@ -38,6 +38,7 @@ import Data.Daft.Vinyl.FieldCube.IO (writeFieldCubeFile)
 import Data.Daft.Vinyl.FieldRec
 import Data.Default.Util (inf)
 import Data.List (intercalate)
+import Data.List.Split (chunksOf)
 import Data.Map.Strict (fromListWithKey)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Set (Set)
@@ -135,7 +136,7 @@ productionMain ConfigProduction{..} =
     logInfo $ "  Time Window:           " ++ show timeWindow
     logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate
     logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate
-    logInfo $ "  Interpolate?           " ++ show interpolate
+--  logInfo $ "  Interpolate?           " ++ show interpolate
 
     let
 
@@ -146,12 +147,14 @@ productionMain ConfigProduction{..} =
 
     (failure, Optimum constructions flows cashes impacts) <-
       optimize
-        firstYear
+        (chunksOf timeWindow [firstYear..lastYear])
         network
         demandCube'
         intensityCube
         processLibrary
         priceCube
+        discountRate
+        escalationRate
 
     let
 

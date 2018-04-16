@@ -25,6 +25,7 @@ import Data.Daft.DataCube (evaluable, evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Default.Util (inf)
+import Data.Foldable (foldlM)
 import Data.Graph.Algorithms (minimumCostFlow)
 import Data.Graph.Types (Graph(..), makeGraph)
 import Data.List (find, nub, unzip4)
@@ -44,8 +45,6 @@ import SERA.Types.Records (Cash, Construction, Flow, Impact)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
-
-trace = const id
 
 data Optimum =
   Optimum
@@ -203,7 +202,7 @@ data EdgeContext =
     EdgeContext
     {
       builder    :: Maybe TechnologyBuilder
-    , capacity   :: Double
+    , capacity   :: [Double]
     , reserved   :: [Double]
     , fixed      :: [TechnologyContext]
     , adjustable :: Maybe TechnologyContext
@@ -222,20 +221,35 @@ data NetworkContext =
   }
 
 
-buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Year -> NetworkContext
-buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube year =
+buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> [Year] -> NetworkContext
+buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube years =
   let
     edgeContexts =
       M.fromList
         [
           (
             edge
-          , case edge of
+          , (
+              \edgeContext ->
+                case edge of
+                  DemandEdge{}         -> edgeContext
+                  PathwayReverseEdge{} -> edgeContext
+                  _                    -> let
+                                            (flows', cashes', impacts') = costEdge' years (reserved edgeContext) edgeContext
+                                          in
+                                            edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
+            ) $
+            case edge of
               DemandEdge location                       -> EdgeContext
                                                            {
                                                              builder    = Nothing
-                                                           , capacity   = maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec) $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
-                                                           , reserved   = [0]
+                                                           , capacity   = [
+                                                                            maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec)
+                                                                              $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
+                                                                          |
+                                                                            year <- years
+                                                                          ]
+                                                           , reserved   = const 0 <$> years
                                                            , fixed      = []
                                                            , adjustable = Nothing
                                                            , flows      = []
@@ -249,8 +263,14 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              EdgeContext
                                                              {
                                                                builder    = Nothing
-                                                             , capacity   = fCapacity <: existing
-                                                             , reserved   = [0]
+                                                             , capacity   = [
+                                                                              if fYear <: existing <= year
+                                                                                then fCapacity <: existing
+                                                                                else 0
+                                                                            |
+                                                                              year <- years
+                                                                            ]
+                                                             , reserved   = const 0 <$> years
                                                              , fixed      = [
                                                                                 TechnologyContext
                                                                                 {
@@ -307,8 +327,8 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                   (foldl mostExtreme 0 demand)
                                                                                   0
                                                                                   technology
-                                                           , capacity   = 0
-                                                           , reserved   = [0]
+                                                           , capacity   = const 0 <$> years
+                                                           , reserved   = const 0 <$> years
                                                            , fixed      = []
                                                            , adjustable = Nothing
                                                            , flows      = []
@@ -330,8 +350,8 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                   (foldl mostExtreme 0 demand)
                                                                                   0
                                                                                   technology
-                                                           , capacity   = 0
-                                                           , reserved   = [0]
+                                                           , capacity   = const 0 <$> years
+                                                           , reserved   = const 0 <$> years
                                                            , fixed      = []
                                                            , adjustable = Nothing
                                                            , flows      = []
@@ -363,8 +383,8 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                     (foldl mostExtreme 0 demand)
                                                                                     distance
                                                                                     technology
-                                                             , capacity   = 0
-                                                             , reserved   = [0]
+                                                             , capacity   = const 0 <$> years
+                                                             , reserved   = const 0 <$> years
                                                              , fixed      = []
                                                              , adjustable = Nothing
                                                              , flows      = []
@@ -383,6 +403,26 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
 
 (.+.) :: Num a => [a] -> [a] -> [a]
 (.+.) = zipWith (+)
+
+
+(.-.) :: Num a => [a] -> [a] -> [a]
+(.-.) = zipWith (-)
+
+
+(#|<#) :: (Num a, Ord a) => [a] -> [a] -> Bool
+(#|<#) = (or .) . zipWith ((<) . abs)
+
+
+(#&<=#) :: (Num a, Ord a) => [a] -> [a] -> Bool
+(#&<=#) = (and .) . zipWith ((<=) . abs)
+
+
+(#<#) :: (Num a, Ord a) => [a] -> [a] -> Bool
+(#<#) x y =
+  let
+    x' = abs <$> x
+  in
+    x' /= y && and (zipWith (<=) x' y)
 
 
 costEdge :: [Year] -> [Double] -> EdgeContext -> Double
@@ -404,7 +444,7 @@ costEdge' _ _ _ = error "costEdge': edge is reversed."
 
 
 costTechnologies :: Year -> Double -> [TechnologyContext] -> ([Flow], [Cash], [Impact])
-costTechnologies year flow technologyContexts=
+costTechnologies year flow technologyContexts =
   let
     (flows', cashes', impacts', _) = -- FIXME: check residue
       foldr (\t (flows'', cashes'', impacts'', residue'') -> let
@@ -454,25 +494,35 @@ marginalCost year delta edgeContext =
 
 
 adjustEdge :: [Year] -> [Double] -> EdgeContext -> EdgeContext
-adjustEdge year delta edgeContext@EdgeContext{..} =
+adjustEdge years delta edgeContext@EdgeContext{..} =
   let
     reserved' = reserved .+. delta
     edgeContext' =
-      if all ((<= capacity) . abs) reserved' -- FIXME: Rewrite this.
+      if reserved' #&<=# capacity
         then edgeContext
              {
                reserved = reserved'
              }
         else let
-               adjustable' = fromJust $ (fromJust builder) (length fixed + 1) year reserved'
+               adjustable' = fromJust $ (fromJust builder) (length fixed + 1) years reserved'
              in
                edgeContext
                {
-                 capacity = sum [fNameplate <: fixed' * fDutyCycle <: fixed' | fixed' <- construction <$> adjustable' : fixed ]
+                 capacity = [
+                              sum
+                                [
+                                  if fYear <: fixed' <= year
+                                    then fNameplate <: fixed' * fDutyCycle <: fixed'
+                                    else 0
+                                | fixed' <- construction <$> adjustable' : fixed
+                                ]
+                            |
+                              year <- years
+                            ]
                , reserved = reserved'
                , adjustable = Just adjustable'
                }
-    (flows', cashes', impacts') = costEdge' year (const 0 <$> year) edgeContext'
+    (flows', cashes', impacts') = costEdge' years (const 0 <$> years) edgeContext'
   in
     edgeContext'
     {
@@ -530,18 +580,17 @@ costFunction year (Capacity flow) context edge =
       edgeContext = edgeContexts context M.! edge
       (capacity', builder') =
         case edgeContext of
-          EdgeContext{..}          -> (capacity - maximumAbs reserved, builder)
-          EdgeReverseContext edge' -> (\z -> capacity z - maximumAbs (reserved z)) &&& builder $ edgeContexts context M.! edge'
+          EdgeContext{..}          -> (capacity .-. (abs <$> reserved), builder)
+          EdgeReverseContext edge' -> (\z -> capacity z .-. (abs <$> reserved z)) &&& builder $ edgeContexts context M.! edge'
       canBuild =  canBuild' year flow builder'
     guard
-      $ capacity' > 0 || canBuild
+      $ (const 0 <$> year) #<# capacity' || canBuild
     return
       (
         case edge of
           DemandEdge _                              -> Sum 0
           ExistingEdge _                            -> Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext
-          PathwayReverseEdge location pathway stage -> (if True && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("REVERSE\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t\t" ++ show flow ++ "\t\t" ++ show x) x) else id) . fst . fromJust . costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-          PathwayForwardEdge location pathway stage     -> (if True && show location `elem` ["link 1545", "@ BA p37", "29089 | Fargo, ND--MN"] then (\x -> trace ("FORWARD\t" ++ show location ++ "\t" ++ show pathway ++ "\t" ++ show stage ++ "\t" ++ show (reserved edgeContext) ++ "\t" ++ show flow ++ "\t" ++ show (reference edgeContext) ++ "\t" ++ show x) x) else id) . Sum $ marginalCost year flow edgeContext
+          PathwayReverseEdge location pathway stage -> fst . fromJust . costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
           _                                         -> Sum $ marginalCost year flow edgeContext
       , context
       )
@@ -553,14 +602,14 @@ capacityFunction year context edge =
   case edgeContexts context M.! edge of
     EdgeContext{..}          -> do
                                   let
-                                    canBuild =  canBuild' (take 1 year) [1] builder
+                                    canBuild =  canBuild' year (const 1 <$> year) builder
                                   guard
-                                    $ capacity > maximumAbs reserved || canBuild
+                                    $ reserved #<# capacity || canBuild
                                   return
                                     (
                                       if canBuild
                                         then Capacity $ const inf <$> reserved
-                                        else Capacity $ (capacity -) . abs <$> reserved
+                                        else Capacity $ capacity .-. (abs <$> reserved)
                                     , context
                                     )
     EdgeReverseContext edge' -> capacityFunction year context edge'
@@ -579,11 +628,11 @@ flowFunction year (Capacity flow) context edge =
       update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' { reference = Nothing } ) $ edgeContexts context }
       (capacity', builder') =
         case edgeContext of
-          EdgeContext{..}          -> (capacity - maximumAbs reserved, builder)
-          EdgeReverseContext edge' -> (\z -> capacity z - maximumAbs (reserved z)) &&& builder $ edgeContexts context M.! edge'
+          EdgeContext{..}          -> (capacity .-. (abs <$> reserved), builder)
+          EdgeReverseContext edge' -> (\z -> capacity z .-. (abs <$> reserved z)) &&& builder $ edgeContexts context M.! edge'
       canBuild =  canBuild' year flow builder'
     guard
-      $ capacity' > 0 || canBuild
+      $ (const 0 <$> year) #<# capacity' || canBuild
     return
       $ case edge of
         DemandEdge _                              -> update $ edgeContext { reserved = reserved edgeContext .+. flow}
@@ -602,22 +651,90 @@ flowFunction year (Capacity flow) context edge =
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
-optimize :: SeraLog m => Year -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> m (Bool, Optimum)
-optimize year' network demandCube intensityCube processLibrary priceCube =
+optimize :: SeraLog m => [[Year]] -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> Double -> Double -> m (Bool, Optimum)
+optimize yearses network demandCube intensityCube processLibrary priceCube discountRate escalationRate =
   do
     let
       graph = networkGraph network demandCube processLibrary
-      context = buildContext graph network processLibrary intensityCube priceCube demandCube year'
+    fmap snd
+      $ foldlM
+        (
+          \(context, (failure, optimum)) years ->
+            do
+              let
+                reflow edgeContext =
+                  let
+                    (flows', cashes', impacts') = costEdge' years (reserved edgeContext) edgeContext
+                  in
+                    edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
+                rebuild PathwayReverseEdge{}  edgeContext = edgeContext
+                rebuild (DemandEdge location) _           = EdgeContext
+                                                            {
+                                                              builder    = Nothing
+                                                            , capacity   = [
+                                                                             maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec)
+                                                                               $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
+                                                                           |
+                                                                             year <- years
+                                                                           ]
+                                                            , reserved   = const 0 <$> years
+                                                            , fixed      = []
+                                                            , adjustable = Nothing
+                                                            , flows      = []
+                                                            , cashes     = []
+                                                            , impacts    = []
+                                                            , reference  = Nothing
+                                                            }
+                rebuild _                     edgeContext = reflow $ edgeContext
+                                                            {
+                                                              capacity   = case builder edgeContext of
+                                                                             Nothing -> capacity edgeContext
+                                                                             Just _  -> [
+                                                                                          sum
+                                                                                            [
+                                                                                              if fYear <: fixed' <= year
+                                                                                                then fNameplate <: fixed' * fDutyCycle <: fixed'
+                                                                                                else 0
+                                                                                            |
+                                                                                              fixed' <- construction <$> (maybe id (:) (adjustable edgeContext)) (fixed edgeContext)
+                                                                                            ]
+                                                                                        |
+                                                                                          year <- years
+                                                                                        ]
+                                                            , reserved   = const 0 <$> years
+                                                            , adjustable = Nothing
+                                                            , fixed      = maybe id (:) (adjustable edgeContext) $ fixed edgeContext
+                                                            , flows      = []
+                                                            , cashes     = []
+                                                            , impacts    = []
+                                                            , reference  = Nothing
+                                                            }
+                context' =
+                  if years == head yearses
+                    then buildContext graph network processLibrary intensityCube priceCube demandCube years
+                    else NetworkContext $ M.mapWithKey rebuild $ edgeContexts context
+              (failure', optimum') <- optimize' years discountRate escalationRate graph context'
+              return (context', (failure || failure', optimum <> optimum'))
+        )
+        (undefined, (False, mempty))
+        $ yearses
+
+
+
+optimize' :: SeraLog m => [Year] -> Double -> Double -> NetworkGraph -> NetworkContext -> m (Bool, Optimum)
+optimize' years discountRate escalationRate graph context =
+  do
+    let
       NetworkContext edgeContexts' =
         minimumCostFlow
-          (costFunction [year'])
-          (capacityFunction [year'])
-          (flowFunction [year'])
+          (costFunction years)
+          (capacityFunction years)
+          (flowFunction years)
           graph
           context
           SuperSource
           SuperSink
-      references = (\x -> trace (show x) x) $
+      references =
         M.fromListWith (.+.)
           [
             (location, reserved edgeContext)
@@ -632,13 +749,29 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
                                      PathwayReverseEdge _         _ _ -> (False, undefined)
           , okay
           ]
+      reflow edgeContext =
+        let
+          (flows'', cashes'', impacts'') = costEdge' years (reserved edgeContext) edgeContext
+        in
+          edgeContext { flows = flows'' , cashes = cashes'' , impacts = impacts'' }
       clear edgeContext@EdgeReverseContext{} = edgeContext
-      clear edgeContext                      = edgeContext
+      clear edgeContext                      = reflow $ edgeContext
                                                {
                                                  capacity   = case builder edgeContext of
                                                                 Nothing -> capacity edgeContext
-                                                                Just _  -> sum [fNameplate <: fixed' * fDutyCycle <: fixed' | fixed' <- construction <$> fixed edgeContext ]
-                                               , reserved   = [0]
+                                                                Just _  -> [
+                                                                             sum
+                                                                               [
+                                                                                 if fYear <: fixed' <= year
+                                                                                   then fNameplate <: fixed' * fDutyCycle <: fixed'
+                                                                                   else 0
+                                                                               |
+                                                                                 fixed' <- construction <$> fixed edgeContext
+                                                                               ]
+                                                                           |
+                                                                             year <- years
+                                                                           ]
+                                               , reserved   = const 0 <$> years
                                                , adjustable = Nothing
                                                , flows      = []
                                                , cashes     = []
@@ -652,24 +785,24 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
                                                                 edgeContext' = clear edgeContext
                                                                 flow = mostExtreme 1 <$> references M.! location
                                                               in
-                                                                edgeContext' { reference = Just $ marginalCost [year'] flow edgeContext' }
+                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
             f (OnsiteEdge         location _  ) edgeContext =  let
                                                                 edgeContext' = clear edgeContext
                                                                 flow = mostExtreme 1 <$> references M.! location
                                                               in
-                                                                edgeContext' { reference = Just $ marginalCost [year'] flow edgeContext' }
+                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
             f (PathwayForwardEdge location _ _) edgeContext =  let
                                                                 edgeContext' = clear edgeContext
                                                                 flow = mostExtreme 1 <$> references M.! location
                                                               in
-                                                                edgeContext' { reference = Just $ marginalCost [year'] flow edgeContext' }
+                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
             f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
             f _                                 edgeContext = clear edgeContext
       NetworkContext{..} =
         minimumCostFlow
-          (costFunction [year'])
-          (capacityFunction [year'])
-          (flowFunction [year'])
+          (costFunction years)
+          (capacityFunction years)
+          (flowFunction years)
           graph
           context''
           SuperSource
@@ -692,16 +825,16 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
             (_, v) <- M.toList edgeContexts
           ]
     logInfo ""
-    logInfo $ "Optimizing and checking solution for year " ++ show year' ++ " . . ."
+    logInfo $ "Optimizing and checking solution for years " ++ show years ++ " . . ."
     let
       (existingSupply, totalDemand) =
-        (sum *** sum)
+        ((sum . concat) *** (sum . concat))
           $ unzip
           [
             case k of
-              DemandEdge   _ -> (0         , capacity v)
-              ExistingEdge _ -> (capacity v, 0         )
-              _              -> (0         , 0         )
+              DemandEdge   _ -> ([]        , capacity v)
+              ExistingEdge _ -> (capacity v, []        )
+              _              -> ([]        , []        )
           |
             (k, v) <- M.toList edgeContexts
           ]
@@ -723,14 +856,16 @@ optimize year' network demandCube intensityCube processLibrary priceCube =
       or <$> sequence
         [
           case k of
-            DemandEdge   location -> if capacity v > maximumAbs (reserved v)
+            DemandEdge   location -> if reserved v #|<# capacity v
                                        then do
-                                              logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v - maximumAbs (reserved v)) ++ " kg/yr."
+                                              logError $ "Unsatisfied demand at \"" ++ show location ++ "\" of " ++ show (capacity v .-. (abs <$> reserved v)) ++ " kg/yr."
                                               return True
-                                       else return False
+                                       else do
+                                              logDebug $ "Satisfied demand at \"" ++ show location ++ "\" of " ++ show (reserved v) ++ " kg/yr."
+                                              return False
             ExistingEdge location -> do
-                                       when (capacity v > maximumAbs (reserved v))
-                                         . logDebug $ "Underused existing production at \"" ++ show location ++ "\" of " ++ show (capacity v - maximumAbs (reserved v)) ++ " kg/yr."
+                                       when (reserved v #|<# capacity v)
+                                         . logDebug $ "Underused existing production at \"" ++ show location ++ "\" of " ++ show (capacity v .-. (abs <$> reserved v)) ++ " kg/yr."
                                        return False
             _                     -> return False
         |
