@@ -497,6 +497,17 @@ adjustEdge :: [Year] -> [Double] -> EdgeContext -> EdgeContext
 adjustEdge years delta edgeContext@EdgeContext{..} =
   let
     reserved' = reserved .+. delta
+    without = [
+                sum
+                  [
+                    if fYear <: fixed' <= year
+                      then fNameplate <: fixed' * fDutyCycle <: fixed'
+                      else 0
+                  | fixed' <- construction <$> fixed
+                  ]
+              |
+                year <- years
+              ]
     edgeContext' =
       if reserved' #&<=# capacity
         then edgeContext
@@ -504,7 +515,14 @@ adjustEdge years delta edgeContext@EdgeContext{..} =
                reserved = reserved'
              }
         else let
-               adjustable' = fromJust $ (fromJust builder) (length fixed + 1) years reserved'
+               adjustable' =
+                 fromJust
+                   $ (fromJust builder) (length fixed + 1) years
+                   [
+                     y -- maximum [0, y - x]
+                   |
+                     (x, y) <- zip without reserved'
+                   ]
              in
                edgeContext
                {
@@ -713,15 +731,15 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                   if years == head yearses
                     then buildContext graph network processLibrary intensityCube priceCube demandCube years
                     else NetworkContext $ M.mapWithKey rebuild $ edgeContexts context
-              (failure', optimum') <- optimize' years discountRate escalationRate graph context'
-              return (context', (failure || failure', optimum <> optimum'))
+              (failure', optimum', context'') <- optimize' years discountRate escalationRate graph context'
+              return (context'', (failure || failure', optimum <> optimum'))
         )
         (undefined, (False, mempty))
         $ yearses
 
 
 
-optimize' :: SeraLog m => [Year] -> Double -> Double -> NetworkGraph -> NetworkContext -> m (Bool, Optimum)
+optimize' :: SeraLog m => [Year] -> Double -> Double -> NetworkGraph -> NetworkContext -> m (Bool, Optimum, NetworkContext)
 optimize' years discountRate escalationRate graph context =
   do
     let
@@ -798,7 +816,7 @@ optimize' years discountRate escalationRate graph context =
                                                                 edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
             f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
             f _                                 edgeContext = clear edgeContext
-      NetworkContext{..} =
+      context'''@NetworkContext{..} =
         minimumCostFlow
           (costFunction years)
           (capacityFunction years)
@@ -880,4 +898,5 @@ optimize' years discountRate escalationRate graph context =
           (concat flows')
           (concat cashes')
           (concat impacts')
+      , context'''
       )
