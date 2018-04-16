@@ -519,7 +519,7 @@ adjustEdge years delta edgeContext@EdgeContext{..} =
                  fromJust
                    $ (fromJust builder) (length fixed + 1) years
                    [
-                     y -- maximum [0, y - x]
+                     signum y * maximum [0, abs y - x]
                    |
                      (x, y) <- zip without reserved'
                    ]
