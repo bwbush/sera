@@ -30,9 +30,10 @@ import Data.Graph.Algorithms (minimumCostFlow)
 import Data.Graph.Types (Graph(..), makeGraph)
 import Data.List (find, nub, unzip4)
 import Data.Map (Map)
-import Data.Maybe (catMaybes, fromJust, isJust)
+import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (fst3)
+import Debug.Trace (trace)
 import SERA (SeraLog)
 import SERA.Material (Pricer, localize)
 import SERA.Network (Network(..))
@@ -485,69 +486,74 @@ marginalCost year delta edgeContext =
   case reference edgeContext of
     Just x  -> x
     Nothing -> let
-                 oldCost = costEdge year (const 0 <$> year)                         edgeContext
-                 newCost = costEdge year (const 0 <$> year) $ adjustEdge year delta edgeContext
+                 oldCost =                 costEdge year (const 0 <$> year)                           edgeContext
+                 newCost = fromMaybe inf $ costEdge year (const 0 <$> year) <$> adjustEdge year delta edgeContext
                in
                  if True
                    then (newCost - oldCost) / sumAbs delta
                    else newCost / sumAbs (reserved edgeContext .+. delta)
 
 
-adjustEdge :: [Year] -> [Double] -> EdgeContext -> EdgeContext
+adjustEdge :: [Year] -> [Double] -> EdgeContext -> Maybe EdgeContext
 adjustEdge years delta edgeContext@EdgeContext{..} =
-  let
-    reserved' = reserved .+. delta
-    without = [
-                sum
-                  [
-                    if fYear <: fixed' <= year
-                      then fNameplate <: fixed' * fDutyCycle <: fixed'
-                      else 0
-                  | fixed' <- construction <$> fixed
-                  ]
-              |
-                year <- years
-              ]
-    edgeContext' =
+  do
+    let
+      reserved' = reserved .+. delta
+      without = [
+                  sum
+                    [
+                      if fYear <: fixed' <= year
+                        then fNameplate <: fixed' * fDutyCycle <: fixed'
+                        else 0
+                    | fixed' <- construction <$> fixed
+                    ]
+                |
+                  year <- years
+                ]
+    edgeContext' <-
       if reserved' #&<=# capacity
-        then edgeContext
-             {
-               reserved = reserved'
-             }
-        else let
-               adjustable' =
-                 fromJust
-                   $ (fromJust builder) (length fixed + 1) years
+        then return
+               $ edgeContext
+                 {
+                   reserved = reserved'
+                 }
+        else do
+               builder' <- builder
+               adjustable' <-
+                 builder'
+                   (length fixed + 1)
+                   years
                    [
                      signum y * maximum [0, abs y - x]
                    |
                      (x, y) <- zip without reserved'
                    ]
-             in
-               edgeContext
-               {
-                 capacity = [
-                              sum
-                                [
-                                  if fYear <: fixed' <= year
-                                    then fNameplate <: fixed' * fDutyCycle <: fixed'
-                                    else 0
-                                | fixed' <- construction <$> adjustable' : fixed
+               return
+                 $ edgeContext
+                   {
+                     capacity = [
+                                  sum
+                                    [
+                                      if fYear <: fixed' <= year
+                                        then fNameplate <: fixed' * fDutyCycle <: fixed'
+                                        else 0
+                                    | fixed' <- construction <$> adjustable' : fixed
+                                    ]
+                                |
+                                  year <- years
                                 ]
-                            |
-                              year <- years
-                            ]
-               , reserved = reserved'
-               , adjustable = Just adjustable'
-               }
-    (flows', cashes', impacts') = costEdge' years (const 0 <$> years) edgeContext'
-  in
-    edgeContext'
-    {
-      flows = flows'
-    , cashes = cashes'
-    , impacts = impacts'
-    }
+                   , reserved = reserved'
+                   , adjustable = Just adjustable'
+                   }
+    let
+      (flows', cashes', impacts') = costEdge' years (const 0 <$> years) edgeContext'
+    return
+      $ edgeContext'
+        {
+          flows = flows'
+        , cashes = cashes'
+        , impacts = impacts'
+        }
 adjustEdge _ _ _ = error "adjustCapacity: edge is reversed."
 
 
@@ -603,15 +609,11 @@ costFunction year (Capacity flow) context edge =
       canBuild =  canBuild' year flow builder'
     guard
       $ (const 0 <$> year) #<# capacity' || canBuild
-    return
-      (
-        case edge of
-          DemandEdge _                              -> Sum 0
-          ExistingEdge _                            -> Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext
-          PathwayReverseEdge location pathway stage -> fst . fromJust . costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-          _                                         -> Sum $ marginalCost year flow edgeContext
-      , context
-      )
+    case edge of
+      DemandEdge _                              -> return (Sum 0, context)
+      ExistingEdge _                            -> return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
+      PathwayReverseEdge location pathway stage -> costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
+      _                                         -> return (Sum $ marginalCost year flow edgeContext, context)
 costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
 
@@ -638,34 +640,34 @@ canBuild' _    flow Nothing        = maximumAbs flow == 0
 canBuild' year flow (Just builder) = isJust $ builder 0 year flow
 
 
-flowFunction :: [Year] -> Capacity Double -> NetworkContext -> Edge -> Maybe NetworkContext
+flowFunction :: [Year] -> Capacity Double -> NetworkContext -> Edge -> NetworkContext
 flowFunction year (Capacity flow) context edge =
-  do
-    let
-      edgeContext = edgeContexts context M.! edge
-      update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' { reference = Nothing } ) $ edgeContexts context }
-      (capacity', builder') =
-        case edgeContext of
-          EdgeContext{..}          -> (capacity .-. (abs <$> reserved), builder)
-          EdgeReverseContext edge' -> (\z -> capacity z .-. (abs <$> reserved z)) &&& builder $ edgeContexts context M.! edge'
-      canBuild =  canBuild' year flow builder'
-    guard
-      $ (const 0 <$> year) #<# capacity' || canBuild
-    return
-      $ case edge of
-        DemandEdge _                              -> update $ edgeContext { reserved = reserved edgeContext .+. flow}
-        ExistingEdge _                            -> update $ let
-                                                                (flows', cashes', impacts') = costEdge' year (const 0 <$> year) $ edgeContext { reserved = reserved edgeContext .+. flow }
-                                                              in
-                                                                edgeContext
-                                                                {
-                                                                  reserved = reserved edgeContext .+. flow
-                                                                , flows    = flows'
-                                                                , cashes   = cashes'
-                                                                , impacts  = impacts'
-                                                                }
-        PathwayReverseEdge location pathway stage -> fromJust . flowFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-        _                                         -> update $ adjustEdge year flow edgeContext
+  fromMaybe (trace ("FAILED TO SET FLOW\t" ++ show edge ++ "\t" ++ show (construction <$> adjustable (edgeContexts context M.! edge)) ++ "\t" ++ show (construction <$> fixed (edgeContexts context M.! edge)) ++ "\t" ++ show year ++ "\t" ++ show flow) context)
+    $ do
+        let
+          edgeContext = edgeContexts context M.! edge
+          update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' { reference = Nothing } ) $ edgeContexts context }
+          (capacity', builder') =
+            case edgeContext of
+              EdgeContext{..}          -> (capacity .-. (abs <$> reserved), builder)
+              EdgeReverseContext edge' -> (\z -> capacity z .-. (abs <$> reserved z)) &&& builder $ edgeContexts context M.! edge'
+          canBuild =  canBuild' year flow builder'
+        guard
+          $ (const 0 <$> year) #<# capacity' || canBuild
+        case edge of
+          DemandEdge _                              -> return . update $ edgeContext { reserved = reserved edgeContext .+. flow}
+          ExistingEdge _                            -> return . update $ let
+                                                                  (flows', cashes', impacts') = costEdge' year (const 0 <$> year) $ edgeContext { reserved = reserved edgeContext .+. flow }
+                                                                in
+                                                                  edgeContext
+                                                                  {
+                                                                    reserved = reserved edgeContext .+. flow
+                                                                  , flows    = flows'
+                                                                  , cashes   = cashes'
+                                                                  , impacts  = impacts'
+                                                                  }
+          PathwayReverseEdge location pathway stage -> return $ flowFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
+          _                                         -> update <$> adjustEdge year flow edgeContext
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
