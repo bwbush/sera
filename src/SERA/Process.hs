@@ -56,11 +56,11 @@ import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
 import SERA (SeraLog, checkCondition, checkPresent, readConcat)
-import SERA.Types.Cubes (PathwayCube, ProcessCostCube, ProcessInputCube, ProcessOutputCube)
+import SERA.Types.Cubes (ExistingCube, PathwayCube, ProcessCostCube, ProcessInputCube, ProcessOutputCube)
 import SERA.Types.Fields (fNameplate, FCondition, fCondition, fDelivery, fExtended, Pathway, FPathway, fPathway, Productive(..), fProductive, FStage, fStage, Technology, FTechnology, fTechnology, fTransmission)
 import SERA.Util (extractKey, extractValue)
 
-import qualified Data.Set as S (map)
+import qualified Data.Set as S (map, union)
 
 
 isProduction :: Productive -> Bool
@@ -175,8 +175,8 @@ readProcessLibrary processLibraryFiles pathwayFiles =
     return ProcessLibrary{..}
 
 
-checkProcessLibrary :: SeraLog m => ProcessLibrary -> m ()
-checkProcessLibrary ProcessLibrary{..} =
+checkProcessLibrary :: SeraLog m => ProcessLibrary -> ExistingCube -> m ()
+checkProcessLibrary ProcessLibrary{..} existingCube =
   do
     logInfo "Checking process library . . ."
     let
@@ -185,18 +185,19 @@ checkProcessLibrary ProcessLibrary{..} =
       outputTechnologies   = extractKey   (fTechnology <:) processOutputCube
       pathwayTechnologies  = extractValue (fTechnology <:) pathwayCube
       deliveryTechnologies = extractKey   (fTechnology <:) $ σ (const $ not . isProduction . (fProductive <:)) processCostCube
+      existingTechnologies = extractValue (fTechnology <:) existingCube
     checkPresent
       logError
       "Process inputs"
       inputTechnologies
-      "process costs"
-      costTechnologies
+      "process costs or existing technologies"
+      (costTechnologies `S.union` existingTechnologies)
     checkPresent
       logError
       "Process outputs"
       outputTechnologies
-      "process costs"
-      costTechnologies
+      "process costs or existing technologies"
+      (costTechnologies `S.union` existingTechnologies)
     checkPresent
       logCritical
       "Pathways"
@@ -239,3 +240,15 @@ checkProcessLibrary ProcessLibrary{..} =
       ((>= 0) . (fNameplate <:))
       "negative nameplate capacity"
       $ toKnownRecords processOutputCube
+    checkPresent
+      logWarning
+      "Existing technologies"
+      existingTechnologies
+      "process inputs"
+      inputTechnologies
+    checkPresent
+      logWarning
+      "Existing technologies"
+      existingTechnologies
+      "process outputs"
+      outputTechnologies

@@ -37,10 +37,10 @@ import Debug.Trace (trace)
 import SERA (SeraLog)
 import SERA.Material (Pricer, localize)
 import SERA.Network (Network(..))
-import SERA.Process.Reification (TechnologyOperation, technologyReifier)
+import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (DemandCube, IntensityCube, PriceCube)
-import SERA.Types.Fields (CostCategory(..), fCapacity, fCapitalCost, fCost, fDutyCycle, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, fNameplate, fCostCategory, fFlow, fFuelConsumption, fLength, Location, FLocation, fLocation, fLoss, fMaterial, fNonFuelConsumption, fPrice, fProduction, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Fields (fCapacity, fCapitalCost, fCost, fDutyCycle, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fMaterial, fNonFuelConsumption, fPrice, fSale, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
@@ -273,41 +273,30 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                             ]
                                                              , reserved   = const 0 <$> years
                                                              , fixed      = [
+                                                                              let
+                                                                                construction =     fInfrastructure =: infrastructure
+                                                                                               <+> fLocation       =: fLocation <: existing
+                                                                                               <+> fTechnology     =: fTechnology <: existing
+                                                                                               <+> fProductive     =: Central
+                                                                                               <+> fYear           =: fYear <: existing
+                                                                                               <+> fLifetime       =: 1000
+                                                                                               <+> fNameplate      =: fCapacity <: existing
+                                                                                               <+> fDutyCycle      =: 1
+                                                                                               <+> fLength         =: 0
+                                                                                               <+> fCapitalCost    =: 0
+                                                                                               <+> fFixedCost      =: 0
+                                                                                               <+> fVariableCost   =: fCost <: existing
+                                                                              in
                                                                                 TechnologyContext
                                                                                 {
-                                                                                  construction =     fInfrastructure =: infrastructure
-                                                                                                 <+> fLocation       =: fLocation <: existing
-                                                                                                 <+> fTechnology     =: Technology "Existing or Planned"
-                                                                                                 <+> fProductive     =: Central
-                                                                                                 <+> fYear           =: fYear <: existing
-                                                                                                 <+> fLifetime       =: 1000
-                                                                                                 <+> fNameplate      =: fCapacity <: existing
-                                                                                                 <+> fDutyCycle      =: 1
-                                                                                                 <+> fLength         =: 0
-                                                                                                 <+> fCapitalCost    =: 0
-                                                                                                 <+> fFixedCost      =: 0
-                                                                                                 <+> fVariableCost   =: fCost <: existing
-                                                                                , operation = \year' flow ->
-                                                                                                (
-                                                                                                      fInfrastructure =: infrastructure
-                                                                                                  <+> fYear           =: year'
-                                                                                                  <+> fTechnology     =: Technology "Existing or Planned"
-                                                                                                  <+> fProduction     =: flow
-                                                                                                  <+> fFlow           =: 0
-                                                                                                  <+> fLoss           =: 0
-                                                                                                  <+> fSale           =: abs flow * fCost <: existing
-                                                                                                  <+> fSalvage        =: 0
-                                                                                                , [
-                                                                                                      fInfrastructure =: infrastructure
-                                                                                                    <+> fYear         =: year'
-                                                                                                    <+> fCostCategory =: Variable
-                                                                                                    <+> fSale         =: abs flow * fCost <: existing
-                                                                                                  ]
-                                                                                                , []
-                                                                                                , flow
-                                                                                                )
+                                                                                  construction = construction
+                                                                                , operation    = operationReifier
+                                                                                                   processLibrary
+                                                                                                   (localize intensityCube $ fLocation <: existing)
+                                                                                                   (makePricer priceCube $ fLocation <: existing)
+                                                                                                   construction
                                                                                 }
-                                                                               ]
+                                                                            ]
                                                              , adjustable = Nothing
                                                              , flows      = []
                                                              , cashes     = []

@@ -244,17 +244,16 @@ technologyReifier processLibrary@ProcessLibrary{..} intensityCube pricer specifi
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
         <+> fVariableCost =: fVariableCost <: costs + distance * fVariableCostStretch <: costs
-    return (construction, operationReifier processLibrary intensityCube pricer costs construction)
+    return (construction, operationReifier processLibrary intensityCube pricer construction)
 
 
 -- | Reify the operation of a technology.
 operationReifier :: ProcessLibrary       -- ^ The process library.
                  -> IntensityCube '[]    -- ^ The intensity datacube.
                  -> Pricer               -- ^ The pricer.
-                 -> FieldRec ProcessCost -- ^ The process cost.
                  -> Construction         -- ^ The constructed technology.
                  -> TechnologyOperation  -- ^ The reified operation
-operationReifier ProcessLibrary{..} intensityCube pricer costs construction =
+operationReifier ProcessLibrary{..} intensityCube pricer construction =
   let
     specifics = τ construction :: FieldRec '[FInfrastructure, FLocation]
     tech     = fTechnology <: construction
@@ -268,7 +267,7 @@ operationReifier ProcessLibrary{..} intensityCube pricer costs construction =
       let
         output = minimum [abs output', fDutyCycle <: construction * fNameplate <: construction] -- FIXME: Check this.
         specifics' = fInfrastructure =: fInfrastructure <: specifics <+> fYear =: year
-        lifetime = fLifetime <: costs
+        lifetime = fLifetime <: construction
         salvage = maximum [0, fCapitalCost <: construction * fromIntegral (built + lifetime - year - 1) / fromIntegral lifetime]
         capital = if built == year then fCapitalCost <: construction else 0
         fixed = fFixedCost <: construction
@@ -336,8 +335,8 @@ operationReifier ProcessLibrary{..} intensityCube pricer costs construction =
         (
               specifics'
           <+> fTechnology =: tech
-          <+> fProduction =: (if isProduction (fProductive <: costs) then output else 0      )
-          <+> fFlow       =: (if isProduction (fProductive <: costs) then 0      else output')
+          <+> fProduction =: (if isProduction (fProductive <: construction) then output else 0      )
+          <+> fFlow       =: (if isProduction (fProductive <: construction) then 0      else output')
           <+> fLoss       =: 0
           <+> fSale       =: (sum $ (fSale <:) <$> cash)
           <+> fSalvage    =: salvage

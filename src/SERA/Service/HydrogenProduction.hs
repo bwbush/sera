@@ -108,7 +108,7 @@ productionMain ConfigProduction{..} =
 
     logInfo ""
     checkNetwork network
-    checkProcessLibrary processLibrary
+    checkProcessLibrary processLibrary existingCube
     checkDemands nodeCube demandCube'
     checkPrices network processLibrary intensityCube' priceCube'
     checkIntensities network processLibrary intensityCube'
