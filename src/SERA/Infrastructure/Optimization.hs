@@ -22,7 +22,7 @@ import Control.Arrow ((&&&), (***))
 import Control.Monad (guard, when)
 import Control.Monad.Log (logDebug, logError, logInfo, logNotice)
 import Data.Daft.DataCube (evaluable, evaluate, knownKeys)
-import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
+import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ, τ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Default.Util (inf)
 import Data.Foldable (foldlM)
@@ -32,7 +32,8 @@ import Data.List (find, nub, unzip4)
 import Data.Map (Map)
 import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust)
 import Data.Monoid (Sum(..), (<>))
-import Data.Tuple.Util (fst3)
+import Data.Tuple.Util (snd3)
+import Data.Vinyl.Derived (FieldRec)
 import Debug.Trace (trace)
 import SERA (SeraLog)
 import SERA.Material (Pricer, localize)
@@ -40,11 +41,14 @@ import SERA.Network (Network(..))
 import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (DemandCube, IntensityCube, PriceCube)
-import SERA.Types.Fields (fCapacity, fCapitalCost, fCost, fDutyCycle, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fMaterial, fNonFuelConsumption, fPrice, fSale, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Fields (fCapacity, fCapitalCost, fCost, CostCategory(Capital), FCostCategory, fCostCategory, fDutyCycle, fExtended, fFixedCost, fFrom, Infrastructure(..), FInfrastructure, fInfrastructure, fLifetime, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fMaterial, fNonFuelConsumption, fPrice, fSale, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, FYear, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+
+
+trace' = const id
 
 
 data Optimum =
@@ -218,12 +222,13 @@ data EdgeContext =
 data NetworkContext =
   NetworkContext
   {
-    edgeContexts :: Map Edge EdgeContext
+    discounting  :: Double
+  , edgeContexts :: Map Edge EdgeContext
   }
 
 
-buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> [Year] -> NetworkContext
-buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube years =
+buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Double -> [Year] -> NetworkContext
+buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting years =
   let
     edgeContexts =
       M.fromList
@@ -236,7 +241,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                   DemandEdge{}         -> edgeContext
                   PathwayReverseEdge{} -> edgeContext
                   _                    -> let
-                                            (flows', cashes', impacts') = costEdge' years (reserved edgeContext) edgeContext
+                                            (flows', cashes', impacts') = costEdge' Nothing years (reserved edgeContext) edgeContext
                                           in
                                             edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
             ) $
@@ -415,30 +420,31 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
     x' /= y && and (zipWith (<=) x' y)
 
 
-costEdge :: [Year] -> [Double] -> EdgeContext -> Double
-costEdge year delta =
+costEdge :: Maybe Int -> Double -> [Year] -> [Double] -> EdgeContext -> Double
+costEdge spread discount year delta =
   sum
+    . zipWith (\n x -> x / (1 + discount)^n) [(0::Int)..]
     . fmap (fSale <:)
-    . fst3
-    . costEdge' year delta -- FIXME: Handle salvage.
+    . snd3
+    . costEdge' spread year delta
 
 
-costEdge' :: [Year] -> [Double] -> EdgeContext -> ([Flow], [Cash], [Impact])
-costEdge' year delta EdgeContext{..} =
+costEdge' :: Maybe Int -> [Year] -> [Double] -> EdgeContext -> ([Flow], [Cash], [Impact])
+costEdge' spread year delta EdgeContext{..} =
   let
     technologyContexts = (maybe id (:) adjustable) fixed
-    (flows', cashes', impacts') = unzip3 . zipWith (\year' flow' -> costTechnologies year' flow' technologyContexts) year $ reserved .+. delta
+    (flows', cashes', impacts') = unzip3 . zipWith (\year' flow' -> costTechnologies spread year' flow' technologyContexts) year $ reserved .+. delta
   in
     (concat flows', concat cashes', concat impacts')
-costEdge' _ _ _ = error "costEdge': edge is reversed."
+costEdge' _ _ _ _ = error "costEdge': edge is reversed."
 
 
-costTechnologies :: Year -> Double -> [TechnologyContext] -> ([Flow], [Cash], [Impact])
-costTechnologies year flow technologyContexts =
+costTechnologies :: Maybe Int -> Year -> Double -> [TechnologyContext] -> ([Flow], [Cash], [Impact])
+costTechnologies spread year flow technologyContexts =
   let
     (flows', cashes', impacts', _) = -- FIXME: check residue
       foldr (\t (flows'', cashes'', impacts'', residue'') -> let
-                                                               (flows''', cashes''', impacts''', residue''') = costTechnology year residue'' t
+                                                               (flows''', cashes''', impacts''', residue''') = costTechnology spread year residue'' t
                                                              in
                                                                (flows''' ++ flows'', cashes''' ++ cashes'', impacts''' ++ impacts'', residue''')
             )
@@ -448,8 +454,8 @@ costTechnologies year flow technologyContexts =
     (flows', cashes', impacts')
 
 
-costTechnology :: Year -> Double -> TechnologyContext -> ([Flow], [Cash], [Impact], Double) -- TODO: Move into operations, which will return flow and residue.
-costTechnology year flow TechnologyContext{..} =                                            -- FIXME: Guard against overflow.
+costTechnology :: Maybe Int -> Year -> Double -> TechnologyContext -> ([Flow], [Cash], [Impact], Double) -- TODO: Move into operations, which will return flow and residue.
+costTechnology spread year flow TechnologyContext{..} =                                            -- FIXME: Guard against overflow.
   let
     capacity' = fNameplate <: construction * fDutyCycle <: construction
     flow' =
@@ -458,8 +464,14 @@ costTechnology year flow TechnologyContext{..} =                                
         else signum flow * capacity'
     residue = flow - flow'
     (flows', cashes', impacts', _) = operation year flow'
+    spreadCapital rec =
+      case (spread, fCostCategory <: rec == Capital) of
+        (Just spread', True) -> (τ rec :: FieldRec '[FInfrastructure, FYear, FCostCategory]) <+> fSale =: (fSale <: rec * minimum [1, fromIntegral spread' / fromIntegral (fLifetime <: construction)])
+        _                    -> rec
   in
-    ([flows'], cashes', impacts', residue)
+    if year < fYear <: construction
+      then ([], [], [], flow)
+      else ([flows'], spreadCapital <$> cashes', impacts', residue)
 
 
 sumAbs :: (Num a, Functor t, Foldable t) => t a -> a
@@ -470,13 +482,13 @@ maximumAbs :: (Num a, Ord a, Functor t, Foldable t) => t a -> a
 maximumAbs = maximum . fmap abs
 
 
-marginalCost :: [Year] -> [Double] -> EdgeContext -> Double
-marginalCost year delta edgeContext =
+marginalCost :: Double -> [Year] -> [Double] -> EdgeContext -> Double
+marginalCost discount year delta edgeContext =
   case reference edgeContext of
     Just x  -> x
     Nothing -> let
-                 oldCost =                 costEdge year (const 0 <$> year)                           edgeContext
-                 newCost = fromMaybe inf $ costEdge year (const 0 <$> year) <$> adjustEdge year delta edgeContext
+                 oldCost =                 costEdge (Just $ length year) discount year (const 0 <$> year)                           edgeContext
+                 newCost = fromMaybe inf $ costEdge (Just $ length year) discount year (const 0 <$> year) <$> adjustEdge year delta edgeContext
                in
                  if True
                    then (newCost - oldCost) / sumAbs delta
@@ -535,7 +547,7 @@ adjustEdge years delta edgeContext@EdgeContext{..} =
                    , adjustable = Just adjustable'
                    }
     let
-      (flows', cashes', impacts') = costEdge' years (const 0 <$> years) edgeContext'
+      (flows', cashes', impacts') = costEdge' Nothing years (const 0 <$> years) edgeContext'
     return
       $ edgeContext'
         {
@@ -602,7 +614,9 @@ costFunction year (Capacity flow) context edge =
       DemandEdge _                              -> return (Sum 0, context)
       ExistingEdge _                            -> return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
       PathwayReverseEdge location pathway stage -> costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-      _                                         -> return (Sum $ marginalCost year flow edgeContext, context)
+      CentralEdge        location technology    -> return ((\x -> if show location == "03817 | Atlanta, GA" then trace' ("COST\t" ++ show location ++ "\t" ++ show technology ++ "\t" ++ show x ++ "\t" ++ show year ++ "\t" ++ show flow ++ "\t" ++ show (reserved edgeContext) ++ "\t" ++ show (construction <$> adjustable edgeContext) ++ "\t" ++ show (construction <$> fixed edgeContext) ++ "\t" ++ show (reference edgeContext)) x else x) $ Sum $ marginalCost (discounting context) year flow edgeContext, context)
+      OnsiteEdge         location technology    -> return ((\x -> if show location == "03817 | Atlanta, GA" then trace' ("COST\t" ++ show location ++ "\t" ++ show technology ++ "\t" ++ show x ++ "\t" ++ show year ++ "\t" ++ show flow ++ "\t" ++ show (reserved edgeContext) ++ "\t" ++ show (construction <$> adjustable edgeContext) ++ "\t" ++ show (construction <$> fixed edgeContext) ++ "\t" ++ show (reference edgeContext)) x else x) $ Sum $ marginalCost (discounting context) year flow edgeContext, context)
+      _                                         -> return (Sum $ marginalCost (discounting context) year flow edgeContext, context)
 costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
 
@@ -646,7 +660,7 @@ flowFunction year (Capacity flow) context edge =
         case edge of
           DemandEdge _                              -> return . update $ edgeContext { reserved = reserved edgeContext .+. flow}
           ExistingEdge _                            -> return . update $ let
-                                                                  (flows', cashes', impacts') = costEdge' year (const 0 <$> year) $ edgeContext { reserved = reserved edgeContext .+. flow }
+                                                                  (flows', cashes', impacts') = costEdge' Nothing year (const 0 <$> year) $ edgeContext { reserved = reserved edgeContext .+. flow }
                                                                 in
                                                                   edgeContext
                                                                   {
@@ -673,7 +687,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
               let
                 reflow edgeContext =
                   let
-                    (flows', cashes', impacts') = costEdge' years (reserved edgeContext) edgeContext
+                    (flows', cashes', impacts') = costEdge' Nothing years (reserved edgeContext) edgeContext
                   in
                     edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
                 rebuild PathwayReverseEdge{}  edgeContext = edgeContext
@@ -720,9 +734,9 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             }
                 context' =
                   if years == head yearses
-                    then buildContext graph network processLibrary intensityCube priceCube demandCube years
-                    else NetworkContext $ M.mapWithKey rebuild $ edgeContexts context
-              (failure', optimum', context'') <- optimize' years discountRate escalationRate graph context'
+                    then buildContext graph network processLibrary intensityCube priceCube demandCube discountRate years
+                    else NetworkContext discountRate $ M.mapWithKey rebuild $ edgeContexts context
+              (failure', optimum', context'') <- optimize' years graph context'
               return (context'', (failure || failure', optimum <> optimum'))
         )
         (undefined, (False, mempty))
@@ -730,11 +744,11 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
 
 
 
-optimize' :: SeraLog m => [Year] -> Double -> Double -> NetworkGraph -> NetworkContext -> m (Bool, Optimum, NetworkContext)
-optimize' years discountRate escalationRate graph context =
+optimize' :: SeraLog m => [Year] -> NetworkGraph -> NetworkContext -> m (Bool, Optimum, NetworkContext)
+optimize' years graph context =
   do
     let
-      NetworkContext edgeContexts' =
+      NetworkContext discountRate edgeContexts' =
         minimumCostFlow
           (costFunction years)
           (capacityFunction years)
@@ -752,15 +766,15 @@ optimize' years discountRate escalationRate graph context =
           , let (okay, location) = case edge of
                                      DemandEdge         _             -> (False, undefined)
                                      ExistingEdge       _             -> (False, undefined)
-                                     CentralEdge        location' _   -> (True , location')
-                                     OnsiteEdge         location' _   -> (True , location')
+                                     CentralEdge        location' _   -> (False, location')
+                                     OnsiteEdge         location' _   -> (False, location')
                                      PathwayForwardEdge location' _ _ -> (True , location')
                                      PathwayReverseEdge _         _ _ -> (False, undefined)
           , okay
           ]
       reflow edgeContext =
         let
-          (flows'', cashes'', impacts'') = costEdge' years (reserved edgeContext) edgeContext
+          (flows'', cashes'', impacts'') = costEdge' Nothing years (reserved edgeContext) edgeContext
         in
           edgeContext { flows = flows'' , cashes = cashes'' , impacts = impacts'' }
       clear edgeContext@EdgeReverseContext{} = edgeContext
@@ -788,23 +802,23 @@ optimize' years discountRate escalationRate graph context =
                                                , reference  = Nothing
                                                }
       context'' =
-        NetworkContext $ M.mapWithKey f edgeContexts'
+        NetworkContext discountRate $ M.mapWithKey f edgeContexts'
           where
-            f (CentralEdge        location _  ) edgeContext = let
-                                                                edgeContext' = clear edgeContext
-                                                                flow = mostExtreme 1 <$> references M.! location
-                                                              in
-                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
-            f (OnsiteEdge         location _  ) edgeContext =  let
-                                                                edgeContext' = clear edgeContext
-                                                                flow = mostExtreme 1 <$> references M.! location
-                                                              in
-                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
+--          f (CentralEdge        location _  ) edgeContext = let
+--                                                              edgeContext' = clear edgeContext
+--                                                              flow = mostExtreme 1 <$> references M.! location
+--                                                            in
+--                                                              edgeContext' { reference = Just $ marginalCost discountRate years flow edgeContext' }
+--          f (OnsiteEdge         location _  ) edgeContext =  let
+--                                                              edgeContext' = clear edgeContext
+--                                                              flow = mostExtreme 1 <$> references M.! location
+--                                                            in
+--                                                              edgeContext' { reference = Just $ marginalCost discountRate years flow edgeContext' }
             f (PathwayForwardEdge location _ _) edgeContext =  let
                                                                 edgeContext' = clear edgeContext
                                                                 flow = mostExtreme 1 <$> references M.! location
                                                               in
-                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
+                                                                edgeContext' { reference = Just $ marginalCost discountRate years flow edgeContext' }
             f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
             f _                                 edgeContext = clear edgeContext
       context'''@NetworkContext{..} =
