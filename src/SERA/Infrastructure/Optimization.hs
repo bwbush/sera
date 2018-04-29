@@ -754,8 +754,8 @@ optimize' years discountRate escalationRate graph context =
           , let (okay, location) = case edge of
                                      DemandEdge         _             -> (False, undefined)
                                      ExistingEdge       _             -> (False, undefined)
-                                     CentralEdge        location' _   -> (True , location')
-                                     OnsiteEdge         location' _   -> (True , location')
+                                     CentralEdge        location' _   -> (False, location')
+                                     OnsiteEdge         location' _   -> (False, location')
                                      PathwayForwardEdge location' _ _ -> (True , location')
                                      PathwayReverseEdge _         _ _ -> (False, undefined)
           , okay
@@ -792,16 +792,16 @@ optimize' years discountRate escalationRate graph context =
       context'' =
         NetworkContext $ M.mapWithKey f edgeContexts'
           where
-            f (CentralEdge        location _  ) edgeContext = let
-                                                                edgeContext' = clear edgeContext
-                                                                flow = mostExtreme 1 <$> references M.! location
-                                                              in
-                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
-            f (OnsiteEdge         location _  ) edgeContext =  let
-                                                                edgeContext' = clear edgeContext
-                                                                flow = mostExtreme 1 <$> references M.! location
-                                                              in
-                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
+--          f (CentralEdge        location _  ) edgeContext = let
+--                                                              edgeContext' = clear edgeContext
+--                                                              flow = mostExtreme 1 <$> references M.! location
+--                                                            in
+--                                                              edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
+--          f (OnsiteEdge         location _  ) edgeContext =  let
+--                                                              edgeContext' = clear edgeContext
+--                                                              flow = mostExtreme 1 <$> references M.! location
+--                                                            in
+--                                                              edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
             f (PathwayForwardEdge location _ _) edgeContext =  let
                                                                 edgeContext' = clear edgeContext
                                                                 flow = mostExtreme 1 <$> references M.! location
