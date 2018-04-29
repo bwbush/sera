@@ -218,12 +218,13 @@ data EdgeContext =
 data NetworkContext =
   NetworkContext
   {
-    edgeContexts :: Map Edge EdgeContext
+    discounting  :: Double
+  , edgeContexts :: Map Edge EdgeContext
   }
 
 
-buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> [Year] -> NetworkContext
-buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube years =
+buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Double -> [Year] -> NetworkContext
+buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting years =
   let
     edgeContexts =
       M.fromList
@@ -415,9 +416,10 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
     x' /= y && and (zipWith (<=) x' y)
 
 
-costEdge :: [Year] -> [Double] -> EdgeContext -> Double
-costEdge year delta =
+costEdge :: Double -> [Year] -> [Double] -> EdgeContext -> Double
+costEdge discount year delta =
   sum
+    . zipWith (\n x -> x / (1 + discount)^n) [(0::Int)..]
     . fmap (fSale <:)
     . fst3
     . costEdge' year delta -- FIXME: Handle salvage.
@@ -472,13 +474,13 @@ maximumAbs :: (Num a, Ord a, Functor t, Foldable t) => t a -> a
 maximumAbs = maximum . fmap abs
 
 
-marginalCost :: [Year] -> [Double] -> EdgeContext -> Double
-marginalCost year delta edgeContext =
+marginalCost :: Double -> [Year] -> [Double] -> EdgeContext -> Double
+marginalCost discount year delta edgeContext =
   case reference edgeContext of
     Just x  -> x
     Nothing -> let
-                 oldCost =                 costEdge year (const 0 <$> year)                           edgeContext
-                 newCost = fromMaybe inf $ costEdge year (const 0 <$> year) <$> adjustEdge year delta edgeContext
+                 oldCost =                 costEdge discount year (const 0 <$> year)                           edgeContext
+                 newCost = fromMaybe inf $ costEdge discount year (const 0 <$> year) <$> adjustEdge year delta edgeContext
                in
                  if True
                    then (newCost - oldCost) / sumAbs delta
@@ -604,7 +606,7 @@ costFunction year (Capacity flow) context edge =
       DemandEdge _                              -> return (Sum 0, context)
       ExistingEdge _                            -> return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
       PathwayReverseEdge location pathway stage -> costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-      _                                         -> return (Sum $ marginalCost year flow edgeContext, context)
+      _                                         -> return (Sum $ marginalCost (discounting context) year flow edgeContext, context)
 costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
 
@@ -722,9 +724,9 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             }
                 context' =
                   if years == head yearses
-                    then buildContext graph network processLibrary intensityCube priceCube demandCube years
-                    else NetworkContext $ M.mapWithKey rebuild $ edgeContexts context
-              (failure', optimum', context'') <- optimize' years discountRate escalationRate graph context'
+                    then buildContext graph network processLibrary intensityCube priceCube demandCube discountRate years
+                    else NetworkContext discountRate $ M.mapWithKey rebuild $ edgeContexts context
+              (failure', optimum', context'') <- optimize' years graph context'
               return (context'', (failure || failure', optimum <> optimum'))
         )
         (undefined, (False, mempty))
@@ -732,11 +734,11 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
 
 
 
-optimize' :: SeraLog m => [Year] -> Double -> Double -> NetworkGraph -> NetworkContext -> m (Bool, Optimum, NetworkContext)
-optimize' years discountRate escalationRate graph context =
+optimize' :: SeraLog m => [Year] -> NetworkGraph -> NetworkContext -> m (Bool, Optimum, NetworkContext)
+optimize' years graph context =
   do
     let
-      NetworkContext edgeContexts' =
+      NetworkContext discountRate edgeContexts' =
         minimumCostFlow
           (costFunction years)
           (capacityFunction years)
@@ -790,7 +792,7 @@ optimize' years discountRate escalationRate graph context =
                                                , reference  = Nothing
                                                }
       context'' =
-        NetworkContext $ M.mapWithKey f edgeContexts'
+        NetworkContext discountRate $ M.mapWithKey f edgeContexts'
           where
 --          f (CentralEdge        location _  ) edgeContext = let
 --                                                              edgeContext' = clear edgeContext
@@ -806,7 +808,7 @@ optimize' years discountRate escalationRate graph context =
                                                                 edgeContext' = clear edgeContext
                                                                 flow = mostExtreme 1 <$> references M.! location
                                                               in
-                                                                edgeContext' { reference = Just $ marginalCost years flow edgeContext' }
+                                                                edgeContext' { reference = Just $ marginalCost discountRate years flow edgeContext' }
             f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
             f _                                 edgeContext = clear edgeContext
       context'''@NetworkContext{..} =
