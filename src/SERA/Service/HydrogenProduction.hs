@@ -48,7 +48,7 @@ import GHC.Generics (Generic)
 import SERA (SeraLog)
 import SERA.Demand (checkDemands, readDemands)
 import SERA.Infrastructure (InfrastructureFiles(..))
-import SERA.Infrastructure.Optimization (Optimum(..), optimize)
+import SERA.Infrastructure.Optimization (Optimum(..), Strategy(..), optimize)
 import SERA.Material (checkIntensities, checkPrices, materials, readIntensities, readPrices, rezoneIntensities, rezonePrices, upstreamMaterials)
 import SERA.Network (Network(..), NetworkFiles(..), checkNetwork, readNetwork)
 import SERA.Process (ProcessLibrary(..), ProcessLibraryFiles, checkProcessLibrary, deliveries, localPathways, productions, readProcessLibrary, transmissionPathways)
@@ -64,9 +64,10 @@ data ConfigProduction =
     firstYear           :: Year
   , lastYear            :: Year
   , timeWindow          :: Year
-  , discountRate        :: Double
-  , escalationRate      :: Double
-  , interpolate         :: Bool
+  , strategy            :: Maybe Strategy
+  , discountRate        :: Maybe Double
+  , escalationRate      :: Maybe Double
+  , interpolate         :: Maybe Bool
   , maximumPathLength   :: Maybe Double
   , singleLinkPaths     :: Maybe Bool
   , priceFiles          :: [FilePath]
@@ -129,14 +130,21 @@ productionMain ConfigProduction{..} =
     list "Upstream materials"   $ upstreamMaterials    intensityCube'
     list "Priced materials"     $ materials            priceCube'
 
+    let
+      strategy'       = fromMaybe LiteralInWindow strategy
+      discountRate'   = fromMaybe 0               discountRate
+      escalationRate' = fromMaybe 0               escalationRate
+      interpolate'    = fromMaybe True            interpolate
+
     logInfo ""
     logInfo "Optimization parameters:"
     logInfo $ "  First Year:            " ++ show firstYear
     logInfo $ "  Last Year:             " ++ show lastYear
     logInfo $ "  Time Window:           " ++ show timeWindow
-    logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate
-    logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate
---  logInfo $ "  Interpolate?           " ++ show interpolate
+    logInfo $ "  Strategy:              " ++ show strategy'
+    logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate'
+    logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate'
+    logInfo $ "  Interpolate?           " ++ show interpolate'
 
     let
 
@@ -153,8 +161,9 @@ productionMain ConfigProduction{..} =
         intensityCube
         processLibrary
         priceCube
-        discountRate
-        escalationRate
+        discountRate'
+        escalationRate'
+        strategy'
 
     let
 
