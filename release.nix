@@ -9,8 +9,8 @@ let
           "${compiler}" = pkgs.haskell.packages."${compiler}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
               sera       = haskellPackagesNew.callPackage ./default.nix    { };
-              daft       = haskellPackagesNew.callPackage ../../../code.functionally.io/daft/default.nix       { };
-              graft      = haskellPackagesNew.callPackage ../../../code.functionally.io/graft/default.nix      { };
+              daft       = haskellPackagesNew.callPackage ./daft.nix       { };
+              graft      = haskellPackagesNew.callPackage ./graft.nix      { };
               singletons = haskellPackagesNew.callPackage ./singletons.nix { };
               heaps      = haskellPackagesNew.callPackage ./heaps.nix      { };
             };
@@ -24,7 +24,7 @@ let
   pin1709  = import (
     fetchNixpkgs {
       rev = "b62c50ce5d3b6053f6f4afa10f2c4013ac0bfe9c";
-      sha256 = "0maw671jf54nx6gdlqhr5srl8kk78951mj847r325824f5bg8rsj";
+    # sha256 = "0maw671jf54nx6gdlqhr5srl8kk78951mj847r325824f5bg8rsj";
     }
   );
   pkgs = pin1709 { inherit config; };
