@@ -338,7 +338,7 @@ operationReifier ProcessLibrary{..} intensityCube pricer construction =
           <+> fProduction =: (if isProduction (fProductive <: construction) then output else 0      )
           <+> fFlow       =: (if isProduction (fProductive <: construction) then 0      else output')
           <+> fLoss       =: 0
-          <+> fSale       =: (sum $ (fSale <:) <$> cash)
+          <+> fSale       =: sum ((fSale <:) <$> cash)
           <+> fSalvage    =: salvage
         , cash
         , impacts

@@ -24,7 +24,7 @@ import Control.Arrow ((&&&), (***))
 import Control.Monad (guard, when)
 import Control.Monad.Log (logDebug, logError, logInfo, logNotice)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
-import Data.Daft.DataCube (evaluable, evaluate, knownKeys)
+import Data.Daft.DataCube (evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Default.Util (inf)
@@ -33,7 +33,7 @@ import Data.Graph.Algorithms (minimumCostFlow)
 import Data.Graph.Types (Graph(..), makeGraph)
 import Data.List (find, nub, unzip4)
 import Data.Map (Map)
-import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Monoid (Sum(..), (<>))
 import Data.Tuple.Util (snd3)
 import Debug.Trace (trace)
@@ -44,7 +44,7 @@ import SERA.Network (Network(..))
 import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (DemandCube, IntensityCube, PriceCube)
-import SERA.Types.Fields (fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fMaterial, fNonFuelConsumption, fPrice, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fMaterial, fNonFuelConsumption, fPrice, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
@@ -122,54 +122,46 @@ networkGraph Network{..} demandCube ProcessLibrary{..} =
   makeGraph
     $ concat
     [
-      case compare stage extendedStage of
-        LT -> [
-                (
-                  if stage == firstStage
-                    then ProductionVertex location
-                    else PathwayVertex location pathway stage
-                , PathwayVertex location pathway $ stage + 1
-                , PathwayForwardEdge location pathway stage
-                )
-              |
-                node <- toKnownRecords nodeCube
-              , let location = fLocation <: node
-              ]
-        EQ -> concat
-              [
-                [
-                  (from', to'  , PathwayForwardEdge location pathway stage) 
-                , (to'  , from', PathwayReverseEdge location pathway stage) 
-                ]
-              |
-                link <- toKnownRecords linkCube
-              , let location = fLocation <: link
-                    from = fFrom <: link
-                    to   = fTo   <: link
-                    from' = PathwayVertex from pathway stage
-                    to'   = PathwayVertex to   pathway stage
-              ]
-        GT -> [
-                (
-                  PathwayVertex location pathway $ stage - 1
-                , if stage == lastStage
-                    then ConsumptionVertex location  -- FIXME: Only do this when there actually is consumption.
-                    else PathwayVertex location pathway stage
-                , PathwayForwardEdge location pathway stage
-                )
-              |
-                node <- toKnownRecords nodeCube
-              , let location = fLocation <: node
-              ]
+      [
+        (
+          if stage == firstStage
+            then ProductionVertex location
+            else PathwayVertex location pathway stage'
+        , if stage == lastStage
+            then ConsumptionVertex location  -- FIXME: Only do this when there actually is consumption.
+            else PathwayVertex location pathway $ stage' + 1
+        , PathwayForwardEdge location pathway stage
+        )
+      |
+        not (fExtended <: pathwayStage) || fDelivery <: pathwayStage
+      , node <- toKnownRecords nodeCube
+      , let location = fLocation <: node
+      ]
+      ++
+      concat [
+        [
+          (from', to'  , PathwayForwardEdge location pathway stage) 
+        , (to'  , from', PathwayReverseEdge location pathway stage) 
+        ]
+      |
+        fExtended <: pathwayStage && fTransmission <: pathwayStage
+      , link <- toKnownRecords linkCube
+      , let location = fLocation <: link
+            from = fFrom <: link
+            to   = fTo   <: link
+            from' = PathwayVertex from pathway stage
+            to'   = PathwayVertex to   pathway stage
+      ]
     |
       pathway <- S.toList $ S.map (fPathway <:) $ knownKeys pathwayCube
     , let stages = toKnownRecords $ σ (\key _ -> pathway == fPathway <: key) pathwayCube
-          extendedStage' = find (\rec -> fExtended <: rec && fTransmission <: rec) stages
+          transmitting = fromMaybe maxBound $ (fStage <:) <$> find (\rec -> fExtended <: rec && fTransmission <: rec) stages
+          mixed = isJust $ find (\rec -> fExtended <: rec && fTransmission <: rec && fDelivery <: rec) stages
           firstStage = fStage <: minimum stages
           lastStage = fStage <: maximum stages
-    , isJust extendedStage'
-    , let extendedStage = fStage <: fromJust extendedStage'
-    , stage <- (fStage <:) <$> stages
+    , pathwayStage <- stages
+    , let stage = fStage <: pathwayStage
+          stage' = if not mixed && stage <= transmitting then stage else stage - 1
     ]
     ++
     [
@@ -367,14 +359,16 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , reference  = Nothing
                                                            }
               PathwayForwardEdge location pathway stage -> let
-                                                             technology = fTechnology <: (pathwayCube ! (fPathway =: pathway <+> fStage =: stage))
-                                                             (from, distance) =
-                                                               if linkCube `evaluable` (fLocation =: location)
-                                                                 then let
-                                                                        link = linkCube ! (fLocation =: location)
-                                                                      in
-                                                                        (fFrom <: link, fLength <: link)
-                                                                 else (location, 0)
+                                                             pathwayStage = pathwayCube ! (fPathway =: pathway <+> fStage =: stage)
+                                                             technology = fTechnology <: pathwayStage
+                                                             (from, distance') =
+                                                               case linkCube `evaluate` (fLocation =: location) of
+                                                                 Just link -> (fFrom <: link, fLength <: link)
+                                                                 Nothing   -> (location, sqrt $ fArea <: (nodeCube ! (fLocation =: location)))
+                                                             distance =
+                                                               if fExtended <: pathwayStage
+                                                                 then distance'
+                                                                 else 0
                                                            in
                                                              EdgeContext
                                                              {
@@ -919,7 +913,7 @@ optimize' years graph context =
         |
           (k, v) <- M.toList edgeContexts
         ]
-    logInfo $ " . . . checks complete."
+    logInfo " . . . checks complete."
     return
       (
         failure
