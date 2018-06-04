@@ -234,21 +234,13 @@ data NetworkContext =
   }
 
 
-makePricers :: PriceCube '[FLocation] -> Network -> Map (Location, Material, Year) Double -> Map Location Pricer
-makePricers priceCube Network{..} feedstocks =
+makePricers :: PriceCube '[FLocation] -> Network -> Map Location Pricer
+makePricers priceCube Network{..} =
   M.fromList
     [
-      (
-        fLocation <: location
-      , \material year ->
-          (
-            makePricer priceCube location
-              $ M.findWithDefault 0 (fLocation <: location, material, year) feedstocks
-          )
-          material year
-      )
+      (fLocation <:location, makePricer priceCube location 0)
     |
-      location <- S.toList (knownKeys nodeCube) ++ S.toList (knownKeys linkCube)
+      location <- S.toList (knownKeys nodeCube) ++ S.toList (knownKeys linkCube) 
     ]
 
 
@@ -258,8 +250,16 @@ remakePricers NetworkContext{..} =
     feedstocks :: Map Location (Map (Material, Year) Double)
     feedstocks =
       M.fromListWith (M.unionWith (+))
+        $
         [
-          (location, (M.singleton (fMaterial <: impact, fYear <: impact) (fQuantity <: impact)))
+          (fLocation <: rec, M.singleton (fMaterial <: rec, fYear <: rec) 0)
+        |
+          rec <- S.toList $ knownKeys priceCube
+        , (fYear <: rec) `elem` yearz
+        ]
+        ++
+        [
+          (location, M.singleton (fMaterial <: impact, fYear <: impact) (- fQuantity <: impact))
         |
           (edge, edgeContext) <- M.toList edgeContexts
         , let (location, impacts'') = case edge of
@@ -303,8 +303,8 @@ reprice networkContext@NetworkContext{..} =
                                                      OnsiteEdge location' _           -> (location', True)
                                                      PathwayForwardEdge location' _ _ -> (location', True)
                                                      PathwayReverseEdge location' _ _ -> (location', False)
-                             edgeContext' = edgeContext { pricer = pricers M.! location }
-                             (flows', cashes', impacts') = costEdge' strategizing yearz (reserved edgeContext) edgeContext
+                             edgeContext' = edgeContext { pricer = M.findWithDefault (error $ "No prices for \"" ++ show location ++ "\".") location pricers }
+                             (flows', cashes', impacts') = costEdge' LiteralInWindow yearz (const 0 <$> yearz) edgeContext
                            in
                              if forward
                                then edgeContext' { flows = flows' , cashes = cashes' , impacts = impacts' }
@@ -317,7 +317,7 @@ reprice networkContext@NetworkContext{..} =
 buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Double -> Strategy -> [Year] -> NetworkContext
 buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting strategizing yearz =
   let
-    pricers = makePricers priceCube network M.empty
+    pricers = makePricers priceCube network
     edgeContexts =
       M.fromList
         [
@@ -785,7 +785,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
               let
                 reflow edgeContext =
                   let
-                    (flows', cashes', impacts') = costEdge' LiteralInWindow years (reserved edgeContext) edgeContext
+                    (flows', cashes', impacts') = costEdge' LiteralInWindow years ({- FIXME: Check this. -} reserved edgeContext) edgeContext
                   in
                     edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
                 rebuild PathwayReverseEdge{}  edgeContext = edgeContext
@@ -851,14 +851,15 @@ optimize' graph context@NetworkContext{..} =
   do
     let
       NetworkContext _ _ _ _ edgeContexts' =
-        minimumCostFlow
-          (costFunction     yearz)
-          (capacityFunction yearz)
-          (flowFunction     yearz)
-          graph
-          context
-          SuperSource
-          SuperSink
+        reprice 
+          $ minimumCostFlow
+              (costFunction     yearz)
+              (capacityFunction yearz)
+              (flowFunction     yearz)
+              graph
+              context
+              SuperSource
+              SuperSink
       references =
         M.fromListWith (.+.)
           [
@@ -876,7 +877,7 @@ optimize' graph context@NetworkContext{..} =
           ]
       reflow edgeContext =
         let
-          (flows'', cashes'', impacts'') = costEdge' LiteralInWindow yearz (reserved edgeContext) edgeContext
+          (flows'', cashes'', impacts'') = costEdge' LiteralInWindow yearz ({- FIXME: Check this. -} reserved edgeContext) edgeContext
         in
           edgeContext { flows = flows'' , cashes = cashes'' , impacts = impacts'' }
       clear edgeContext@EdgeReverseContext{} = edgeContext
@@ -928,14 +929,15 @@ optimize' graph context@NetworkContext{..} =
             f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
             f _                                 edgeContext = clear edgeContext
       context''' =
-        minimumCostFlow
-          (costFunction     yearz)
-          (capacityFunction yearz)
-          (flowFunction     yearz)
-          graph
-          context''
-          SuperSource
-          SuperSink
+        reprice
+          $ minimumCostFlow
+              (costFunction     yearz)
+              (capacityFunction yearz)
+              (flowFunction     yearz)
+              graph
+              context''
+              SuperSource
+              SuperSink
       (constructions', flows', cashes', impacts') =
         unzip4
           $ concat
