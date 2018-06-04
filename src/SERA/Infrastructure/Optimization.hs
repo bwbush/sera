@@ -44,7 +44,7 @@ import SERA.Network (Network(..))
 import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (DemandCube, IntensityCube, PriceCube)
-import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, Material, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fNonFuelConsumption, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fNonFuelConsumption, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fQuantity, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
@@ -226,34 +226,96 @@ data EdgeContext =
 data NetworkContext =
   NetworkContext
   {
-    strategizing :: Strategy
+    yearz        :: [Year]
+  , priceCube    :: PriceCube '[FLocation]
+  , strategizing :: Strategy
   , discounting  :: Double
---, feedstocks   :: Map (Location, Material) Double
   , edgeContexts :: Map Edge EdgeContext
   }
 
 
-makePricers :: PriceCube '[FLocation] -> Network -> Map (Location, Material) Double -> Map Location Pricer
-makePricers priceCube Network{..} feedstocks' =
+makePricers :: PriceCube '[FLocation] -> Network -> Map (Location, Material, Year) Double -> Map Location Pricer
+makePricers priceCube Network{..} feedstocks =
   M.fromList
     [
       (
         fLocation <: location
-      , \material ->
+      , \material year ->
           (
             makePricer priceCube location
-              . fromMaybe 0
-              $ (fLocation <: location, material) `M.lookup` feedstocks'
+              $ M.findWithDefault 0 (fLocation <: location, material, year) feedstocks
           )
-          material
+          material year
       )
     |
       location <- S.toList (knownKeys nodeCube) ++ S.toList (knownKeys linkCube)
     ]
 
 
+remakePricers :: NetworkContext -> Map Location Pricer
+remakePricers NetworkContext{..} =
+  let
+    feedstocks :: Map Location (Map (Material, Year) Double)
+    feedstocks =
+      M.fromListWith (M.unionWith (+))
+        [
+          (location, (M.singleton (fMaterial <: impact, fYear <: impact) (fQuantity <: impact)))
+        |
+          (edge, edgeContext) <- M.toList edgeContexts
+        , let (location, impacts'') = case edge of
+                                        DemandEdge location'             -> (location', impacts edgeContext)
+                                        ExistingEdge _                   -> (fLocation <: construction (head $ fixed edgeContext), impacts edgeContext)
+                                        CentralEdge location' _          -> (location', impacts edgeContext)
+                                        OnsiteEdge location' _           -> (location', impacts edgeContext)
+                                        PathwayForwardEdge location' _ _ -> (location', impacts edgeContext)
+                                        PathwayReverseEdge location' _ _ -> (location', [])
+        , impact <- impacts''
+        , fImpactCategory <: impact == Consumption
+        ]
+  in
+    M.mapWithKey
+      (
+        \location consumptions material year ->
+           (
+             makePricer priceCube (fLocation =: location)
+               $ M.findWithDefault 0 (material, year) consumptions
+           )
+            material year
+      )
+      feedstocks
+
+
+reprice :: NetworkContext -> NetworkContext
+reprice networkContext@NetworkContext{..} =
+  let
+    pricers = remakePricers networkContext
+  in
+    networkContext
+    {
+      edgeContexts = M.mapWithKey
+                       (
+                         \edge edgeContext ->
+                           let
+                             (location, forward) = case edge of
+                                                     DemandEdge location'             -> (location', True)
+                                                     ExistingEdge _                   -> (fLocation <: construction (head $ fixed edgeContext), True)
+                                                     CentralEdge location' _          -> (location', True)
+                                                     OnsiteEdge location' _           -> (location', True)
+                                                     PathwayForwardEdge location' _ _ -> (location', True)
+                                                     PathwayReverseEdge location' _ _ -> (location', False)
+                             edgeContext' = edgeContext { pricer = pricers M.! location }
+                             (flows', cashes', impacts') = costEdge' strategizing yearz (reserved edgeContext) edgeContext
+                           in
+                             if forward
+                               then edgeContext' { flows = flows' , cashes = cashes' , impacts = impacts' }
+                               else edgeContext
+                       )
+                       edgeContexts
+    }
+
+
 buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Double -> Strategy -> [Year] -> NetworkContext
-buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting strategizing years =
+buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting strategizing yearz =
   let
     pricers = makePricers priceCube network M.empty
     edgeContexts =
@@ -267,7 +329,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                   DemandEdge{}         -> edgeContext
                   PathwayReverseEdge{} -> edgeContext
                   _                    -> let
-                                            (flows', cashes', impacts') = costEdge' LiteralInWindow years (reserved edgeContext) edgeContext
+                                            (flows', cashes', impacts') = costEdge' LiteralInWindow yearz (reserved edgeContext) edgeContext
                                           in
                                             edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
             ) $
@@ -279,9 +341,9 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                                             maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec)
                                                                               $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
                                                                           |
-                                                                            year <- years
+                                                                            year <- yearz
                                                                           ]
-                                                           , reserved   = const 0 <$> years
+                                                           , reserved   = const 0 <$> yearz
                                                            , fixed      = []
                                                            , adjustable = Nothing
                                                            , flows      = []
@@ -301,9 +363,9 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                                                 then fCapacity <: existing
                                                                                 else 0
                                                                             |
-                                                                              year <- years
+                                                                              year <- yearz
                                                                             ]
-                                                             , reserved   = const 0 <$> years
+                                                             , reserved   = const 0 <$> yearz
                                                              , fixed      = [
                                                                               let
                                                                                 construction =     fInfrastructure =: infrastructure
@@ -348,8 +410,8 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                                                   (foldl mostExtreme 0 demand)
                                                                                   0
                                                                                   technology
-                                                           , capacity   = const 0 <$> years
-                                                           , reserved   = const 0 <$> years
+                                                           , capacity   = const 0 <$> yearz
+                                                           , reserved   = const 0 <$> yearz
                                                            , fixed      = []
                                                            , adjustable = Nothing
                                                            , flows      = []
@@ -371,8 +433,8 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                                                   (foldl mostExtreme 0 demand)
                                                                                   0
                                                                                   technology
-                                                           , capacity   = const 0 <$> years
-                                                           , reserved   = const 0 <$> years
+                                                           , capacity   = const 0 <$> yearz
+                                                           , reserved   = const 0 <$> yearz
                                                            , fixed      = []
                                                            , adjustable = Nothing
                                                            , flows      = []
@@ -406,8 +468,8 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                                                     (foldl mostExtreme 0 demand)
                                                                                     distance
                                                                                     technology
-                                                             , capacity   = const 0 <$> years
-                                                             , reserved   = const 0 <$> years
+                                                             , capacity   = const 0 <$> yearz
+                                                             , reserved   = const 0 <$> yearz
                                                              , fixed      = []
                                                              , adjustable = Nothing
                                                              , flows      = []
@@ -727,7 +789,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                   in
                     edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
                 rebuild PathwayReverseEdge{}  edgeContext = edgeContext
-                rebuild (DemandEdge location) edgeContext = EdgeContext
+                rebuild (DemandEdge location) edgeContext = edgeContext
                                                             {
                                                               builder    = Nothing
                                                             , capacity   = [
@@ -743,7 +805,6 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
-                                                            , pricer     = pricer edgeContext
                                                             }
                 rebuild _                     edgeContext = reflow $ edgeContext
                                                             {
@@ -768,13 +829,16 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
-                                                            , pricer     = pricer edgeContext
                                                             }
                 context' =
                   if years == head yearses
                     then buildContext graph network processLibrary intensityCube priceCube demandCube discountRate strategy years
-                    else NetworkContext strategy discountRate $ M.mapWithKey rebuild $ edgeContexts context
-              (failure', optimum', context'') <- optimize' years graph context'
+                    else context
+                         {
+                           yearz        = years 
+                         , edgeContexts = M.mapWithKey rebuild $ edgeContexts context
+                         }
+              (failure', optimum', context'') <- optimize' graph context'
               return (context'', (failure || failure', optimum <> optimum'))
         )
         (undefined, (False, mempty))
@@ -782,15 +846,15 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
 
 
 
-optimize' :: SeraLog m => [Year] -> NetworkGraph -> NetworkContext -> m (Bool, Optimum, NetworkContext)
-optimize' years graph context =
+optimize' :: SeraLog m => NetworkGraph -> NetworkContext -> m (Bool, Optimum, NetworkContext)
+optimize' graph context@NetworkContext{..} =
   do
     let
-      NetworkContext strategy discountRate edgeContexts' =
+      NetworkContext _ _ _ _ edgeContexts' =
         minimumCostFlow
-          (costFunction years)
-          (capacityFunction years)
-          (flowFunction years)
+          (costFunction     yearz)
+          (capacityFunction yearz)
+          (flowFunction     yearz)
           graph
           context
           SuperSource
@@ -812,7 +876,7 @@ optimize' years graph context =
           ]
       reflow edgeContext =
         let
-          (flows'', cashes'', impacts'') = costEdge' LiteralInWindow years (reserved edgeContext) edgeContext
+          (flows'', cashes'', impacts'') = costEdge' LiteralInWindow yearz (reserved edgeContext) edgeContext
         in
           edgeContext { flows = flows'' , cashes = cashes'' , impacts = impacts'' }
       clear edgeContext@EdgeReverseContext{} = edgeContext
@@ -830,9 +894,9 @@ optimize' years graph context =
                                                                                  fixed' <- construction <$> fixed edgeContext
                                                                                ]
                                                                            |
-                                                                             year <- years
+                                                                             year <- yearz
                                                                            ]
-                                               , reserved   = const 0 <$> years
+                                               , reserved   = const 0 <$> yearz
                                                , adjustable = Nothing
                                                , flows      = []
                                                , cashes     = []
@@ -840,7 +904,11 @@ optimize' years graph context =
                                                , reference  = Nothing
                                                }
       context'' =
-        NetworkContext strategy discountRate $ M.mapWithKey f edgeContexts'
+        context
+        {
+          edgeContexts =
+            M.mapWithKey f edgeContexts'
+        }
           where
 --          f (CentralEdge        location _  ) edgeContext = let
 --                                                              edgeContext' = clear edgeContext
@@ -856,14 +924,14 @@ optimize' years graph context =
                                                                 edgeContext' = clear edgeContext
                                                                 flow = mostExtreme 1 <$> references M.! location
                                                               in
-                                                                edgeContext' { reference = Just $ marginalCost strategy discountRate years flow edgeContext' }
+                                                                edgeContext' { reference = Just $ marginalCost strategizing discounting yearz flow edgeContext' }
             f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
             f _                                 edgeContext = clear edgeContext
-      context'''@NetworkContext{..} =
+      context''' =
         minimumCostFlow
-          (costFunction years)
-          (capacityFunction years)
-          (flowFunction years)
+          (costFunction     yearz)
+          (capacityFunction yearz)
+          (flowFunction     yearz)
           graph
           context''
           SuperSource
@@ -883,10 +951,10 @@ optimize' years graph context =
                                       ] 
               EdgeReverseContext _ -> [] 
           |
-            (_, v) <- M.toList edgeContexts
+            (_, v) <- M.toList $ SERA.Infrastructure.Optimization.edgeContexts context'''
           ]
     logInfo ""
-    logInfo $ "Optimizing and checking solution for years " ++ show years ++ " . . ."
+    logInfo $ "Optimizing and checking solution for years " ++ show yearz ++ " . . ."
     let
       (existingSupply, totalDemand) =
         ((sum . concat) *** (sum . concat))
@@ -897,7 +965,7 @@ optimize' years graph context =
               ExistingEdge _ -> (capacity v, []        )
               _              -> ([]        , []        )
           |
-            (k, v) <- M.toList edgeContexts
+            (k, v) <- M.toList $ SERA.Infrastructure.Optimization.edgeContexts context'''
           ]
       totalCost =
         sum
@@ -907,7 +975,7 @@ optimize' years graph context =
               EdgeContext{..}      -> (fSale <:) <$> flows
               EdgeReverseContext{} -> []
           |
-            (_, v) <- M.toList edgeContexts
+            (_, v) <- M.toList $ SERA.Infrastructure.Optimization.edgeContexts context'''
           ]
     logNotice $ "Total existing production capacity: " ++ show existingSupply            ++ " kg/yr."
     logNotice $ "Total demand: "                       ++ show totalDemand               ++ " kg."
@@ -930,7 +998,7 @@ optimize' years graph context =
                                        return False
             _                     -> return False
         |
-          (k, v) <- M.toList edgeContexts
+          (k, v) <- M.toList $ SERA.Infrastructure.Optimization.edgeContexts context'''
         ]
     logInfo " . . . checks complete."
     return
