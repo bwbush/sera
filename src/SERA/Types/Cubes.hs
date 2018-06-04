@@ -44,6 +44,7 @@ module SERA.Types.Cubes (
 
 
 import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Vinyl.TypeLevel (type (++))
 import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRent, FSale, FSales, FSalvage, FStage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone)
 import SERA.Types.Records (ProcessCost)
 
@@ -87,7 +88,7 @@ type NodeCube = '[FLocation] *↝ '[FX, FY, FArea, FProductive, FSale, FRent]
 type PathwayCube = '[FPathway, FStage] *↝  '[FTechnology, FYield, FExtended, FTransmission, FDelivery, FFormat]
 
 
-type PriceCube key = (FMaterial ': FYear ': key) *↝ '[FPrice, FBillable]
+type PriceCube key = (key ++ '[FMaterial, FYear, FQuantity]) *↝ '[FPrice, FBillable]
 
 
 type ProcessCostCube = ProcessKey *↝ ProcessCost

@@ -38,30 +38,30 @@ module SERA.Material (
 
 import Control.Monad.Except (MonadError, MonadIO)
 import Control.Monad.Log (logError, logInfo, logNotice, logWarning)
-import Data.Daft.DataCube (DataCube(Key, Keys), evaluate)
+import Data.Daft.DataCube (DataCube(Key, Keys))
 import Data.Daft.Vinyl.FieldCube (FieldCube, (⋈), κ, σ, ω, υ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
+import Data.Vinyl.TypeLevel (type (++))
 import SERA (SeraLog, checkPresent, readConcat)
 import SERA.Network (Network(..))
 import SERA.Process (ProcessLibrary(..))
 import SERA.Types.Cubes (IntensityCube, PriceCube, ZoneCube)
-import SERA.Types.Fields (fBillable, fFraction, fIntensity, Location, FLocation, fLocation, Material, FMaterial, fMaterial, fPrice, FUpstreamMaterial, fUpstreamMaterial, Year, fYear, FZone, fZone)
+import SERA.Types.Fields (fBillable, fFraction, fIntensity, Location, FLocation, fLocation, Material, FMaterial, fMaterial, fPrice, FQuantity, fQuantity, FUpstreamMaterial, fUpstreamMaterial, Year, FYear, fYear, FZone, fZone)
 import SERA.Util (extractKey)
 
+import qualified Data.Map as M (lookupGE)
 import qualified Data.Set as S (union, unions)
 
 
-makePricer :: Ord (FieldRec key) => PriceCube key -> FieldRec key -> Pricer
-makePricer priceCube key material year =
-  maybe 0 (fPrice <:) 
-    . evaluate priceCube
-    $ fMaterial =: material <+> fYear =: year <+> key
-
-
+makePricer :: Ord (FieldRec (key ++ '[FMaterial, FYear, FQuantity])) => PriceCube key -> FieldRec key -> Double -> Pricer
+makePricer priceCube key quantity material year =
+  maybe 0 ((fPrice <:) . snd)
+    . flip M.lookupGE priceCube
+    $ key <+> (fMaterial =: material <+> fYear =: year <+> fQuantity =: quantity)
 
 
 materials :: (FMaterial ∈ ks, Key cube Material, DataCube cube, Keys cube ~ Set) => FieldCube cube ks vs -> Set Material
@@ -89,6 +89,7 @@ checkPrices Network{..} ProcessLibrary{..} intensityCube priceCube =
       outputMaterials     = extractKey (fMaterial <:)         processOutputCube
       intensityMaterials  = extractKey (fMaterial <:)         intensityCube
       intensityMaterials' = extractKey (fUpstreamMaterial <:) intensityCube
+    -- FIXME: add more tests.
     checkPresent
       logError
       "Prices"

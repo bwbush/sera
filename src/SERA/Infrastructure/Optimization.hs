@@ -39,7 +39,7 @@ import Data.Tuple.Util (snd3)
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
 import SERA (SeraLog)
-import SERA.Material (Pricer, localize)
+import SERA.Material (Pricer, localize, makePricer)
 import SERA.Network (Network(..))
 import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
@@ -236,9 +236,9 @@ makePricers :: PriceCube '[FLocation] -> Network -> Map Location Pricer
 makePricers priceCube Network{..} =
   M.fromList
     [
-      (location, makePricer priceCube location)
+      (fLocation <: location, makePricer priceCube location 0)
     |
-      location <- (fLocation <:) <$> S.toList (knownKeys nodeCube) ++ S.toList (knownKeys linkCube)
+      location <- S.toList (knownKeys nodeCube) ++ S.toList (knownKeys linkCube)
     ]
 
 
@@ -590,12 +590,6 @@ adjustEdge years delta edgeContext@EdgeContext{..} =
         , impacts = impacts'
         }
 adjustEdge _ _ _ = error "adjustCapacity: edge is reversed."
-
-
-makePricer :: PriceCube '[FLocation] -> Location -> Pricer
-makePricer priceCube location material year =
-  maybe 0 (fPrice <:)
-    $ priceCube `evaluate` (fMaterial =: material <+> fYear =: year <+> fLocation =: location) -- FIXME: extrapolate
 
 
 mostExtreme :: (Num a, Ord a) => a -> a -> a
