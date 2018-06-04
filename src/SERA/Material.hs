@@ -36,15 +36,18 @@ module SERA.Material (
 ) where
 
 
+import Control.Monad (guard)
 import Control.Monad.Except (MonadError, MonadIO)
 import Control.Monad.Log (logError, logInfo, logNotice, logWarning)
 import Data.Daft.DataCube (DataCube(Key, Keys))
-import Data.Daft.Vinyl.FieldCube (FieldCube, (⋈), κ, σ, ω, υ)
+import Data.Daft.Vinyl.FieldCube (FieldCube, (⋈), κ, σ, τ, ω, υ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
+import Data.Vinyl.Notation (type (⊆))
 import Data.Vinyl.TypeLevel (type (++))
 import SERA (SeraLog, checkPresent, readConcat)
 import SERA.Network (Network(..))
@@ -57,11 +60,17 @@ import qualified Data.Map as M (lookupGE)
 import qualified Data.Set as S (union, unions)
 
 
-makePricer :: Ord (FieldRec (key ++ '[FMaterial, FYear, FQuantity])) => PriceCube key -> FieldRec key -> Double -> Pricer
+makePricer :: (Eq (FieldRec (key ++ '[FMaterial])), (key ++ '[FMaterial]) ⊆ (key ++ '[FMaterial, FYear, FQuantity]), Ord (FieldRec (key ++ '[FMaterial, FYear, FQuantity]))) => PriceCube key -> FieldRec key -> Double -> Pricer
 makePricer priceCube key quantity material year =
-  maybe 0 ((fPrice <:) . snd)
-    . flip M.lookupGE priceCube
-    $ key <+> (fMaterial =: material <+> fYear =: year <+> fQuantity =: quantity)
+  fromMaybe 0
+    $ do
+      (key', value') <-
+        flip M.lookupGE priceCube
+          $ key <+> (fMaterial =: material <+> fYear =: year <+> fQuantity =: quantity)
+      guard
+        $ (key <+> fMaterial =: material) == τ key'
+      return
+        $ fPrice <: value'
 
 
 materials :: (FMaterial ∈ ks, Key cube Material, DataCube cube, Keys cube ~ Set) => FieldCube cube ks vs -> Set Material

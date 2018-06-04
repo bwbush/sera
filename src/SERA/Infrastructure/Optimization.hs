@@ -44,7 +44,7 @@ import SERA.Network (Network(..))
 import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (DemandCube, IntensityCube, PriceCube)
-import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fMaterial, fNonFuelConsumption, fPrice, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, Infrastructure(..), fInfrastructure, fLifetime, Material, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fNonFuelConsumption, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
@@ -228,15 +228,25 @@ data NetworkContext =
   {
     strategizing :: Strategy
   , discounting  :: Double
+--, feedstocks   :: Map (Location, Material) Double
   , edgeContexts :: Map Edge EdgeContext
   }
 
 
-makePricers :: PriceCube '[FLocation] -> Network -> Map Location Pricer
-makePricers priceCube Network{..} =
+makePricers :: PriceCube '[FLocation] -> Network -> Map (Location, Material) Double -> Map Location Pricer
+makePricers priceCube Network{..} feedstocks' =
   M.fromList
     [
-      (fLocation <: location, makePricer priceCube location 0)
+      (
+        fLocation <: location
+      , \material ->
+          (
+            makePricer priceCube location
+              . fromMaybe 0
+              $ (fLocation <: location, material) `M.lookup` feedstocks'
+          )
+          material
+      )
     |
       location <- S.toList (knownKeys nodeCube) ++ S.toList (knownKeys linkCube)
     ]
@@ -245,7 +255,7 @@ makePricers priceCube Network{..} =
 buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Double -> Strategy -> [Year] -> NetworkContext
 buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting strategizing years =
   let
-    pricers = makePricers priceCube network
+    pricers = makePricers priceCube network M.empty
     edgeContexts =
       M.fromList
         [
