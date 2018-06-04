@@ -218,6 +218,7 @@ data EdgeContext =
     , cashes     :: [Cash]
     , impacts    :: [Impact]
     , reference  :: Maybe Double
+    , pricer     :: Pricer
     }
   | EdgeReverseContext Edge
 
@@ -231,9 +232,20 @@ data NetworkContext =
   }
 
 
+makePricers :: PriceCube '[FLocation] -> Network -> Map Location Pricer
+makePricers priceCube Network{..} =
+  M.fromList
+    [
+      (location, makePricer priceCube location)
+    |
+      location <- (fLocation <:) <$> S.toList (knownKeys nodeCube) ++ S.toList (knownKeys linkCube)
+    ]
+
+
 buildContext :: NetworkGraph -> Network -> ProcessLibrary -> IntensityCube '[FLocation] -> PriceCube '[FLocation] -> DemandCube -> Double -> Strategy -> [Year] -> NetworkContext
-buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting strategizing years =
+buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} intensityCube priceCube demandCube discounting strategizing years =
   let
+    pricers = makePricers priceCube network
     edgeContexts =
       M.fromList
         [
@@ -266,6 +278,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , cashes     = []
                                                            , impacts    = []
                                                            , reference  = Nothing
+                                                           , pricer     = pricers M.! location
                                                            }
               ExistingEdge infrastructure               -> let
                                                              existing = existingCube ! (fInfrastructure =: infrastructure)
@@ -302,7 +315,6 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                 , operation    = operationReifier
                                                                                                    processLibrary
                                                                                                    (localize intensityCube $ fLocation <: existing)
-                                                                                                   (makePricer priceCube $ fLocation <: existing)
                                                                                                    construction
                                                                                 }
                                                                             ]
@@ -311,6 +323,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              , cashes     = []
                                                              , impacts    = []
                                                              , reference  = Nothing
+                                                             , pricer     = pricers M.! (fLocation <: existing)
                                                              }
               CentralEdge location technology           -> EdgeContext
                                                            {
@@ -320,7 +333,6 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                               $ technologyReifier
                                                                                   processLibrary
                                                                                   (localize intensityCube location)
-                                                                                  (makePricer priceCube location)
                                                                                   (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
                                                                                   (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
                                                                                   (foldl mostExtreme 0 demand)
@@ -334,6 +346,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , cashes     = []
                                                            , impacts    = []
                                                            , reference  = Nothing
+                                                           , pricer     = pricers M.! location
                                                            }
               OnsiteEdge location technology            -> EdgeContext
                                                            {
@@ -343,7 +356,6 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                               $ technologyReifier
                                                                                   processLibrary
                                                                                   (localize intensityCube location)
-                                                                                  (makePricer priceCube location)
                                                                                   (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
                                                                                   (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
                                                                                   (foldl mostExtreme 0 demand)
@@ -357,6 +369,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , cashes     = []
                                                            , impacts    = []
                                                            , reference  = Nothing
+                                                           , pricer     = pricers M.! location
                                                            }
               PathwayForwardEdge location pathway stage -> let
                                                              pathwayStage = pathwayCube ! (fPathway =: pathway <+> fStage =: stage)
@@ -378,7 +391,6 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                                                 $ technologyReifier
                                                                                     processLibrary
                                                                                     (localize intensityCube location)
-                                                                                    (makePricer priceCube from)
                                                                                     (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
                                                                                     (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
                                                                                     (foldl mostExtreme 0 demand)
@@ -392,6 +404,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              , cashes     = []
                                                              , impacts    = []
                                                              , reference  = Nothing
+                                                             , pricer     = pricers M.! location
                                                              }
               PathwayReverseEdge location pathway stage -> EdgeReverseContext $ PathwayForwardEdge location pathway stage
           )
@@ -445,7 +458,7 @@ costEdge' :: Strategy -> [Year] -> [Double] -> EdgeContext -> ([Flow], [Cash], [
 costEdge' strategy year delta EdgeContext{..} =
   let
     technologyContexts = (maybe id (:) adjustable) fixed
-    (flows', cashes', impacts') = unzip3 . zipWith (\year' flow' -> costTechnologies year' flow' technologyContexts) year $ reserved .+. delta
+    (flows', cashes', impacts') = unzip3 . zipWith (\year' flow' -> costTechnologies pricer year' flow' technologyContexts) year $ reserved .+. delta
   in
     (
       concat flows'
@@ -464,12 +477,12 @@ costEdge' strategy year delta EdgeContext{..} =
 costEdge' _ _ _ _ = error "costEdge': edge is reversed."
 
 
-costTechnologies :: Year -> Double -> [TechnologyContext] -> ([Flow], [Cash], [Impact])
-costTechnologies year flow technologyContexts =
+costTechnologies :: Pricer -> Year -> Double -> [TechnologyContext] -> ([Flow], [Cash], [Impact])
+costTechnologies pricer year flow technologyContexts =
   let
     (flows', cashes', impacts', _) = -- FIXME: check residue
       foldr (\t (flows'', cashes'', impacts'', residue'') -> let
-                                                               (flows''', cashes''', impacts''', residue''') = costTechnology year residue'' t
+                                                               (flows''', cashes''', impacts''', residue''') = costTechnology pricer year residue'' t
                                                              in
                                                                (flows''' ++ flows'', cashes''' ++ cashes'', impacts''' ++ impacts'', residue''')
             )
@@ -479,8 +492,8 @@ costTechnologies year flow technologyContexts =
     (flows', cashes', impacts')
 
 
-costTechnology :: Year -> Double -> TechnologyContext -> ([Flow], [Cash], [Impact], Double) -- TODO: Move into operations, which will return flow and residue.
-costTechnology year flow TechnologyContext{..} =                                            -- FIXME: Guard against overflow.
+costTechnology :: Pricer -> Year -> Double -> TechnologyContext -> ([Flow], [Cash], [Impact], Double) -- TODO: Move into operations, which will return flow and residue.
+costTechnology pricer year flow TechnologyContext{..} =                                            -- FIXME: Guard against overflow.
   let
     capacity' = fNameplate <: construction * fDutyCycle <: construction
     flow' =
@@ -488,7 +501,7 @@ costTechnology year flow TechnologyContext{..} =                                
         then flow
         else signum flow * capacity'
     residue = flow - flow'
-    (flows', cashes', impacts', _) = operation year flow'
+    (flows', cashes', impacts', _) = operation pricer year flow'
   in
     if year < fYear <: construction
       then ([], [], [], flow)
@@ -694,7 +707,7 @@ flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
 optimize :: SeraLog m => [[Year]] -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> Double -> Double -> Strategy -> m (Bool, Optimum)
-optimize yearses network demandCube intensityCube processLibrary priceCube discountRate escalationRate strategy =
+optimize yearses network demandCube intensityCube processLibrary priceCube discountRate _escalationRate strategy =
   do
     let
       graph = networkGraph network demandCube processLibrary
@@ -710,7 +723,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                   in
                     edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
                 rebuild PathwayReverseEdge{}  edgeContext = edgeContext
-                rebuild (DemandEdge location) _           = EdgeContext
+                rebuild (DemandEdge location) edgeContext = EdgeContext
                                                             {
                                                               builder    = Nothing
                                                             , capacity   = [
@@ -726,6 +739,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
+                                                            , pricer     = pricer edgeContext
                                                             }
                 rebuild _                     edgeContext = reflow $ edgeContext
                                                             {
@@ -750,6 +764,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
+                                                            , pricer     = pricer edgeContext
                                                             }
                 context' =
                   if years == head yearses

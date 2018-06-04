@@ -54,7 +54,8 @@ import qualified Data.Set as S (toList)
 
 
 -- | Operate a technology for a year at a given flow rate.
-type TechnologyOperation =  Year                             -- ^ The year.
+type TechnologyOperation =  Pricer
+                         -> Year                             -- ^ The year.
                          -> Double                           -- ^ The flow rate [kg/yr].
                          -> (Flow, [Cash], [Impact], Double) -- ^ The flow, cash, and impact records, along with the flow.
 
@@ -213,9 +214,8 @@ sizeIntensity year material intensities =
 -- | Create a technology reifier.
 technologyReifier :: ProcessLibrary    -- ^ The process library.
                   -> IntensityCube '[] -- ^ The intensity datacube.
-                  -> Pricer            -- ^ The pricer.
                   -> TechnologyReifier -- ^ The reifier.
-technologyReifier processLibrary@ProcessLibrary{..} intensityCube pricer specifics built demand' distance' tech = 
+technologyReifier processLibrary@ProcessLibrary{..} intensityCube specifics built demand' distance' tech = 
   do -- FIXME: Add interpolation
     let
       demand = abs demand'
@@ -244,16 +244,15 @@ technologyReifier processLibrary@ProcessLibrary{..} intensityCube pricer specifi
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
         <+> fVariableCost =: fVariableCost <: costs + distance * fVariableCostStretch <: costs
-    return (construction, operationReifier processLibrary intensityCube pricer construction)
+    return (construction, operationReifier processLibrary intensityCube construction)
 
 
 -- | Reify the operation of a technology.
 operationReifier :: ProcessLibrary       -- ^ The process library.
                  -> IntensityCube '[]    -- ^ The intensity datacube.
-                 -> Pricer               -- ^ The pricer.
                  -> Construction         -- ^ The constructed technology.
                  -> TechnologyOperation  -- ^ The reified operation
-operationReifier ProcessLibrary{..} intensityCube pricer construction =
+operationReifier ProcessLibrary{..} intensityCube construction pricer =
   let
     specifics = τ construction :: FieldRec '[FInfrastructure, FLocation]
     tech     = fTechnology <: construction
