@@ -304,7 +304,7 @@ reprice networkContext@NetworkContext{..} =
                                                      PathwayForwardEdge location' _ _ -> (location', True)
                                                      PathwayReverseEdge location' _ _ -> (location', False)
                              edgeContext' = edgeContext { pricer = M.findWithDefault (error $ "No prices for \"" ++ show location ++ "\".") location pricers }
-                             (flows', cashes', impacts') = costEdge' LiteralInWindow yearz (const 0 <$> yearz) edgeContext
+                             (flows', cashes', impacts') = costEdge' strategizing yearz (const 0 <$> yearz) edgeContext
                            in
                              if forward
                                then edgeContext' { flows = flows' , cashes = cashes' , impacts = impacts' }
@@ -329,7 +329,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                   DemandEdge{}         -> edgeContext
                   PathwayReverseEdge{} -> edgeContext
                   _                    -> let
-                                            (flows', cashes', impacts') = costEdge' LiteralInWindow yearz (reserved edgeContext) edgeContext
+                                            (flows', cashes', impacts') = costEdge' strategizing yearz ({- FIXME: Checkt this. -} const 0 <$> yearz) edgeContext
                                           in
                                             edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
             ) $
@@ -401,15 +401,15 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                            {
                                                              builder    = Just
                                                                             $ \i year' demand ->
-                                                                              fmap (uncurry TechnologyContext)
-                                                                              $ technologyReifier
-                                                                                  processLibrary
-                                                                                  (localize intensityCube location)
-                                                                                  (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
-                                                                                  (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
-                                                                                  (foldl mostExtreme 0 demand)
-                                                                                  0
-                                                                                  technology
+                                                                              uncurry TechnologyContext
+                                                                                <$> technologyReifier
+                                                                                      processLibrary
+                                                                                      (localize intensityCube location)
+                                                                                      (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
+                                                                                      (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
+                                                                                      (foldl mostExtreme 0 demand)
+                                                                                      0
+                                                                                      technology
                                                            , capacity   = const 0 <$> yearz
                                                            , reserved   = const 0 <$> yearz
                                                            , fixed      = []
@@ -424,15 +424,15 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                            {
                                                              builder    = Just
                                                                             $ \i year' demand ->
-                                                                              fmap (uncurry TechnologyContext)
-                                                                              $ technologyReifier
-                                                                                  processLibrary
-                                                                                  (localize intensityCube location)
-                                                                                  (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
-                                                                                  (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
-                                                                                  (foldl mostExtreme 0 demand)
-                                                                                  0
-                                                                                  technology
+                                                                              uncurry TechnologyContext
+                                                                                <$> technologyReifier
+                                                                                      processLibrary
+                                                                                      (localize intensityCube location)
+                                                                                      (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
+                                                                                      (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
+                                                                                      (foldl mostExtreme 0 demand)
+                                                                                      0
+                                                                                      technology
                                                            , capacity   = const 0 <$> yearz
                                                            , reserved   = const 0 <$> yearz
                                                            , fixed      = []
@@ -446,7 +446,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
               PathwayForwardEdge location pathway stage -> let
                                                              pathwayStage = pathwayCube ! (fPathway =: pathway <+> fStage =: stage)
                                                              technology = fTechnology <: pathwayStage
-                                                             (from, distance') =
+                                                             (_, distance') =
                                                                case linkCube `evaluate` (fLocation =: location) of
                                                                  Just link -> (fFrom <: link, fLength <: link)
                                                                  Nothing   -> (location, sqrt $ fArea <: (nodeCube ! (fLocation =: location)))
@@ -459,15 +459,15 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                              {
                                                                builder    = Just
                                                                               $ \i year' demand ->
-                                                                                fmap (uncurry TechnologyContext)
-                                                                                $ technologyReifier
-                                                                                    processLibrary
-                                                                                    (localize intensityCube location)
-                                                                                    (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
-                                                                                    (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
-                                                                                    (foldl mostExtreme 0 demand)
-                                                                                    distance
-                                                                                    technology
+                                                                                uncurry TechnologyContext
+                                                                                  <$> technologyReifier
+                                                                                        processLibrary
+                                                                                        (localize intensityCube location)
+                                                                                        (fInfrastructure =: Infrastructure ("INFR-" ++ show identifier ++ "-" ++ show (head year') ++ "-" ++ show i) <+> fLocation =: location)
+                                                                                        (minimum $ last year' : catMaybes (zipWith (\year'' demand'' -> guard (demand'' /= 0) >> return year'') year' demand))
+                                                                                        (foldl mostExtreme 0 demand)
+                                                                                        distance
+                                                                                        technology
                                                              , capacity   = const 0 <$> yearz
                                                              , reserved   = const 0 <$> yearz
                                                              , fixed      = []
@@ -529,7 +529,7 @@ costEdge strategy discount year delta =
 costEdge' :: Strategy -> [Year] -> [Double] -> EdgeContext -> ([Flow], [Cash], [Impact])
 costEdge' strategy year delta EdgeContext{..} =
   let
-    technologyContexts = (maybe id (:) adjustable) fixed
+    technologyContexts = maybe id (:) adjustable fixed
     (flows', cashes', impacts') = unzip3 . zipWith (\year' flow' -> costTechnologies pricer year' flow' technologyContexts) year $ reserved .+. delta
   in
     (
@@ -590,19 +590,21 @@ maximumAbs = maximum . fmap abs
 
 marginalCost :: Strategy -> Double -> [Year] -> [Double] -> EdgeContext -> Double
 marginalCost strategy discount year delta edgeContext =
-  case reference edgeContext of
-    Just x  -> x
-    Nothing -> let
-                 oldCost =                 costEdge strategy discount year (const 0 <$> year)                           edgeContext
-                 newCost = fromMaybe inf $ costEdge strategy discount year (const 0 <$> year) <$> adjustEdge year delta edgeContext
-               in
-                 if True
-                   then (newCost - oldCost) / sumAbs delta
-                   else newCost / sumAbs (reserved edgeContext .+. delta)
+  fromMaybe
+    (
+      let
+        oldCost =                 costEdge strategy discount year (const 0 <$> year)                                    edgeContext
+        newCost = fromMaybe inf $ costEdge strategy discount year (const 0 <$> year) <$> adjustEdge strategy year delta edgeContext
+      in
+        if True
+          then (newCost - oldCost) / sumAbs delta
+          else newCost / sumAbs (reserved edgeContext .+. delta)
+    )
+    (reference edgeContext)
 
 
-adjustEdge :: [Year] -> [Double] -> EdgeContext -> Maybe EdgeContext
-adjustEdge years delta edgeContext@EdgeContext{..} =
+adjustEdge :: Strategy -> [Year] -> [Double] -> EdgeContext -> Maybe EdgeContext
+adjustEdge strategy years delta edgeContext@EdgeContext{..} =
   do
     let
       reserved' = reserved .+. delta
@@ -653,7 +655,7 @@ adjustEdge years delta edgeContext@EdgeContext{..} =
                    , adjustable = Just adjustable'
                    }
     let
-      (flows', cashes', impacts') = costEdge' LiteralInWindow years (const 0 <$> years) edgeContext'
+      (flows', cashes', impacts') = costEdge' strategy years (const 0 <$> years) edgeContext'
     return
       $ edgeContext'
         {
@@ -661,7 +663,7 @@ adjustEdge years delta edgeContext@EdgeContext{..} =
         , cashes = cashes'
         , impacts = impacts'
         }
-adjustEdge _ _ _ = error "adjustCapacity: edge is reversed."
+adjustEdge _ _ _ _ = error "adjustCapacity: edge is reversed."
 
 
 mostExtreme :: (Num a, Ord a) => a -> a -> a
@@ -758,7 +760,7 @@ flowFunction year (Capacity flow) context edge =
         case edge of
           DemandEdge _                              -> return . update $ edgeContext { reserved = reserved edgeContext .+. flow}
           ExistingEdge _                            -> return . update $ let
-                                                                  (flows', cashes', impacts') = costEdge' LiteralInWindow year (const 0 <$> year) $ edgeContext { reserved = reserved edgeContext .+. flow }
+                                                                  (flows', cashes', impacts') = costEdge' (strategizing context) year (const 0 <$> year) $ edgeContext { reserved = reserved edgeContext .+. flow }
                                                                 in
                                                                   edgeContext
                                                                   {
@@ -768,7 +770,7 @@ flowFunction year (Capacity flow) context edge =
                                                                   , impacts  = impacts'
                                                                   }
           PathwayReverseEdge location pathway stage -> return $ flowFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-          _                                         -> update <$> adjustEdge year flow edgeContext
+          _                                         -> update <$> adjustEdge (strategizing context) year flow edgeContext
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
@@ -777,15 +779,15 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
   do
     let
       graph = networkGraph network demandCube processLibrary
-    fmap snd
-      $ foldlM
+    snd
+      <$> foldlM
         (
           \(context, (failure, optimum)) years ->
             do
               let
                 reflow edgeContext =
                   let
-                    (flows', cashes', impacts') = costEdge' LiteralInWindow years ({- FIXME: Check this. -} reserved edgeContext) edgeContext
+                    (flows', cashes', impacts') = costEdge' strategy years ({- FIXME: Check this. -} const 0 <$> years) edgeContext
                   in
                     edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
                 rebuild PathwayReverseEdge{}  edgeContext = edgeContext
@@ -817,7 +819,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                                                                 then fNameplate <: fixed' * fDutyCycle <: fixed'
                                                                                                 else 0
                                                                                             |
-                                                                                              fixed' <- construction <$> (maybe id (:) (adjustable edgeContext)) (fixed edgeContext)
+                                                                                              fixed' <- construction <$> maybe id (:) (adjustable edgeContext) (fixed edgeContext)
                                                                                             ]
                                                                                         |
                                                                                           year <- years
@@ -842,7 +844,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
               return (context'', (failure || failure', optimum <> optimum'))
         )
         (undefined, (False, mempty))
-        $ yearses
+        yearses
 
 
 
@@ -872,12 +874,12 @@ optimize' graph context@NetworkContext{..} =
                                      CentralEdge        location' _   -> (False, location')
                                      OnsiteEdge         location' _   -> (False, location')
                                      PathwayForwardEdge location' _ _ -> (True , location')
-                                     PathwayReverseEdge _         _ _ -> (False, undefined)
+                                     PathwayReverseEdge {}            -> (False, undefined)
           , okay
           ]
       reflow edgeContext =
         let
-          (flows'', cashes'', impacts'') = costEdge' LiteralInWindow yearz ({- FIXME: Check this. -} reserved edgeContext) edgeContext
+          (flows'', cashes'', impacts'') = costEdge' strategizing yearz ({- FIXME: Check this. -} const 0 <$> yearz) edgeContext
         in
           edgeContext { flows = flows'' , cashes = cashes'' , impacts = impacts'' }
       clear edgeContext@EdgeReverseContext{} = edgeContext
@@ -926,8 +928,8 @@ optimize' graph context@NetworkContext{..} =
                                                                 flow = mostExtreme 1 <$> references M.! location
                                                               in
                                                                 edgeContext' { reference = Just $ marginalCost strategizing discounting yearz flow edgeContext' }
-            f (PathwayReverseEdge _        _ _) edgeContext = edgeContext
-            f _                                 edgeContext = clear edgeContext
+            f PathwayReverseEdge{} edgeContext = edgeContext
+            f _                    edgeContext = clear edgeContext
       context''' =
         reprice
           $ minimumCostFlow
@@ -945,7 +947,7 @@ optimize' graph context@NetworkContext{..} =
             case v of
               EdgeContext{..}      -> [
                                         (
-                                          construction <$> (maybe id (:) adjustable) fixed
+                                          construction <$> maybe id (:) adjustable fixed
                                         , flows
                                         , cashes
                                         , impacts
