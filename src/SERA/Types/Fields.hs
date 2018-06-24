@@ -22,24 +22,44 @@
 module SERA.Types.Fields (
 -- * Data types
   CostCategory(..)
+, Age
+, AnnualTravel
 , Cluster(..)
+, Emission
+, EmissionRate
+, Energy
 , Format(..)
+, Fuel(..)
+, FuelEfficiency
+, FuelSplit
 , Geometry(..)
 , ImpactCategory(..)
 , Infrastructure(..)
 , Location(..)
+, MarketShare
 , Material(..)
+, ModelYear
 , Pathway(..)
+, Pollutant
 , Position(..)
 , Productive(..)
+, Purchases
 , Region(..)
+, RelativeMarketShare
+, Stock
+, Survival
 , Technology(..)
 , Territory(..)
+, Travel
 , UrbanCode(..)
 , UrbanName(..)
+, Vehicle(..)
+, Vocation(..)
 , Year
 , Zone(..)
 -- * Field types
+, FAge
+, FAnnualTravel
 , FArea
 , FBillable
 , FCapacity
@@ -55,6 +75,9 @@ module SERA.Types.Fields (
 , FDelivery
 , FDistance
 , FDutyCycle
+, FEmission
+, FEmissionRate
+, FEnergy
 , FExtended
 , FFixedCost
 , FFixedCostStretch
@@ -62,7 +85,10 @@ module SERA.Types.Fields (
 , FFormat
 , FFraction
 , FFrom
+, FFuel
 , FFuelConsumption
+, FFuelEfficiency
+, FFuelSplit
 , FGeometry
 , FImpactCategory
 , FInfrastructure
@@ -71,25 +97,32 @@ module SERA.Types.Fields (
 , FLifetime
 , FLocation
 , FLoss
+, FMarketShare
 , FMaterial
+, FModelYear
 , FNameplate
 , FNetPrice
 , FNonFuelConsumption
 , FPathway
+, FPollutant
 , FPosition
 , FPrice
 , FProduction
 , FProductionRate
 , FProductionRateStretch
 , FProductive
+, FPurchases
 , FQuantity
 , FRegion
+, FRelativeMarketShare
 , FRent
 , FSale
 , FSales
 , FSalvage
 , FScaling
 , FStage
+, FStock
+, FSurvival
 , FTechnology
 , FTerritory
 , FTo
@@ -97,17 +130,22 @@ module SERA.Types.Fields (
 , FTotalCost
 , FTotalProduction
 , FTransmission
+, FTravel
 , FUpstreamMaterial
 , FUrbanCode
 , FUrbanName
 , FVariableCost
 , FVariableCostStretch
+, FVehicle
+, FVocation
 , FX
 , FY
 , FYear
 , FYield
 , FZone
 -- * FIeld accessors
+, fAge
+, fAnnualTravel
 , fArea
 , fBillable
 , fCapacity
@@ -123,6 +161,9 @@ module SERA.Types.Fields (
 , fDelivery
 , fDistance
 , fDutyCycle
+, fEmission
+, fEmissionRate
+, fEnergy
 , fExtended
 , fFixedCost
 , fFixedCostStretch
@@ -130,7 +171,10 @@ module SERA.Types.Fields (
 , fFormat
 , fFraction
 , fFrom
+, fFuel
 , fFuelConsumption
+, fFuelEfficiency
+, fFuelSplit
 , fGeometry
 , fImpactCategory
 , fInfrastructure
@@ -139,25 +183,32 @@ module SERA.Types.Fields (
 , fLifetime
 , fLocation
 , fLoss
+, fMarketShare
 , fMaterial
+, fModelYear
 , fNameplate
 , fNetPrice
 , fNonFuelConsumption
 , fPathway
+, fPollutant
 , fPosition
 , fPrice
 , fProduction
 , fProductionRate
 , fProductionRateStretch
 , fProductive
+, fPurchases
 , fQuantity
 , fRegion
+, fRelativeMarketShare
 , fRent
 , fSale
 , fSales
 , fSalvage
 , fScaling
 , fStage
+, fStock
+, fSurvival
 , fTechnology
 , fTerritory
 , fTo
@@ -165,11 +216,14 @@ module SERA.Types.Fields (
 , fTotalCost
 , fTotalProduction
 , fTransmission
+, fTravel
 , fUpstreamMaterial
 , fUrbanCode
 , fUrbanName
 , fVariableCost
 , fVariableCostStretch
+, fVehicle
+, fVocation
 , fX
 , fY
 , fYear
@@ -179,12 +233,16 @@ module SERA.Types.Fields (
 
 
 import Control.Arrow (first)
-import SERA.Vehicle.Types (Age)
 import SERA.Types.TH (makeField, makeStringField)
 
 
 -- | Data type for calendar years.
 type Year = Int
+
+
+-- | Data type for vehicle age.
+type Age = Int
+
 
 
 $(makeStringField "Material" "Material") 
@@ -294,3 +352,149 @@ $(makeStringField "UrbanName" "Census Urban Area Name")
 $(makeField "Fraction" "Fraction" ''Double)
 $(makeField "Cluster" "Cluster ID" ''Cluster)
 $(makeStringField "Geometry" "Geometry [WKT]")
+
+
+-- | Data type for vehicle vocation.
+-- | Field type for vehicle vocation.
+-- | Field label for vehicle vocation.
+$(makeStringField "Vocation" "Vocation")
+
+
+-- | Data type for vehicle type.
+-- | Field type for vehicle type.
+-- | Field label for vehicle type.
+$(makeStringField "Vehicle" "Vehicle")
+
+
+-- | Field type for vehicle age.
+-- | Field label for vehicle age.
+$(makeField "Age" "Age [yr]" ''Age)
+
+
+-- | Data type for model year.
+type ModelYear = Int
+
+
+-- | Field type for model year.
+$(makeField "ModelYear" "Model Year" ''ModelYear)
+
+
+-- | Field label for model year.
+-- | Data type for fuel.
+-- | Field type for fuel.
+-- | Field label for fuel.
+$(makeStringField "Fuel" "Fuel")
+
+
+-- | Data type for pollutant type.
+-- | Field type for pollutant type.
+-- | Field label for pollutant type.
+$(makeStringField "Pollutant" "Pollutant")
+
+
+-- | Data type for market share.
+type MarketShare = Double
+
+
+-- | Field type for market share.
+-- | Field label for market share.
+$(makeField "MarketShare" "Market Share [veh/veh]" ''MarketShare)
+
+
+-- | Data type for relative market share.
+type RelativeMarketShare = Double
+
+
+-- | Field type for relative market share.
+-- | Field label for relative market share.
+$(makeField "RelativeMarketShare" "Relative Market Share" ''RelativeMarketShare)
+
+
+-- | Data type for vehicle survival.
+type Survival = Double
+
+
+-- | Field type for vehicle survival.
+-- | Field label for vehicle survival.
+$(makeField "Survival" "Surviving Vehicles [veh/veh]" ''Survival)
+
+
+-- | Data type for annual travel.
+type AnnualTravel = Double
+
+
+-- | Field type for annual travel.
+-- | Field label for annual travel.
+$(makeField "AnnualTravel" "Annual Travel [mi/yr]" ''AnnualTravel)
+
+
+-- | Data type for fuel split.
+type FuelSplit = Double
+
+
+-- | Field type for fuel split.
+-- | Field label for fuel split.
+$(makeField "FuelSplit" "Fraction of Travel [mi/mi]" ''FuelSplit)
+
+
+-- | Data type for fuel efficiency.
+type FuelEfficiency = Double
+
+
+-- | Field type for fuel efficiency.
+-- | Field label for fuel efficiency.
+$(makeField "FuelEfficiency" "Fuel Efficiency [mi/gge]" ''FuelEfficiency)
+
+
+-- | Data type for emission rate.
+type EmissionRate = Double
+
+
+-- | Field type for emission rate.
+-- | Field label for emission rate.
+$(makeField "EmissionRate" "Emission Rate [g/gge]" ''EmissionRate)
+
+
+-- | Data type for vehicle sales.
+type Purchases = Double
+
+
+-- | Field type for vehicle sales.
+-- | Field label for vehicle sales.
+$(makeField "Purchases" "Sales [veh]" ''Purchases)
+
+
+-- | Data type for vehicle stock.
+type Stock = Double
+
+
+-- | Field type for vehicle stock.
+-- | Field label for vehicle stock.
+$(makeField "Stock" "Stock [veh]" ''Stock)
+
+
+-- | Data type for distance traveled.
+type Travel = Double
+
+
+-- | Field type for distance traveled.
+-- | Field label for distance traveled.
+$(makeField "Travel" "Travel [mi]" ''Travel)
+
+
+-- | Data type for energy consumed.
+type Energy = Double
+
+
+-- | Field type for energy consumed.
+-- | Field label for energy consumed.
+$(makeField "Energy" "Energy [gge]" ''Energy)
+
+
+-- | Data type for pollutants emitted.
+type Emission = Double
+
+
+-- | Field type for pollutants emitted.
+-- | Field label for pollutants emitted.
+$(makeField "Emission" "Emission [g]" ''Emission)

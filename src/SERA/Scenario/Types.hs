@@ -35,8 +35,8 @@ module SERA.Scenario.Types (
 , fReferenceYear
 , FReferenceShare
 , fReferenceShare
-, FMaximumSales
-, fMaximumSales
+, FMaximumPurchases
+, fMaximumPurchases
 , FMaximumShare
 , fMaximumShare
 , FGrowthRate
@@ -94,9 +94,8 @@ import Data.Daft.Vinyl.FieldCube (type (↝))
 import Data.Daft.Vinyl.FieldRec ((<:))
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
-import SERA.Types.Fields (FRegion, FUrbanCode, FUrbanName, FYear)
+import SERA.Types.Fields (FRegion, FUrbanCode, FUrbanName, FYear, MarketShare, ModelYear, FRelativeMarketShare, Purchases, FVehicle, FVocation)
 import SERA.Types.TH (makeField, makeStringField)
-import SERA.Vehicle.Types (MarketShare, ModelYear, FRelativeMarketShare, Sales, FVehicle, FVocation)
 
 
 $(makeStringField "Cohort" "Cohort")
@@ -124,7 +123,7 @@ $(makeField "ReferenceShare" "Reference Share [veh/veh]" ''MarketShare)
 
 -- | Field type for maximum share of a logistic curve.
 -- | Field label for maximum share of a logistic curve.
-$(makeField "MaximumSales" "Maximum Sales [veh]" ''Sales)
+$(makeField "MaximumPurchases" "Maximum Sales [veh]" ''Purchases)
 
 
 -- | Field type for maximum share of a logistic curve.
@@ -233,7 +232,7 @@ type LogisticCube = '[FRegion, FVocation, FVehicle] ↝ '[FReferenceYear, FRefer
 
 
 -- | Data cube for urban characteristics.
-type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FMaximumSales]
+type UrbanCharacteristicsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FArea, FPopulation, FPercentileEAM, FNearbyPercentileEAM, FMaximumPurchases]
 
 
 -- | Data Cube for introduction year parameters.
@@ -245,7 +244,7 @@ type OverrideIntroductionYearsCube = '[FUrbanCode, FUrbanName] ↝ '[FIntroducti
 
 
 -- | Data cube for regional introductions.
-type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FMaximumSales, FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
+type RegionalIntroductionsCube = '[FRegion, FUrbanCode, FUrbanName] ↝ '[FMaximumPurchases, FRelativeMarketShare, FIntroductionYear, FStationCount, FCoverageStations, FThreshholdStations, FMaximumStations]
 
 
 -- | Data cube for regional incentives.

@@ -24,7 +24,7 @@ module SERA.Scenario.Regionalization (
 -- * Types
   RegionalizationParameters(..)
 -- * Cubes
-, SalesOnlyCube
+, PurchasesOnlyCube
 , TravelReductionCube
 -- * Fields
 , FTravelReduction
@@ -46,11 +46,10 @@ import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import Data.Vinyl.Lens (type (∈))
 import GHC.Generics (Generic)
-import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, fMaximumSales, RegionalIntroductionsCube)
-import SERA.Types (pushYear, minimumYear)
-import SERA.Types.Fields (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
-import SERA.Vehicle.Stock.Types (StockCube)
-import SERA.Vehicle.Types (FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FSales, fSales, hasStock, Vehicle(..), FVehicle, fVehicle, FVocation, fVocation)
+import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, fMaximumPurchases, RegionalIntroductionsCube)
+import SERA.Types (pushYear, minimumYear, hasStock)
+import SERA.Types.Fields (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear, FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FPurchases, fPurchases, Vehicle(..), FVehicle, fVehicle, FVocation, fVocation)
+import SERA.Types.Cubes (StockCube)
 
 
 -- | Field type for total relative market share.
@@ -82,7 +81,7 @@ fTravelReduction = SField
 type TravelReductionCube = '[FRegion, FYear, FVocation, FVehicle] ↝ '[FTravelReduction]
 
 
-type SalesOnlyCube = '[FRegion, FModelYear, FVocation, FVehicle] ↝ '[FSales]
+type PurchasesOnlyCube = '[FRegion, FModelYear, FVocation, FVehicle] ↝ '[FPurchases]
 
 
 -- | Parameters for regionalizing demand.
@@ -114,7 +113,7 @@ travelReduction RegionalizationParameters{..} time
 regionalize :: RegionalizationParameters            -- ^ Regionalization parameters.
             -> RegionalIntroductionsCube            -- ^ Regional introduction years.
             -> StockCube                            -- ^ Total stock.
-            -> (SalesOnlyCube, TravelReductionCube) -- ^ Regionalized sales and VMT reductions.
+            -> (PurchasesOnlyCube, TravelReductionCube) -- ^ Regionalized sales and VMT reductions.
 regionalize parameters introductions totals = -- FIXME: Review for opportunities to simplify and clarify.
   let
     totals' = σ (\key _ -> fVehicle <: key == Vehicle "FCEV") totals
@@ -136,11 +135,11 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
         fRelativeMarketShare =:
           (share
             * if year >= introductionYear
-                then ((fSales <:) $ totals' ! (fYear =: year' <+> τ key)) ** fromMaybe 1 (logisticIntensification parameters)
+                then ((fPurchases <:) $ totals' ! (fYear =: year' <+> τ key)) ** fromMaybe 1 (logisticIntensification parameters)
                 else 0
           )
             <+> fTravelReduction =: reduction
-            <+> fMaximumSales =: fMaximumSales <: rec
+            <+> fMaximumPurchases =: fMaximumPurchases <: rec
     allocations =
       π allocating
         $ σ pruneTooEarly
@@ -150,10 +149,10 @@ regionalize parameters introductions totals = -- FIXME: Review for opportunities
     scaling _ rec =
       let
         share = fRelativeMarketShare <: rec / fTotalRelativeMarketShare <: rec
-        sales = share * fSales <: rec
-        maximumSales = maybe nan (* (fMaximumSales <: rec)) $ salesLimit parameters
+        sales = share * fPurchases <: rec
+        maximumPurchases = maybe nan (* (fMaximumPurchases <: rec)) $ salesLimit parameters
       in
-        fSales =: if isNaN maximumSales || sales <= maximumSales then sales else maximumSales
+        fPurchases =: if isNaN maximumPurchases || sales <= maximumPurchases then sales else maximumPurchases
   in
     (
       urbanToRegion

@@ -36,7 +36,7 @@ import Data.Daft.Vinyl.FieldCube ((⋈), π, τ)
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import GHC.Generics (Generic)
 import SERA.Scenario.Types
-import SERA.Vehicle.Types (fRelativeMarketShare)
+import SERA.Types.Fields (fRelativeMarketShare)
 
 
 -- | Parameters for computing number of stations for an urban area.
@@ -115,7 +115,7 @@ computeIntroductionYears StationParameters{..} overrides regional urban =
         nearby = introduce $ fNearbyPercentileEAM <: rec
         area = fArea <: rec / 1.60934^(2 :: Int)
         population = fPopulation <: rec
-        sales = fMaximumSales <: rec
+        sales = fMaximumPurchases <: rec
         density = population / area
         coverageStations = coverageCount coverageParameters density area
         clustering = fClustering <: rec
@@ -123,7 +123,7 @@ computeIntroductionYears StationParameters{..} overrides regional urban =
         floor'   x = if isNaN population then 0 else floor   x
         ceiling' x = if isNaN population then 0 else ceiling x
       in
-            fMaximumSales        =: sales
+            fMaximumPurchases        =: sales
         <+> fRelativeMarketShare =: fIntensification <: rec * sales
         <+> fIntroductionYear    =: maybe
                                        (round (base * (1 - clustering) + nearby * clustering + delay * eam))

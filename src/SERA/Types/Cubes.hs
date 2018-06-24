@@ -20,16 +20,24 @@
 module SERA.Types.Cubes (
 -- * Data cubes
   CashCube
+, AnnualTravelCube
 , ConstructionCube
 , ConsumptionCube
 , DemandAreaCube
 , DemandCube
+, EmissionCube
+, EmissionRateCube
+, EnergyCube
 , ExistingCube
 , FlowCube
+, FuelEfficiencyCube
+, FuelSplitCube
 , GeometryCube
 , ImpactCube
 , IntensityCube
 , LinkCube
+, MarketShareCube
+, ModelYearCube
 , NodeCube
 , PathwayCube
 , PriceCube
@@ -37,16 +45,27 @@ module SERA.Types.Cubes (
 , ProcessInputCube
 , ProcessOutputCube
 , ProductionCube
+, PurchasesCube
+, RegionalPurchasesCube
+, RegionalStockCube
 , SaleCube
+, StockCube
+, SurvivalCube
 , TerritoryCube
 , ZoneCube
+-- * Functions
+, SurvivalFunction
+, asSurvivalFunction
 ) where
 
 
-import Data.Daft.Vinyl.FieldCube (type (*↝))
+import Data.Daft.Vinyl.FieldCube (type (↝), type (*↝))
 import Data.Vinyl.TypeLevel (type (++))
-import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRent, FSale, FSales, FSalvage, FStage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone)
+import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRent, FSale, FSales, FSalvage, FStage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone, Region, FRegion, fRegion, Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FPurchases, FStock, Survival, FSurvival, fSurvival, FTravel, FVehicle, Vocation, FVocation, fVocation)
 import SERA.Types.Records (ProcessCost)
+import Data.Daft.DataCube (evaluate)
+import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
+import Data.Maybe (fromMaybe)
 
  
 type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FSale, FGeometry]
@@ -116,3 +135,67 @@ type TerritoryCube = '[FTerritory, FLocation] *↝ '[FFraction]
 
 
 type ZoneCube key = (FZone ': key) *↝ '[FFraction]
+
+
+
+type ModelYearCube = '[FModelYear] ↝ '[]
+
+
+-- | Vehicle sales as a function of region, and model year.
+type RegionalPurchasesCube  = '[       FRegion                           , FModelYear                   ] ↝ '[FPurchases         ]
+
+
+-- | Market share as a function of region, vocation, vehicle type, and model year.
+type MarketShareCube    = '[       FRegion, FVocation, FVehicle      , FModelYear                   ] ↝ '[FMarketShare   ]
+
+
+-- | Fraction of vehicles surviving to a given age, as a function of vocation.
+type SurvivalCube       = '[       FRegion, FVocation          , FAge                               ] ↝ '[FSurvival      ]
+
+
+-- | Annual distance traveled as a function of vocation and age.
+type AnnualTravelCube   = '[       FRegion, FVocation          , FAge                               ] ↝ '[FAnnualTravel  ]
+
+
+-- | Fraction of fuel consumed as a function of vocation and vehicle type.
+type FuelSplitCube      = '[                FVocation, FVehicle                  , FFuel            ] ↝ '[FFuelSplit     ]
+
+
+-- | Fuel efficiency on a given fuel as a function of vehicle type and model year.
+type FuelEfficiencyCube = '[                           FVehicle      , FModelYear, FFuel            ] ↝ '[FFuelEfficiency]
+
+
+-- | Pollutants emitted as a function of vehicle type and model year.
+type EmissionRateCube   = '[                           FVehicle      , FModelYear, FFuel, FPollutant] ↝ '[FEmissionRate  ]
+
+
+-- | Vehicle sales, stock, travel, and energy consumed as a function of calendar year, region, vocation, vehicle type, and model year.
+type PurchasesCube          = '[FYear, FRegion, FVocation, FVehicle      , FModelYear                   ] ↝ '[FPurchases, FStock, FTravel, FEnergy          ]
+
+
+-- | Vehicle sales, stock, travel, and energy consumed as a function of calendar year, region, vocation, and vehicle type.
+type StockCube          = '[FYear, FRegion, FVocation, FVehicle                                     ] ↝ '[FPurchases, FStock, FTravel, FEnergy          ]
+
+
+-- | Energy consumed as a function of calendar year, region, vocation, vehicle type, and fuel.
+type EnergyCube         = '[FYear, FRegion, FVocation, FVehicle                  , FFuel            ] ↝ '[                         FEnergy          ]
+
+
+-- | Polutants emitted as a function of calendar year, region, vocation, vehicle type and fuel.
+type EmissionCube       = '[FYear, FRegion, FVocation, FVehicle                  , FFuel, FPollutant] ↝ '[                                 FEmission]
+
+
+-- | Stock as a function of year, region, vocation, and vehicle type.
+type RegionalStockCube  = '[FYear, FRegion, FVocation, FVehicle                                     ] ↝ '[FStock                                    ]
+
+
+-- | Survival function.
+type SurvivalFunction = Region -> Vocation -> Age -> Survival
+
+
+-- | Convert a survival cube to a survival function.
+asSurvivalFunction :: SurvivalCube -> SurvivalFunction
+asSurvivalFunction cube region vocation age =
+  fromMaybe 0
+    $   (fSurvival <:)
+    <$> evaluate cube (fRegion =: region <+> fVocation =: vocation <+> fAge =: age)

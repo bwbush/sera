@@ -35,8 +35,8 @@ import Data.Daft.Vinyl.FieldCube (ε)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Default (Default(..))
 import GHC.Generics (Generic)
-import SERA.Vehicle.Stock.Types (AnnualTravelCube)
-import SERA.Vehicle.Types (fAge, fAnnualTravel)
+import SERA.Types.Fields (fAge, fAnnualTravel)
+import SERA.Types.Cubes (AnnualTravelCube)
 
 
 data TravelData =

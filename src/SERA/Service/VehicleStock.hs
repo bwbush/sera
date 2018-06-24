@@ -42,8 +42,8 @@ import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform, verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Service ()
-import SERA.Vehicle.Stock (computeStock, inferSales)
-import SERA.Vehicle.Stock.Types (AnnualTravelCube, SurvivalCube)
+import SERA.Vehicle.Stock (computeStock, inferPurchases)
+import SERA.Types.Cubes (AnnualTravelCube, SurvivalCube)
 import VISION.Survival (survivalLDV, survivalHDV)
 import VISION.Travel (travelLDV)
 
@@ -157,6 +157,6 @@ stockInvertMain ConfigStock{..} =
     survival <- survivalCube survivalSource
     inform "Computing vehicle sales . . ."
     let
-      (regionalSales, marketShare) = inferSales (fromMaybe 0 priorYears) survival stock
+      (regionalSales, marketShare) = inferPurchases (fromMaybe 0 priorYears) survival stock
     verboseWriteFieldCubeSource "regional sales" regionalSalesSource regionalSales
     verboseWriteFieldCubeSource "market shares" marketShareSource marketShare

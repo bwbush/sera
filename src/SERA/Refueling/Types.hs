@@ -64,9 +64,8 @@ module SERA.Refueling.Types (
 
 import Data.Daft.Vinyl.FieldCube -- (type (↝), π, σ)
 import SERA.Service ()
-import SERA.Types.Fields hiding (FSales)  -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
+import SERA.Types.Fields   -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
 import SERA.Types.TH (makeField, makeStringField)
-import SERA.Vehicle.Types
 
 
 -- | Field type for new capital cost.
@@ -159,4 +158,4 @@ type StationDetailCube = '[FRegion, FYear, FStationID] ↝ '[FNewCapitalCost, FN
 
 
 -- | Data cube summarizing stations.
-type StationSummaryCube = '[FYear, FRegion] ↝ '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]
+type StationSummaryCube = '[FYear, FRegion] ↝ '[FPurchases, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]

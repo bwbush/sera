@@ -37,8 +37,8 @@ import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Default (Default(..))
 import Data.List (inits)
 import GHC.Generics (Generic)
-import SERA.Vehicle.Types (fAge, fSurvival)
-import SERA.Vehicle.Stock.Types (SurvivalCube)
+import SERA.Types.Fields (fAge, fSurvival)
+import SERA.Types.Cubes (SurvivalCube)
 
 
 data SurvivalData =

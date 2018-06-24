@@ -69,7 +69,7 @@ regionalizationMain ConfigRegionalization{..} =
     totalStock            <- verboseReadFieldCubeSource "total stock"                 totalStockSource
     inform "Regionalizing vehicle sales . . ."
     let
-      (regionalSales, travelReduction) = regionalize regionalizationParameters regionalIntroductions totalStock
+      (regionalPurchases, travelReduction) = regionalize regionalizationParameters regionalIntroductions totalStock
     survival <- survivalCube survivalSource
     annualTravel <- travelCube annualTravelSource
     fuelSplit <- verboseReadFieldCubeSource "fuel split" fuelSplitSource
@@ -77,5 +77,5 @@ regionalizationMain ConfigRegionalization{..} =
     emissionRate <- verboseReadFieldCubeSource "emission rate" emissionRateSource
     inform "Computing vehicle stock . . ."
     let
-      (_, regionalStock, _, _) = recomputeStock regionalSales travelReduction survival annualTravel fuelSplit fuelEfficiency emissionRate
+      (_, regionalStock, _, _) = recomputeStock regionalPurchases travelReduction survival annualTravel fuelSplit fuelEfficiency emissionRate
     verboseWriteFieldCubeSource "regional stock" regionalStockSource regionalStock

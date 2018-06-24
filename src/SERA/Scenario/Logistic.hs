@@ -34,8 +34,8 @@ import GHC.Generics (Generic)
 import Data.Daft.Vinyl.FieldCube ((⋈), ε, π, fromRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import SERA.Scenario.Types
-import SERA.Vehicle.Types (fMarketShare, ModelYear, fModelYear)
-import SERA.Vehicle.Stock.Types (MarketShareCube, ModelYearCube)
+import SERA.Types.Fields (fMarketShare, ModelYear, fModelYear)
+import SERA.Types.Cubes (MarketShareCube, ModelYearCube)
 
 
 -- | Logistic curve parameters.

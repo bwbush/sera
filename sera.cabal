@@ -1,5 +1,5 @@
 name: sera
-version: 3.1.5.5
+version: 3.2.0.0
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -123,8 +123,6 @@ library
                     SERA.Vehicle.MHD.Mitchell20141106
                     SERA.Vehicle.MHD.TEDB32
                     SERA.Vehicle.Stock
-                    SERA.Vehicle.Stock.Types
-                    SERA.Vehicle.Types
                     VISION.Survival
                     VISION.Travel
   build-depends   : base >= 4 && < 5

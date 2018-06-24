@@ -16,7 +16,6 @@
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeOperators             #-}
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
@@ -66,9 +65,8 @@ import SERA.Finance.Scenario (Scenario(..))
 import SERA.Finance.Solution (solveConstrained')
 import SERA.Refueling.Types
 import SERA.Service ()
-import SERA.Types.Fields hiding (FSales)
+import SERA.Types.Fields
 import SERA.Util.Summarization (summation)
-import SERA.Vehicle.Types
 import Text.Regex.Posix ((=~))
 
 
@@ -130,7 +128,7 @@ instance ToJSON StationParameters
 computeRegionalUtilization :: StationSummaryCube -> UtilizationCube
 computeRegionalUtilization =
   let
-    utilization :: k -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity] -> FieldRec '[FUtilization]
+    utilization :: k -> FieldRec '[FPurchases, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity] -> FieldRec '[FUtilization]
     utilization _ rec =
       fUtilization =: fDemand <: rec / fTotalCapacity <: rec
   in

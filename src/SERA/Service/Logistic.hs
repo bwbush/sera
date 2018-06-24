@@ -35,7 +35,7 @@ import GHC.Generics (Generic)
 import SERA (verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Scenario.Logistic (computeMarketShares)
 import SERA.Service ()
-import SERA.Vehicle.Types (ModelYear)
+import SERA.Types.Fields (ModelYear)
 
 
 -- | Configuration for logistic curve computations.

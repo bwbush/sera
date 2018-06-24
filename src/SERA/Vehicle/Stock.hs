@@ -25,7 +25,7 @@ module SERA.Vehicle.Stock (
 -- * Computation
   computeStock
 , recomputeStock
-, inferSales
+, inferPurchases
 ) where
 
 
@@ -36,10 +36,9 @@ import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
-import SERA.Scenario.Regionalization (SalesOnlyCube, TravelReductionCube, fTravelReduction)
-import SERA.Types.Fields (Region, FRegion, fRegion, Year, FYear, fYear)
-import SERA.Vehicle.Stock.Types (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalSalesCube, RegionalStockCube, SalesCube, StockCube, SurvivalCube, SurvivalFunction, asSurvivalFunction)
-import SERA.Vehicle.Types (FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, ModelYear, FModelYear, fModelYear, Sales, FSales, fSales, Stock, FStock, fStock, fSurvival, fTravel, FVehicle, Vocation, FVocation, fVocation)
+import SERA.Scenario.Regionalization (PurchasesOnlyCube, TravelReductionCube, fTravelReduction)
+import SERA.Types.Fields (Region, FRegion, fRegion, Year, FYear, fYear, FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, ModelYear, FModelYear, fModelYear, Purchases, FPurchases, fPurchases, Stock, FStock, fStock, fSurvival, fTravel, FVehicle, Vocation, FVocation, fVocation)
+import SERA.Types.Cubes (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalPurchasesCube, RegionalStockCube, PurchasesCube, StockCube, SurvivalCube, SurvivalFunction, asSurvivalFunction)
 
 import qualified Data.Set as S (map)
 
@@ -55,27 +54,27 @@ byYear =
 
 
 -- | Compute the vehicle stock.
-computeStock :: RegionalSalesCube                                 -- ^ Regional sales.
+computeStock :: RegionalPurchasesCube                                 -- ^ Regional sales.
              -> MarketShareCube                                   -- ^ Market share.
              -> SurvivalCube                                      -- ^ Vehicle survival.
              -> AnnualTravelCube                                  -- ^ Annual travel.
              -> FuelSplitCube                                     -- ^ Fuel split.
              -> FuelEfficiencyCube                                -- ^ Fuel efficiency.
              -> EmissionRateCube                                  -- ^ Emission rate.
-             -> (SalesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Sales, stock, energy consumed, and pollutants emitted.
-computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
+             -> (PurchasesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Purchases, stock, energy consumed, and pollutants emitted.
+computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
   let
-    modelYears = ω regionalSales :: Set (FieldRec '[FModelYear])
+    modelYears = ω regionalPurchases :: Set (FieldRec '[FModelYear])
     years = ((fYear =:) . (fModelYear <:)) `S.map` modelYears
     fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
     traveling key rec =
       let
-        sales = fSales <: rec * fMarketShare <: rec
+        sales = fPurchases <: rec * fMarketShare <: rec
         sales' = if fAge <: key == 0 then sales else 0
         stock = sales * fSurvival <: rec
         travel' = stock * fAnnualTravel <: rec
       in
-            fSales  =: sales'
+            fPurchases  =: sales'
         <+> fStock  =: stock
         <+> fTravel =: travel'
     travel =
@@ -83,7 +82,7 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
       $ byYear
       (
         π traveling
-        $ regionalSales
+        $ regionalPurchases
         ⋈ marketShares
         ⋈ survival
         ⋈ annualTravel
@@ -91,12 +90,12 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
     consuming _ rec =
       let
         split = fFuelSplit <: rec
-        sales = split * fSales <: rec
+        sales = split * fPurchases <: rec
         stock = split * fStock <: rec
         travel' = split * fTravel <: rec
         energy' = travel' / fFuelEfficiency <: rec
       in
-            fSales  =: sales
+            fPurchases  =: sales
         <+> fStock  =: stock
         <+> fTravel =: travel'
         <+> fEnergy =: energy'
@@ -112,7 +111,7 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
       $ energy
       ⋈ emissionRate
     total _ xs =
-          fSales  =: sum ((fSales  <:) <$> xs)
+          fPurchases  =: sum ((fPurchases  <:) <$> xs)
       <+> fStock  =: sum ((fStock  <:) <$> xs)
       <+> fTravel =: sum ((fTravel <:) <$> xs)
       <+> fEnergy =: sum ((fEnergy <:) <$> xs)
@@ -128,48 +127,48 @@ computeStock regionalSales marketShares survival annualTravel fuelSplit fuelEffi
 
 
 -- | Compute the vehicle stock.
-recomputeStock :: SalesOnlyCube                                     -- ^ Sales.
+recomputeStock :: PurchasesOnlyCube                                     -- ^ Purchases.
                -> TravelReductionCube                               -- ^ Travel reduction.
                -> SurvivalCube                                      -- ^ Vehicle survival.
                -> AnnualTravelCube                                  -- ^ Annual travel.
                -> FuelSplitCube                                     -- ^ Fuel split.
                -> FuelEfficiencyCube                                -- ^ Fuel efficiency.
                -> EmissionRateCube                                  -- ^ Emission rate.
-               -> (SalesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Sales, stock, energy consumed, and pollutants emitted.
-recomputeStock regionalSales travelReduction survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
+               -> (PurchasesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Purchases, stock, energy consumed, and pollutants emitted.
+recomputeStock regionalPurchases travelReduction survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
   let
-    modelYears = ω regionalSales :: Set (FieldRec '[FModelYear])
+    modelYears = ω regionalPurchases :: Set (FieldRec '[FModelYear])
     years = ((fYear =:) . (fModelYear <:)) `S.map` modelYears
     fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
     traveling key rec =
       let
-        sales = fSales <: rec
+        sales = fPurchases <: rec
         sales' = if fAge <: key == 0 then sales else 0
         stock = sales * fSurvival <: rec
         travel' = stock * fAnnualTravel <: rec
       in
-            fSales  =: sales'
+            fPurchases  =: sales'
         <+> fStock  =: stock
         <+> fTravel =: travel'
     travel =
-      ρ (years × ω regionalSales)
+      ρ (years × ω regionalPurchases)
       $ byYear
       (
         π traveling
-        $ regionalSales
+        $ regionalPurchases
         ⋈ survival
         ⋈ annualTravel
       )
     consuming _ rec =
       let
         split = fFuelSplit <: rec
-        sales = split * fSales <: rec
+        sales = split * fPurchases <: rec
         stock = split * fStock <: rec
         travel' = split * fTravel <: rec
         energy' = travel' / fFuelEfficiency <: rec
         reduction = fTravelReduction <: rec
       in
-            fSales  =: sales
+            fPurchases  =: sales
         <+> fStock  =: stock
         <+> fTravel =: travel' * (1 - reduction)
         <+> fEnergy =: energy' * (1 - reduction)
@@ -186,7 +185,7 @@ recomputeStock regionalSales travelReduction survival annualTravel fuelSplit fue
       $ energy
       ⋈ emissionRate
     total _ xs =
-          fSales  =: sum ((fSales  <:) <$> xs)
+          fPurchases  =: sum ((fPurchases  <:) <$> xs)
       <+> fStock  =: sum ((fStock  <:) <$> xs)
       <+> fTravel =: sum ((fTravel <:) <$> xs)
       <+> fEnergy =: sum ((fEnergy <:) <$> xs)
@@ -202,29 +201,29 @@ recomputeStock regionalSales travelReduction survival annualTravel fuelSplit fue
 
 
 -- | Field type for sales by model year.
-type FSalesList = '("Sales", [(ModelYear, Sales)])
+type FPurchasesList = '("Purchases", [(ModelYear, Purchases)])
 
 
 -- | Field label for sales by model year.
-fSalesList :: SField FSalesList
-fSalesList = SField
+fPurchasesList :: SField FPurchasesList
+fPurchasesList = SField
 
 
 -- | Field type for total sales.
-type FTotalSales = '("Total Sales", Sales)
+type FTotalPurchases = '("Total Purchases", Purchases)
 
 
 -- | Field label for total sales.
-fTotalSales :: SField FTotalSales
-fTotalSales = SField
+fTotalPurchases :: SField FTotalPurchases
+fTotalPurchases = SField
 
 
 -- | Infer vehicle sales from vehicle stock.
-inferSales :: Int                                  -- ^ Number of prior years to generate sales for the stock.
+inferPurchases :: Int                                  -- ^ Number of prior years to generate sales for the stock.
            -> SurvivalCube                         -- ^ Vehicle survival.
            -> RegionalStockCube                    -- ^ Regional vehicle stock.
-           -> (RegionalSalesCube, MarketShareCube) -- ^ Regional vehicle sales and market share.
-inferSales {- FIXME: Implement padding. -} padding survival regionalStock = -- FIXME: Review for opportunities to simplify.
+           -> (RegionalPurchasesCube, MarketShareCube) -- ^ Regional vehicle sales and market share.
+inferPurchases {- FIXME: Implement padding. -} padding survival regionalStock = -- FIXME: Review for opportunities to simplify.
   let
     years = ω regionalStock :: Set (FieldRec '[FYear])
     modelYears = ((fModelYear =:) . (fYear <:)) `S.map` (ω regionalStock :: Set (FieldRec '[FYear]))
@@ -235,35 +234,35 @@ inferSales {- FIXME: Implement padding. -} padding survival regionalStock = -- F
           prependYear :: FieldRec '[FYear, FRegion, FVocation, FVehicle] -> FieldRec '[FStock] -> FieldRec '[FYear, FStock]
           prependYear = (<+>) . (fYear =:) . (fYear <:)
     salesLists =
-      κ years invertSales regionalStock'
+      κ years invertPurchases regionalStock'
         where
-          invertSales :: FieldRec '[FRegion, FVocation, FVehicle] -> [FieldRec '[FYear, FStock]] -> FieldRec '[FSalesList]
-          invertSales key recs =
-            fSalesList =:
+          invertPurchases :: FieldRec '[FRegion, FVocation, FVehicle] -> [FieldRec '[FYear, FStock]] -> FieldRec '[FPurchasesList]
+          invertPurchases key recs =
+            fPurchasesList =:
               inverseSurvivalFunction
                 (asSurvivalFunction survival)
                 (fRegion <: key)
                 (fVocation <: key)
                 (((fYear <:) &&& (fStock <:)) <$> recs)
     sales =
-      δ modelYears disaggregateSales salesLists
+      δ modelYears disaggregatePurchases salesLists
         where
-          disaggregateSales :: FieldRec '[FRegion, FVocation, FVehicle, FModelYear] -> FieldRec '[FSalesList] -> FieldRec '[FSales]
-          disaggregateSales = (((fSales =:) . fromMaybe 0) . ) . (. (fSalesList <:)) . lookup . (fModelYear <:)
-    regionalSales =
-      κ vocationsVehicles sumSales sales
+          disaggregatePurchases :: FieldRec '[FRegion, FVocation, FVehicle, FModelYear] -> FieldRec '[FPurchasesList] -> FieldRec '[FPurchases]
+          disaggregatePurchases = (((fPurchases =:) . fromMaybe 0) . ) . (. (fPurchasesList <:)) . lookup . (fModelYear <:)
+    regionalPurchases =
+      κ vocationsVehicles sumPurchases sales
         where
-          sumSales = const $ (fSales =:) . sum . map (fSales <:)
+          sumPurchases = const $ (fPurchases =:) . sum . map (fPurchases <:)
     marketShare =
-      π fractionalizeSales
+      π fractionalizePurchases
       $ sales
-      ⋈ π relabelSales regionalSales
+      ⋈ π relabelPurchases regionalPurchases
       where
-        fractionalizeSales _ rec = fMarketShare =: fSales <: rec / fTotalSales <: rec
-        relabelSales = const $ (fTotalSales =:) . (fSales <:)
+        fractionalizePurchases _ rec = fMarketShare =: fPurchases <: rec / fTotalPurchases <: rec
+        relabelPurchases = const $ (fTotalPurchases =:) . (fPurchases <:)
   in
     (
-      regionalSales
+      regionalPurchases
     , marketShare
     )
 
@@ -273,7 +272,7 @@ inverseSurvivalFunction :: SurvivalFunction     -- ^ The survival function.
                         -> Region
                         -> Vocation             -- ^ The vehicles being classified.
                         -> [(Year, Stock)]      -- ^ The vehicle stock to be inverted.
-                        -> [(ModelYear, Sales)] -- ^ The vehicle sales.
+                        -> [(ModelYear, Purchases)] -- ^ The vehicle sales.
 inverseSurvivalFunction survival region vocation stocks =
   let
     (year0, year1) = (minimum &&& maximum) $ fst <$> stocks

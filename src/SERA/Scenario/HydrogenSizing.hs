@@ -49,9 +49,8 @@ import SERA.Refueling.Hydrogen.Sizing (StationCapacityParameters, stationCapacit
 import SERA.Refueling.Types
 import SERA.Scenario.Types (RegionalIntroductionsCube, FFirstYear, fFirstYear, fIntroductionYear, FLastYear, fLastYear, FStationCount, fStationCount, hasStations)
 import SERA.Service ()
-import SERA.Types.Fields hiding (FSales, fSales) -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
-import SERA.Vehicle.Stock.Types (StockCube)
-import SERA.Vehicle.Types
+import SERA.Types.Fields -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
+import SERA.Types.Cubes (StockCube)
 
 
 -- | Capital cost parameters.
@@ -141,17 +140,17 @@ lastOverride _ rec =
 
 -- | Totatl the vehicle stock.
 totalStock :: FieldRec '[FYear, FRegion]                            -- ^ The key.
-           -> [FieldRec '[FSales, FStock, FTravel, FEnergy]]        -- ^ The stocks.
-           -> FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand] -- ^ The totals.
+           -> [FieldRec '[FPurchases, FStock, FTravel, FEnergy]]        -- ^ The stocks.
+           -> FieldRec '[FPurchases, FStock, FTravel, FEnergy, FDemand] -- ^ The totals.
 totalStock _ rec =
   let
-    sales = sum $ (fSales <:) <$> rec
+    sales = sum $ (fPurchases <:) <$> rec
     stock = sum $ (fStock <:) <$> rec
     travel = sum $ (fTravel <:) <$> rec
     energy = sum $ (fEnergy <:) <$> rec
     demand = 120.1e6 / 121.3e6 / 365 * energy
   in
-        fSales =: sales
+        fPurchases =: sales
     <+> fStock =: stock
     <+> fTravel =: travel
     <+> fEnergy =: energy
@@ -250,7 +249,7 @@ runningTotals cube =
 
 -- | Extend the stock data to later years.
 extendedStock :: FieldRec '[FRegion]                                                                                                 -- ^ The key.
-              -> [FieldRec '[FSales, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]] -- ^ The stock information.
+              -> [FieldRec '[FPurchases, FStock, FTravel, FEnergy, FDemand, FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]] -- ^ The stock information.
               -> FieldRec '[FNewStations, FTotalStations, FNewCapacity, FTotalCapacity]                                              -- ^ The extension of the value.
 extendedStock _ recs =
       fNewStations =: 0
@@ -331,7 +330,7 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
         , let california = take 2 (show $ fRegion <: rec) == "CA"
         ]
     details' = overrides <> details
-    padding = κ (undefined :: Set (FieldRec '[FStationID])) (\_ _ -> fSales =: 0 <+> fStock =: 0 <+> fTravel =: 0 <+> fEnergy =: 0 <+> fDemand =: 0) details'
+    padding = κ (undefined :: Set (FieldRec '[FStationID])) (\_ _ -> fPurchases =: 0 <+> fStock =: 0 <+> fTravel =: 0 <+> fEnergy =: 0 <+> fDemand =: 0) details'
     summary = (stock' <> padding) ⋈ runningTotals details'
     regions = ω summary :: Set (FieldRec '[FRegion])
     totalGlobalCapacity key recs =

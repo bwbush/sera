@@ -16,13 +16,13 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE Trustworthy                #-}
-{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeOperators              #-}
 
 
 module SERA.Types (
   pushYear
 , minimumYear
+, hasStock
 ) where
 
 
@@ -30,7 +30,7 @@ import Data.Daft.Vinyl.FieldCube (τ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import Data.Vinyl.Derived (FieldRec)
 import Data.Vinyl.Lens (type (∈))
-import SERA.Types.Fields (FYear, fYear)
+import SERA.Types.Fields (FStock, fStock, FYear, fYear)
 
 
 -- | Transfer a year from the key to the value.
@@ -47,3 +47,11 @@ minimumYear :: (FYear ∈ vs)
             -> [FieldRec vs]     -- ^ The values.
             -> FieldRec '[FYear] -- ^ The minimum year.
 minimumYear _ recs = fYear =: minimum ((fYear <:) <$> recs)
+
+
+-- | Determine whether a record has stock.
+hasStock :: (FStock ∈ vs)
+         => k           -- ^ The key.
+         -> FieldRec vs -- ^ The value.
+         -> Bool        -- ^ Whether the value has vehicle stock.
+hasStock = const $ (\x -> x /= 0 && not (isNaN x)) . (fStock <:)
