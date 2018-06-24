@@ -50,7 +50,7 @@ import SERA.Refueling.Types
 import SERA.Scenario.Types (RegionalIntroductionsCube, FFirstYear, fFirstYear, fIntroductionYear, FLastYear, fLastYear, FStationCount, fStationCount, hasStations)
 import SERA.Service ()
 import SERA.Types.Fields -- (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear)
-import SERA.Types.Cubes (StockCube)
+import SERA.Types.Cubes (StockCube, tamerRegions')
 
 
 -- | Capital cost parameters.
@@ -284,7 +284,7 @@ sizeStations parameters parameters' parameters'' externals overrides introductio
             undefined
     introductions' = urbanToRegion $ σ hasStations introductions
     vocationsVehicles = ω stock :: Set (FieldRec '[FVocation, FVehicle])
-    stock' = κ vocationsVehicles totalStock stock
+    stock' = κ vocationsVehicles totalStock $ tamerRegions' stock
     years = ω stock :: Set (FieldRec '[FYear])
     dailyDemands key rec =
       let

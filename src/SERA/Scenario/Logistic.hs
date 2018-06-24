@@ -35,7 +35,8 @@ import Data.Daft.Vinyl.FieldCube ((⋈), ε, π, fromRecords)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:))
 import SERA.Scenario.Types
 import SERA.Types.Fields (fMarketShare, ModelYear, fModelYear)
-import SERA.Types.Cubes (MarketShareCube, ModelYearCube)
+import SERA.Types.Cubes (MarketShareCube, ModelYearCube, wilderRegions)
+import SERA.Util.Wilder (Wilder(Tame, tame))
 
 
 -- | Logistic curve parameters.
@@ -68,10 +69,10 @@ computeMarketShares :: (ModelYear, ModelYear) -- ^ The first and last model year
                     -> MarketShareCube        -- ^ The market shares.
 computeMarketShares (firstYear, lastYear) logistics =
   let
-    modelYears = ε $ fromRecords [fModelYear =: y | y <- [firstYear..lastYear]] :: ModelYearCube
+    modelYears = ε $ fromRecords [fModelYear =: y | y <- Tame <$> [firstYear..lastYear]] :: ModelYearCube
     sharing key rec =
       let
-        t    =                fModelYear      <: key
+        t    =         tame $ fModelYear      <: key
         t0   = fromIntegral $ fReferenceYear  <: rec
         s0   =                fReferenceShare <: rec
         m    =                fMaximumShare   <: rec
@@ -80,5 +81,6 @@ computeMarketShares (firstYear, lastYear) logistics =
       in
         fMarketShare =: marketShare LogisticParameters{..} t
   in
-    π sharing
+    wilderRegions
+      $ π sharing
       $ logistics ⋈ modelYears

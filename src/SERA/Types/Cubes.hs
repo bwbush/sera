@@ -14,6 +14,8 @@
 
 
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 
 
@@ -56,16 +58,22 @@ module SERA.Types.Cubes (
 -- * Functions
 , SurvivalFunction
 , asSurvivalFunction
+, wilderRegions
+, tamerRegions
+, tamerRegions'
 ) where
 
 
 import Data.Daft.Vinyl.FieldCube (type (↝), type (*↝))
+import Data.Daft.DataCube (Rekeyer(..), evaluate, rekey)
+import Data.Vinyl.Derived (ElField(Field), getField)
+import Data.Vinyl.Core (Rec((:&)))
 import Data.Vinyl.TypeLevel (type (++))
-import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRent, FSale, FSales, FSalvage, FStage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone, Region, FRegion, fRegion, Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FPurchases, FStock, Survival, FSurvival, fSurvival, FTravel, FVehicle, Vocation, FVocation, fVocation)
+import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRegion, FRent, FSale, FSales, FSalvage, FStage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone, Region, Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, FPollutant, FPurchases, FStock, Survival, FSurvival, fSurvival, FTravel, Vehicle, FVehicle, fVehicle, Vocation, FVocation, fVocation, FWilderRegion, fWilderRegion)
 import SERA.Types.Records (ProcessCost)
-import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Maybe (fromMaybe)
+import SERA.Util.Wilder (Wilder(Tame), tame)
 
  
 type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FSale, FGeometry]
@@ -142,60 +150,102 @@ type ModelYearCube = '[FModelYear] ↝ '[]
 
 
 -- | Vehicle sales as a function of region, and model year.
-type RegionalPurchasesCube  = '[       FRegion                           , FModelYear                   ] ↝ '[FPurchases         ]
+type RegionalPurchasesCube = '[FWilderRegion, FModelYear] ↝ '[FPurchases]
 
 
 -- | Market share as a function of region, vocation, vehicle type, and model year.
-type MarketShareCube    = '[       FRegion, FVocation, FVehicle      , FModelYear                   ] ↝ '[FMarketShare   ]
+type MarketShareCube = '[FWilderRegion, FVocation, FVehicle, FModelYear] ↝ '[FMarketShare]
 
 
 -- | Fraction of vehicles surviving to a given age, as a function of vocation.
-type SurvivalCube       = '[       FRegion, FVocation          , FAge                               ] ↝ '[FSurvival      ]
+type SurvivalCube = '[FWilderRegion, FVocation, FVehicle, FAge] ↝ '[FSurvival]
 
 
 -- | Annual distance traveled as a function of vocation and age.
-type AnnualTravelCube   = '[       FRegion, FVocation          , FAge                               ] ↝ '[FAnnualTravel  ]
+type AnnualTravelCube = '[FWilderRegion, FVocation, FVehicle, FAge] ↝ '[FAnnualTravel]
 
 
 -- | Fraction of fuel consumed as a function of vocation and vehicle type.
-type FuelSplitCube      = '[                FVocation, FVehicle                  , FFuel            ] ↝ '[FFuelSplit     ]
+type FuelSplitCube = '[FWilderRegion, FVocation, FVehicle, FFuel] ↝ '[FFuelSplit]
 
 
 -- | Fuel efficiency on a given fuel as a function of vehicle type and model year.
-type FuelEfficiencyCube = '[                           FVehicle      , FModelYear, FFuel            ] ↝ '[FFuelEfficiency]
+type FuelEfficiencyCube = '[FWilderRegion, FVocation, FVehicle, FModelYear, FAge, FFuel] ↝ '[FFuelEfficiency]
 
 
 -- | Pollutants emitted as a function of vehicle type and model year.
-type EmissionRateCube   = '[                           FVehicle      , FModelYear, FFuel, FPollutant] ↝ '[FEmissionRate  ]
+type EmissionRateCube = '[FWilderRegion, FVocation, FVehicle, FModelYear, FAge, FFuel, FPollutant] ↝ '[FEmissionRate]
 
 
 -- | Vehicle sales, stock, travel, and energy consumed as a function of calendar year, region, vocation, vehicle type, and model year.
-type PurchasesCube          = '[FYear, FRegion, FVocation, FVehicle      , FModelYear                   ] ↝ '[FPurchases, FStock, FTravel, FEnergy          ]
+type PurchasesCube = '[FYear, FWilderRegion, FVocation, FVehicle, FModelYear] ↝ '[FPurchases, FStock, FTravel, FEnergy]
 
 
 -- | Vehicle sales, stock, travel, and energy consumed as a function of calendar year, region, vocation, and vehicle type.
-type StockCube          = '[FYear, FRegion, FVocation, FVehicle                                     ] ↝ '[FPurchases, FStock, FTravel, FEnergy          ]
+type StockCube = '[FYear, FWilderRegion, FVocation, FVehicle] ↝ '[FPurchases, FStock, FTravel, FEnergy]
 
 
 -- | Energy consumed as a function of calendar year, region, vocation, vehicle type, and fuel.
-type EnergyCube         = '[FYear, FRegion, FVocation, FVehicle                  , FFuel            ] ↝ '[                         FEnergy          ]
+type EnergyCube = '[FYear, FWilderRegion, FVocation, FVehicle, FFuel] ↝ '[FEnergy]
 
 
 -- | Polutants emitted as a function of calendar year, region, vocation, vehicle type and fuel.
-type EmissionCube       = '[FYear, FRegion, FVocation, FVehicle                  , FFuel, FPollutant] ↝ '[                                 FEmission]
+type EmissionCube = '[FYear, FWilderRegion, FVocation, FVehicle, FFuel, FPollutant] ↝ '[FEmission]
 
 
 -- | Stock as a function of year, region, vocation, and vehicle type.
-type RegionalStockCube  = '[FYear, FRegion, FVocation, FVehicle                                     ] ↝ '[FStock                                    ]
+type RegionalStockCube = '[FYear, FWilderRegion, FVocation, FVehicle] ↝ '[FStock]
 
 
 -- | Survival function.
-type SurvivalFunction = Region -> Vocation -> Age -> Survival
+type SurvivalFunction = Wilder Region -> Wilder Vocation -> Wilder Vehicle -> Wilder Age -> Survival
 
 
 -- | Convert a survival cube to a survival function.
 asSurvivalFunction :: SurvivalCube -> SurvivalFunction
-asSurvivalFunction cube region vocation age =
+asSurvivalFunction cube region vocation vehicle age =
   fromMaybe 0
     $   (fSurvival <:)
-    <$> evaluate cube (fRegion =: region <+> fVocation =: vocation <+> fAge =: age)
+    <$> evaluate cube (fWilderRegion =: region <+> fVocation =: vocation <+> fVehicle =: vehicle <+> fAge =: age)
+
+
+wilderRegions :: Ord (Rec ElField k)
+              => (FRegion ': k) ↝ v
+              -> (FWilderRegion ': k) ↝ v
+wilderRegions =
+  rekey
+    $ Rekeyer
+        (
+          \key ->
+            case key of
+              r :& key' -> Field (Tame $ getField r) :& key'
+        )
+        undefined
+
+
+tamerRegions :: Ord (Rec ElField k)
+              => (FWilderRegion ': k) ↝ v
+              -> (FRegion ': k) ↝ v
+tamerRegions =
+  rekey
+    $ Rekeyer
+        (
+          \key ->
+            case key of
+              r :& key' -> Field (tame $ getField r) :& key'
+        )
+        undefined
+
+
+tamerRegions' :: '[FYear, FWilderRegion, FVocation, FVehicle] ↝ v
+              -> '[FYear, FRegion, FVocation, FVehicle] ↝ v
+tamerRegions' =
+  rekey
+    $ Rekeyer
+        (
+          \key ->
+            case key of
+              y :& r :& key' -> y :& Field (tame $ getField r) :& key'
+              _              -> undefined
+        )
+        undefined

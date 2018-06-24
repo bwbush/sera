@@ -114,6 +114,7 @@ module SERA.Types.Fields (
 , FPurchases
 , FQuantity
 , FRegion
+, FWilderRegion
 , FRelativeMarketShare
 , FRent
 , FSale
@@ -200,6 +201,7 @@ module SERA.Types.Fields (
 , fPurchases
 , fQuantity
 , fRegion
+, fWilderRegion
 , fRelativeMarketShare
 , fRent
 , fSale
@@ -233,7 +235,7 @@ module SERA.Types.Fields (
 
 
 import Control.Arrow (first)
-import SERA.Types.TH (makeField, makeStringField)
+import SERA.Types.TH (makeField, makeStringField, makeWilderField, makeWilderStringField)
 
 
 -- | Data type for calendar years.
@@ -346,6 +348,7 @@ $(makeField       "Cost"                "Cost [$/kg]"                       ''Do
 $(makeField       "Yield"               "Yield [upstream/kg]"               ''Double    )
 $(makeField       "Condition"           "Condition?"                        ''Bool      )
 $(makeStringField "Region" "Region")
+$(makeWilderField "WilderRegion" "Region" ''Region)
 $(makeField "Year" "Year" ''Year)
 $(makeStringField "UrbanCode" "Census Urban Area Code")
 $(makeStringField "UrbanName" "Census Urban Area Name")
@@ -357,18 +360,18 @@ $(makeStringField "Geometry" "Geometry [WKT]")
 -- | Data type for vehicle vocation.
 -- | Field type for vehicle vocation.
 -- | Field label for vehicle vocation.
-$(makeStringField "Vocation" "Vocation")
+$(makeWilderStringField "Vocation" "Vocation")
 
 
 -- | Data type for vehicle type.
 -- | Field type for vehicle type.
 -- | Field label for vehicle type.
-$(makeStringField "Vehicle" "Vehicle")
+$(makeWilderStringField "Vehicle" "Vehicle")
 
 
 -- | Field type for vehicle age.
 -- | Field label for vehicle age.
-$(makeField "Age" "Age [yr]" ''Age)
+$(makeWilderField "Age" "Age [yr]" ''Age)
 
 
 -- | Data type for model year.
@@ -376,7 +379,7 @@ type ModelYear = Int
 
 
 -- | Field type for model year.
-$(makeField "ModelYear" "Model Year" ''ModelYear)
+$(makeWilderField "ModelYear" "Model Year" ''ModelYear)
 
 
 -- | Field label for model year.

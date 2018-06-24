@@ -49,8 +49,8 @@ import GHC.Generics (Generic)
 import SERA.Scenario.Types (FIntroductionYear, fIntroductionYear, hasStations, fMaximumPurchases, RegionalIntroductionsCube)
 import SERA.Types (pushYear, minimumYear, hasStock)
 import SERA.Types.Fields (Region(..), FRegion, fRegion, UrbanCode(..), FUrbanCode, fUrbanCode, UrbanName(..), FUrbanName, fUrbanName, FYear, fYear, FModelYear, fModelYear, FRelativeMarketShare, fRelativeMarketShare, FPurchases, fPurchases, Vehicle(..), FVehicle, fVehicle, FVocation, fVocation)
-import SERA.Types.Cubes (StockCube)
-
+import SERA.Types.Cubes (StockCube, tamerRegions')
+import SERA.Util.Wilder (Wilder(Tame))
 
 -- | Field type for total relative market share.
 type FTotalRelativeMarketShare = '("Total Relative Market Share", Double)
@@ -116,7 +116,7 @@ regionalize :: RegionalizationParameters            -- ^ Regionalization paramet
             -> (PurchasesOnlyCube, TravelReductionCube) -- ^ Regionalized sales and VMT reductions.
 regionalize parameters introductions totals = -- FIXME: Review for opportunities to simplify and clarify.
   let
-    totals' = σ (\key _ -> fVehicle <: key == Vehicle "FCEV") totals
+    totals' = σ (\key _ -> fVehicle <: key == Tame (Vehicle "FCEV")) $ tamerRegions' totals
     universe = ω totals' :: Set (FieldRec '[FYear])
     firstYears :: '[FRegion, FVocation, FVehicle] ↝ '[FYear]
     firstYears =
@@ -171,7 +171,7 @@ urbanToRegion = -- Review for opportunities to simplify and clarify.
   rekey
     $ Rekeyer
         (\key ->     fRegion    =: Region (region (fRegion <: key) ++ " | " ++ urbanCode (fUrbanCode <: key) ++ " | " ++ urbanName (fUrbanName <: key))
-                 <+> fModelYear =: fYear     <: key
+                 <+> fModelYear =: Tame (fYear     <: key)
                  <+> fVocation  =: fVocation <: key
                  <+> fVehicle   =: fVehicle  <: key
         )

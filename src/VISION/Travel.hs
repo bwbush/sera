@@ -37,6 +37,7 @@ import Data.Default (Default(..))
 import GHC.Generics (Generic)
 import SERA.Types.Fields (fAge, fAnnualTravel)
 import SERA.Types.Cubes (AnnualTravelCube)
+import SERA.Util.Wilder (tameWith)
 
 
 data TravelData =
@@ -73,7 +74,7 @@ travel TravelData{..} =
   ε . fromFunction $ \rec ->
     do
       let
-        age = fromIntegral $ fAge <: rec
+        age = fromIntegral . tameWith 0 $ fAge <: rec
         f :: Double -> Double
         f a = vmt0 + dr * a + dv * a^(2 :: Int) + v0 * a^(3 :: Int)
         x = [f i | i <- [21..27]]

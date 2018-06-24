@@ -49,9 +49,9 @@ import VISION.Travel (travelLDV)
 
 
 -- | Vehicle survival data.
-data SurvivalData =
-    VISION_LDV_Survival -- ^ LDV survival function from the VISION model.
-  | VISION_HDV_Survival -- ^ HDV survival function from the VISION model.
+data SurvivalData = FixMeSurvivalData
+--    VISION_LDV_Survival -- ^ LDV survival function from the VISION model.
+--  | VISION_HDV_Survival -- ^ HDV survival function from the VISION model.
   deriving (Bounded, Enum, Eq, Generic, Ord, Read, Show)
 
 instance FromJSON SurvivalData
@@ -59,7 +59,7 @@ instance FromJSON SurvivalData
 instance ToJSON SurvivalData
 
 instance Default SurvivalData where
-  def = VISION_LDV_Survival
+  def = FixMeSurvivalData -- VISION_LDV_Survival
 
 
 -- | Read survival data.
@@ -67,19 +67,20 @@ survivalCube :: (IsString e, MonadError e m, MonadIO m)
              => Maybe (DataSource SurvivalData) -- ^ Source of survival data.
              -> m SurvivalCube                  -- ^ Data cube for survival data.
 survivalCube  Nothing                                 = return survivalLDV
-survivalCube (Just (BuiltinData VISION_LDV_Survival)) = do
-                                                          inform "Using built-in VISION LDV survival data."
-                                                          return survivalLDV
-survivalCube (Just (BuiltinData VISION_HDV_Survival)) = do
-                                                          inform "Using built-in VISION MDV/HDV survival data."
-                                                          return survivalHDV
+--survivalCube (Just (BuiltinData VISION_LDV_Survival)) = do
+--                                                          inform "Using built-in VISION LDV survival data."
+--                                                          return survivalLDV
+--survivalCube (Just (BuiltinData VISION_HDV_Survival)) = do
+--                                                          inform "Using built-in VISION MDV/HDV survival data."
+--                                                          return survivalHDV
 survivalCube (Just source                           ) = verboseReadFieldCubeSource "survival" source
 
 
 -- | Vehicle travel data.
 data TravelData =
-    VISION_LDV_Travel -- ^ LDV travel function from the VISION model.
-  | VISION_HDV_Travel -- ^ HDV travel function from the VISION model.
+    FixMeTravelData
+--    VISION_LDV_Travel -- ^ LDV travel function from the VISION model.
+--  | VISION_HDV_Travel -- ^ HDV travel function from the VISION model.
   deriving (Bounded, Enum, Eq, Generic, Ord, Read, Show)
 
 instance FromJSON TravelData
@@ -87,7 +88,7 @@ instance FromJSON TravelData
 instance ToJSON TravelData
 
 instance Default TravelData where
-  def = VISION_LDV_Travel
+  def = FixMeTravelData -- VISION_LDV_Travel
 
 
 -- | Read travel data.
@@ -95,9 +96,9 @@ travelCube :: (IsString e, MonadError e m, MonadIO m)
            => Maybe (DataSource TravelData) -- ^ Source of travel data.
            -> m AnnualTravelCube            -- ^ Data cube for travel data.
 travelCube  Nothing                               = return travelLDV
-travelCube (Just (BuiltinData VISION_LDV_Travel)) = do
-                                                      inform "Using built-in VISION LDV annual travel data."
-                                                      return travelLDV
+--travelCube (Just (BuiltinData VISION_LDV_Travel)) = do
+--                                                      inform "Using built-in VISION LDV annual travel data."
+--                                                      return travelLDV
 travelCube (Just source                         ) = verboseReadFieldCubeSource "annual travel" source
 
 

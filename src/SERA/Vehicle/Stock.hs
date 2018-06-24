@@ -29,6 +29,7 @@ module SERA.Vehicle.Stock (
 ) where
 
 
+import Control.Applicative (liftA2)
 import Control.Arrow ((&&&))
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
@@ -37,20 +38,21 @@ import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec, SField(..))
 import SERA.Scenario.Regionalization (PurchasesOnlyCube, TravelReductionCube, fTravelReduction)
-import SERA.Types.Fields (Region, FRegion, fRegion, Year, FYear, fYear, FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, ModelYear, FModelYear, fModelYear, Purchases, FPurchases, fPurchases, Stock, FStock, fStock, fSurvival, fTravel, FVehicle, Vocation, FVocation, fVocation)
-import SERA.Types.Cubes (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalPurchasesCube, RegionalStockCube, PurchasesCube, StockCube, SurvivalCube, SurvivalFunction, asSurvivalFunction)
+import SERA.Types.Fields (Region, fWilderRegion, Year, FYear, fYear, FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, ModelYear, FModelYear, fModelYear, Purchases, FPurchases, fPurchases, Stock, FStock, fStock, fSurvival, fTravel, Vehicle, FVehicle, fVehicle, Vocation, FVocation, fVocation, FWilderRegion)
+import SERA.Types.Cubes (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalPurchasesCube, RegionalStockCube, PurchasesCube, StockCube, SurvivalCube, SurvivalFunction, asSurvivalFunction, wilderRegions)
+import SERA.Util.Wilder
 
-import qualified Data.Set as S (map)
+import qualified Data.Set as S (findMin, map)
 
 
 -- | Add calendar year to a key.
-byYear :: '[FRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v  -- ^ The data cube.
-       -> '[FYear, FRegion, FVocation, FVehicle, FModelYear] ↝ v -- ^ The data cube year added to the key.
+byYear :: '[FWilderRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v  -- ^ The data cube.
+       -> '[FYear, FWilderRegion, FVocation, FVehicle, FModelYear] ↝ v -- ^ The data cube year added to the key.
 byYear =
   rekey Rekeyer{..}
     where
-      rekeyer   rec = τ (rec <+> fYear =: fAge  <: rec + fModelYear <: rec)
-      unrekeyer rec = τ (rec <+> fAge  =: fYear <: rec - fModelYear <: rec)
+      rekeyer   rec = τ (rec <+> fYear =: tame (liftA2 (+) (fAge  <: rec) (fModelYear <: rec)))
+      unrekeyer rec = τ (rec <+> fAge  =: fmap (+ negate (fYear <: rec))  (fModelYear <: rec))
 
 
 -- | Compute the vehicle stock.
@@ -65,12 +67,14 @@ computeStock :: RegionalPurchasesCube                                 -- ^ Regio
 computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
   let
     modelYears = ω regionalPurchases :: Set (FieldRec '[FModelYear])
-    years = ((fYear =:) . (fModelYear <:)) `S.map` modelYears
+    firstYear = fModelYear <: (S.findMin modelYears)
+    years = ((fYear =:) . tame . (fModelYear <:)) `S.map` modelYears
+    ages = ((fAge =:) . (liftA2 (-) firstYear) . (fModelYear <:)) `S.map`  modelYears
     fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
     traveling key rec =
       let
         sales = fPurchases <: rec * fMarketShare <: rec
-        sales' = if fAge <: key == 0 then sales else 0
+        sales' = if fAge <: key == Tame 0 then sales else 0
         stock = sales * fSurvival <: rec
         travel' = stock * fAnnualTravel <: rec
       in
@@ -119,10 +123,10 @@ computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuel
           fEmission =: sum ((fEmission <:) <$> xs)
   in
     (
-      κ               fuels  total           energy
-    , κ (modelYears × fuels) total           energy
-    , κ  modelYears          ((τ .) . total) energy
-    , κ  modelYears          totalEmission   emission
+      κ (             ages × fuels) total           energy
+    , κ (modelYears × ages × fuels) total           energy
+    , κ (modelYears × ages        ) ((τ .) . total) energy
+    , κ (modelYears × ages        ) totalEmission   emission
     )
 
 
@@ -135,15 +139,18 @@ recomputeStock :: PurchasesOnlyCube                                     -- ^ Pur
                -> FuelEfficiencyCube                                -- ^ Fuel efficiency.
                -> EmissionRateCube                                  -- ^ Emission rate.
                -> (PurchasesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Purchases, stock, energy consumed, and pollutants emitted.
-recomputeStock regionalPurchases travelReduction survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
+recomputeStock regionalPurchases' travelReduction survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
   let
+    regionalPurchases = wilderRegions regionalPurchases'
     modelYears = ω regionalPurchases :: Set (FieldRec '[FModelYear])
-    years = ((fYear =:) . (fModelYear <:)) `S.map` modelYears
+    firstYear = fModelYear <: (S.findMin modelYears)
+    years = ((fYear =:) . tame . (fModelYear <:)) `S.map` modelYears
+    ages = ((fAge =:) . (liftA2 (-) firstYear) . (fModelYear <:)) `S.map`  modelYears
     fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
     traveling key rec =
       let
         sales = fPurchases <: rec
-        sales' = if fAge <: key == 0 then sales else 0
+        sales' = if fAge <: key == Tame 0 then sales else 0
         stock = sales * fSurvival <: rec
         travel' = stock * fAnnualTravel <: rec
       in
@@ -174,7 +181,7 @@ recomputeStock regionalPurchases travelReduction survival annualTravel fuelSplit
         <+> fEnergy =: energy' * (1 - reduction)
     energy =
       π consuming
-      $ (⋈ travelReduction)
+      $ (⋈ wilderRegions travelReduction)
       $ ε travel
       ⋈ fuelSplit
       ⋈ fuelEfficiency
@@ -193,10 +200,10 @@ recomputeStock regionalPurchases travelReduction survival annualTravel fuelSplit
           fEmission =: sum ((fEmission <:) <$> xs)
   in
     (
-      κ               fuels  total           energy
-    , κ (modelYears × fuels) total           energy
-    , κ  modelYears          ((τ .) . total) energy
-    , κ  modelYears          totalEmission   emission
+      κ (             ages × fuels) total           energy
+    , κ (modelYears × ages × fuels) total           energy
+    , κ (modelYears × ages        ) ((τ .) . total) energy
+    , κ (modelYears × ages        ) totalEmission   emission
     )
 
 
@@ -226,29 +233,30 @@ inferPurchases :: Int                                  -- ^ Number of prior year
 inferPurchases {- FIXME: Implement padding. -} padding survival regionalStock = -- FIXME: Review for opportunities to simplify.
   let
     years = ω regionalStock :: Set (FieldRec '[FYear])
-    modelYears = ((fModelYear =:) . (fYear <:)) `S.map` (ω regionalStock :: Set (FieldRec '[FYear]))
+    modelYears = ((fModelYear =:) . Tame . (fYear <:)) `S.map` (ω regionalStock :: Set (FieldRec '[FYear]))
     vocationsVehicles = ω regionalStock :: Set (FieldRec '[FVocation, FVehicle])
     regionalStock' =
       π prependYear regionalStock
         where
-          prependYear :: FieldRec '[FYear, FRegion, FVocation, FVehicle] -> FieldRec '[FStock] -> FieldRec '[FYear, FStock]
+          prependYear :: FieldRec '[FYear, FWilderRegion, FVocation, FVehicle] -> FieldRec '[FStock] -> FieldRec '[FYear, FStock]
           prependYear = (<+>) . (fYear =:) . (fYear <:)
     salesLists =
       κ years invertPurchases regionalStock'
         where
-          invertPurchases :: FieldRec '[FRegion, FVocation, FVehicle] -> [FieldRec '[FYear, FStock]] -> FieldRec '[FPurchasesList]
+          invertPurchases :: FieldRec '[FWilderRegion, FVocation, FVehicle] -> [FieldRec '[FYear, FStock]] -> FieldRec '[FPurchasesList]
           invertPurchases key recs =
             fPurchasesList =:
               inverseSurvivalFunction
                 (asSurvivalFunction survival)
-                (fRegion <: key)
-                (fVocation <: key)
+                (tame $ fWilderRegion <: key)
+                (tame $ fVocation <: key)
+                (tame $ fVehicle <: key)
                 (((fYear <:) &&& (fStock <:)) <$> recs)
     sales =
       δ modelYears disaggregatePurchases salesLists
         where
-          disaggregatePurchases :: FieldRec '[FRegion, FVocation, FVehicle, FModelYear] -> FieldRec '[FPurchasesList] -> FieldRec '[FPurchases]
-          disaggregatePurchases = (((fPurchases =:) . fromMaybe 0) . ) . (. (fPurchasesList <:)) . lookup . (fModelYear <:)
+          disaggregatePurchases :: FieldRec '[FWilderRegion, FVocation, FVehicle, FModelYear] -> FieldRec '[FPurchasesList] -> FieldRec '[FPurchases]
+          disaggregatePurchases = (((fPurchases =:) . fromMaybe 0) . ) . (. (fPurchasesList <:)) . lookup . (tame . (fModelYear <:))
     regionalPurchases =
       κ vocationsVehicles sumPurchases sales
         where
@@ -271,15 +279,16 @@ inferPurchases {- FIXME: Implement padding. -} padding survival regionalStock = 
 inverseSurvivalFunction :: SurvivalFunction     -- ^ The survival function.
                         -> Region
                         -> Vocation             -- ^ The vehicles being classified.
+                        -> Vehicle
                         -> [(Year, Stock)]      -- ^ The vehicle stock to be inverted.
                         -> [(ModelYear, Purchases)] -- ^ The vehicle sales.
-inverseSurvivalFunction survival region vocation stocks =
+inverseSurvivalFunction survival region vocation vehicle stocks =
   let
     (year0, year1) = (minimum &&& maximum) $ fst <$> stocks
     years = [year0..year1]
     stocks' = map (\y -> fromMaybe (read "NaN") (y `lookup` stocks)) years
     dot = (sum .) . zipWith (*)
-    s0 : ss = map (survival region vocation) [0..]
+    s0 : ss = map (survival (Tame region) (Tame vocation) (Tame vehicle)) (Tame <$> [0..])
     invert sales []                = sales
     invert sales (stock : stockss) = invert ((stock - ss `dot` sales) / s0 : sales) stockss
     invert _     _                 = undefined

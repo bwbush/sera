@@ -1,5 +1,5 @@
 name: sera
-version: 3.2.0.0
+version: 3.2.0.1
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -118,6 +118,7 @@ library
                     SERA.Util.Time
                     SERA.Util.Units
                     SERA.Util.Version
+                    SERA.Util.Wilder
                     SERA.Vehicle.MHD.Census2002
                     SERA.Vehicle.MHD.EMFAC2010
                     SERA.Vehicle.MHD.Mitchell20141106

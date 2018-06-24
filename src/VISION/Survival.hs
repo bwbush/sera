@@ -39,6 +39,7 @@ import Data.List (inits)
 import GHC.Generics (Generic)
 import SERA.Types.Fields (fAge, fSurvival)
 import SERA.Types.Cubes (SurvivalCube)
+import SERA.Util.Wilder (tameWith)
 
 
 data SurvivalData =
@@ -79,7 +80,7 @@ survival survivalData =
           map product
             $ inits
               [factor survivalData $ fromIntegral a | a <- [(0::Int)..]]
-        age = fAge <: rec
+        age = tameWith 0 $ fAge <: rec
       guard
         $ age >= 0
       return
@@ -114,7 +115,7 @@ survivalHDV =
             ++ replicate 1 0.90
             ++ replicate 5 0.86
             ++ repeat      0.82
-        age = fAge <: rec
+        age = tameWith 0 $ fAge <: rec
       guard
         $ age >= 0
       return

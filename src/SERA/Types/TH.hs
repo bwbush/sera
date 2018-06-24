@@ -7,6 +7,8 @@ module SERA.Types.TH (
 , makeStringField
 , makeStringType
 , quotedStringTypes
+, makeWilderField
+, makeWilderStringField
 ) where
 
 
@@ -19,6 +21,7 @@ import Data.String.ToString (toString)
 import Data.Vinyl.Derived (SField(..))
 import GHC.Generics (Generic)
 import Language.Haskell.TH
+import SERA.Util.Wilder (Wilder(..))
 
 
 -- | Whether to quote string types in 'Show' and 'Read' instances.
@@ -70,5 +73,24 @@ makeStringType name =
             toJSON = toJSON . $(varE fieldName)
         |]
     return
-      $ (NewtypeD [] typeName [] (RecC typeName [(fieldName, NotStrict, ConT ''String)]) [''Default, ''Eq, ''Generic, ''Ord])
+      $ NewtypeD [] typeName [] (RecC typeName [(fieldName, NotStrict, ConT ''String)]) [''Default, ''Eq, ''Generic, ''Ord]
       :  details
+
+
+makeWilderField :: String -> String -> Name -> Q [Dec]
+makeWilderField name label typeName =
+  do
+    let
+      fieldName = mkName $ 'F' : name
+      instanceName = mkName $ 'f' : name
+    return
+      [
+        TySynD fieldName [] $ AppT (AppT (PromotedTupleT 2) (LitT $ StrTyLit label)) (AppT (ConT ''Wilder) (ConT typeName))
+      , SigD instanceName $ AppT (ConT ''SField) (ConT fieldName)
+      , FunD instanceName [Clause [] (NormalB $ ConE 'SField) []]
+      ]
+
+
+makeWilderStringField :: String -> String -> Q [Dec]
+makeWilderStringField name label =
+  liftM2 (++) (makeStringType name) (makeWilderField name label $ mkName name)
