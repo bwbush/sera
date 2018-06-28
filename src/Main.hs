@@ -44,7 +44,7 @@ import SERA.Service.Intraurban (intraurbanMain)
 import SERA.Service.Introduction (introductionsMain)
 import SERA.Service.Logistic (logisticMain)
 import SERA.Service.Regionalization (regionalizationMain)
-import SERA.Service.VehicleStock (stockMain, stockInvertMain)
+import SERA.Service.VehicleStock (stockMain)
 import System.Console.CmdArgs (Typeable, (&=), Default(..), argPos, args, cmdArgs, details, help, modes, name, program, summary, typ, typFile)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getArgs, withArgs)
@@ -66,11 +66,6 @@ data SERA =
       files :: [FilePath]
     }
   | VehicleStock
-    {
-      configuration :: FilePath
-    , logging       :: Severity
-    } 
-  | InvertVehicleStock
     {
       configuration :: FilePath
     , logging       :: Severity
@@ -119,7 +114,6 @@ sera =
     [
       combineScenarios
     , vehicleStock
-    , invertVehicleStock
     , logistic
     , introduction
     , regionalization
@@ -160,17 +154,6 @@ vehicleStock =
   }
     &= name "stock"
     &= help "Compute vehicle stock."
-    &= details []
-
-
--- | Mode for inverting a vehicle stock computation.
-invertVehicleStock :: SERA
-invertVehicleStock =
-  InvertVehicleStock
-  {
-  }
-    &= name "invert-stock"
-    &= help "Invert a table of vehicle stock, computing sales from stock."
     &= details []
 
 
@@ -302,7 +285,6 @@ dispatch CombineScenarios{..} =
         (scenario, file) <- zip scenarios files
       ]
 dispatch s@VehicleStock{}        = dispatch' s stockMain
-dispatch s@InvertVehicleStock{}  = dispatch' s stockInvertMain
 dispatch s@Logistic{}            = dispatch' s logisticMain
 dispatch s@Introduction{}        = dispatch' s introductionsMain
 dispatch s@Regionalization{}     = dispatch' s regionalizationMain

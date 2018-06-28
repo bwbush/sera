@@ -28,7 +28,6 @@ module SERA.Service.VehicleStock (
 , travelCube
 -- * Computation
 , stockMain
-, stockInvertMain
 ) where
 
 
@@ -36,13 +35,12 @@ import Control.Monad.Except (MonadError, MonadIO)
 import Data.Aeson.Types (FromJSON, ToJSON)
 import Data.Daft.Source (DataSource(..))
 import Data.Default (Default(..))
-import Data.Maybe (fromMaybe)
 import Data.String (IsString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import SERA (inform, verboseReadFieldCubeSource, verboseWriteFieldCubeSource)
 import SERA.Service ()
-import SERA.Vehicle.Stock (computeStock, inferPurchases)
+import SERA.Vehicle.Stock (computeStock)
 import SERA.Types.Cubes (AnnualTravelCube, SurvivalCube)
 import VISION.Survival (survivalLDV, survivalHDV)
 import VISION.Travel (travelLDV)
@@ -117,7 +115,6 @@ data ConfigStock =
   , stockSource          :: DataSource Void                  -- ^ Source for vehicle stock.
   , energySource         :: DataSource Void                  -- ^ Source for energy consumed.
   , emissionSource       :: DataSource Void                  -- ^ Source for pollutants emitted.
-  , priorYears           :: Maybe Int                        -- ^ Number of prior years to consider when inverting vehicle stock.
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -146,18 +143,3 @@ stockMain ConfigStock{..} =
     verboseWriteFieldCubeSource "vehicle stock" stockSource stock
     verboseWriteFieldCubeSource "energy consumption" energySource energy
     verboseWriteFieldCubeSource "emission of pollutants" emissionSource emission
-
-
--- | Invert a vehicle stock computation.
-stockInvertMain :: (IsString e, MonadError e m, MonadIO m)
-            => ConfigStock -- ^ Configuration data.
-            -> m ()        -- ^ Action to invert a vehicle stock computation.
-stockInvertMain ConfigStock{..} =
-  do
-    stock <- verboseReadFieldCubeSource "regional stocks" stockSource
-    survival <- survivalCube survivalSource
-    inform "Computing vehicle sales . . ."
-    let
-      (regionalSales, marketShare) = inferPurchases (fromMaybe 0 priorYears) survival stock
-    verboseWriteFieldCubeSource "regional sales" regionalSalesSource regionalSales
-    verboseWriteFieldCubeSource "market shares" marketShareSource marketShare
