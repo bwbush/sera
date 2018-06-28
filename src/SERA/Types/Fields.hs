@@ -39,6 +39,7 @@ module SERA.Types.Fields (
 , MarketShare
 , Material(..)
 , ModelYear
+, OwnershipExpense(..)
 , Pathway(..)
 , Pollutant
 , Position(..)
@@ -144,6 +145,10 @@ module SERA.Types.Fields (
 , FYear
 , FYield
 , FZone
+, FVehicleExpense
+, FTravelExpense
+, FFuelExpense
+, FOwnershipExpense
 -- * FIeld accessors
 , fAge
 , fAnnualTravel
@@ -231,6 +236,10 @@ module SERA.Types.Fields (
 , fYear
 , fYield
 , fZone
+, fVehicleExpense
+, fTravelExpense
+, fFuelExpense
+, fOwnershipExpense
 ) where
 
 
@@ -501,3 +510,16 @@ type Emission = Double
 -- | Field type for pollutants emitted.
 -- | Field label for pollutants emitted.
 $(makeField "Emission" "Emission [g]" ''Emission)
+
+
+$(makeField "VehicleExpense" "Cost [$/veh]" ''Double)
+$(makeField "TravelExpense"  "Cost [$/mi]"  ''Double)
+$(makeField "FuelExpense"    "Cost [$/gge]" ''Double)
+
+data OwnershipExpense =
+    PerVehicle
+  | PerMile
+  | PerGGE Fuel
+    deriving (Eq, Ord, Read, Show)
+
+$(makeField "OwnershipExpense"    "Expense Type" ''OwnershipExpense)

@@ -29,17 +29,18 @@ module SERA.Vehicle.Stock (
 
 
 import Control.Applicative (liftA2)
+import Data.Monoid ((<>))
 import Data.Daft.DataCube
 import Data.Daft.Vinyl.FieldCube
 import Data.Daft.Vinyl.FieldRec ((<+>), (=:), (<:))
 import Data.Set (Set)
 import Data.Vinyl.Derived (FieldRec)
 import SERA.Scenario.Regionalization (PurchasesOnlyCube, TravelReductionCube, fTravelReduction)
-import SERA.Types.Fields (FYear, fYear, FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, FModelYear, fModelYear, fPurchases, fStock, fSurvival, fTravel, FVehicle, FVocation, FWilderRegion)
-import SERA.Types.Cubes (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalPurchasesCube, PurchasesCube, StockCube, SurvivalCube, wilderRegions)
+import SERA.Types.Fields (FYear, fYear, FAge, fAge, fAnnualTravel, fEmission, fEmissionRate, fEnergy, FFuel, fFuelEfficiency, fFuelSplit, fMarketShare, FModelYear, fModelYear, fPurchases, fStock, fSurvival, fTravel, FVehicle, FVocation, FWilderRegion, OwnershipExpense(..), FOwnershipExpense, fOwnershipExpense, fSale, fVehicleExpense, fTravelExpense, fFuelExpense, fFuel)
+import SERA.Types.Cubes (AnnualTravelCube, EmissionRateCube, EmissionCube, EnergyCube, FuelEfficiencyCube, FuelSplitCube, MarketShareCube, RegionalPurchasesCube, PurchasesCube, StockCube, SurvivalCube, wilderRegions, VehicleExpenseCube, TravelExpenseCube, FuelExpenseCube, OwnershipExpenseCube)
 import SERA.Util.Wilder
 
-import qualified Data.Set as S (findMin, map)
+import qualified Data.Set as S (findMin, map, toList)
 
 
 -- | Add calendar year to a key.
@@ -60,8 +61,11 @@ computeStock :: RegionalPurchasesCube                                 -- ^ Regio
              -> FuelSplitCube                                     -- ^ Fuel split.
              -> FuelEfficiencyCube                                -- ^ Fuel efficiency.
              -> EmissionRateCube                                  -- ^ Emission rate.
-             -> (PurchasesCube, StockCube, EnergyCube, EmissionCube)  -- ^ Purchases, stock, energy consumed, and pollutants emitted.
-computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate = -- FIXME: Review for opportunities to simplify.
+             -> VehicleExpenseCube
+             -> TravelExpenseCube
+             -> FuelExpenseCube
+             -> (PurchasesCube, StockCube, EnergyCube, EmissionCube, OwnershipExpenseCube)  -- ^ Purchases, stock, energy consumed, and pollutants emitted.
+computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuelEfficiency emissionRate vehicleExpense travelExpense fuelExpense = -- FIXME: Review for opportunities to simplify.
   let
     modelYears = ω regionalPurchases :: Set (FieldRec '[FModelYear])
     firstYear = fModelYear <: S.findMin modelYears
@@ -111,6 +115,27 @@ computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuel
       π emitting
       $ energy
       ⋈ emissionRate
+    vehicleExpensing _ rec =
+      fSale =: fPurchases <: rec * fVehicleExpense <: rec
+    travelExpensing _ rec =
+      fSale =: fTravel <: rec * fTravelExpense <: rec
+    fuelExpensing _ rec =
+      fSale =: fEnergy <: rec * fFuelExpense <: rec
+    totalVehicleExpense =
+      π vehicleExpensing
+      $ energy
+      ⋈ vehicleExpense
+      ⋈ (ε $ fromRecords [fOwnershipExpense =: PerVehicle] :: '[FOwnershipExpense] ↝ '[])
+    totalTravelExpense =
+      π travelExpensing
+      $ energy
+      ⋈ travelExpense
+      ⋈ (ε $ fromRecords [fOwnershipExpense =: PerMile] :: '[FOwnershipExpense] ↝ '[])
+    totalFuelExpense =
+      π fuelExpensing
+      $ energy
+      ⋈ fuelExpense
+      ⋈ (ε $ fromRecords [fuel <+> fOwnershipExpense =: PerGGE (fFuel <: fuel) | fuel <- S.toList fuels] :: '[FFuel, FOwnershipExpense] ↝ '[])
     total _ xs =
           fPurchases  =: sum ((fPurchases  <:) <$> xs)
       <+> fStock  =: sum ((fStock  <:) <$> xs)
@@ -118,12 +143,15 @@ computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuel
       <+> fEnergy =: sum ((fEnergy <:) <$> xs)
     totalEmission _ xs =
           fEmission =: sum ((fEmission <:) <$> xs)
+    totalExpense _ xs =
+          fSale =: sum ((fSale <:) <$> xs)
   in
     (
       κ (             ages × fuels) total           energy
     , κ (modelYears × ages × fuels) total           energy
     , κ (modelYears × ages        ) ((τ .) . total) energy
     , κ (modelYears × ages        ) totalEmission   emission
+    , κ (modelYears × ages × fuels) totalExpense    $ totalVehicleExpense <> totalTravelExpense <> totalFuelExpense
     )
 
 

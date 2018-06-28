@@ -110,11 +110,15 @@ data ConfigStock =
   , annualTravelSource   :: Maybe (DataSource TravelData  )  -- ^ Source for annual travel.
   , fuelSplitSource      :: DataSource Void                  -- ^ Source for fuel splits.
   , fuelEfficiencySource :: DataSource Void                  -- ^ Source for fuel efficiency.
+  , vehicleExpenseSource :: DataSource Void
+  , travelExpenseSource  :: DataSource Void
+  , fuelExpenseSource    :: DataSource Void
   , emissionRateSource   :: DataSource Void                  -- ^ Source for emission rates.
   , salesSource          :: DataSource Void                  -- ^ Source for vehicle sales.
   , stockSource          :: DataSource Void                  -- ^ Source for vehicle stock.
   , energySource         :: DataSource Void                  -- ^ Source for energy consumed.
   , emissionSource       :: DataSource Void                  -- ^ Source for pollutants emitted.
+  , ownershipExpenseSource :: DataSource Void
   }
     deriving (Eq, Generic, Ord, Read, Show)
 
@@ -136,10 +140,14 @@ stockMain ConfigStock{..} =
     fuelSplit <- verboseReadFieldCubeSource "fuel split" fuelSplitSource
     fuelEfficiency <- verboseReadFieldCubeSource "fuel efficiency" fuelEfficiencySource
     emissionRate <- verboseReadFieldCubeSource "emission rate" emissionRateSource
+    vehicleExpense <- verboseReadFieldCubeSource "vehicle expense" vehicleExpenseSource
+    travelExpense <- verboseReadFieldCubeSource "travel expense" travelExpenseSource
+    fuelExpense <- verboseReadFieldCubeSource "fuel expense" fuelExpenseSource
     inform "Computing vehicle stock . . ."
     let
-      (sales, stock, energy, emission) = computeStock regionalSales marketShare survival annualTravel fuelSplit fuelEfficiency emissionRate
+      (sales, stock, energy, emission, expense) = computeStock regionalSales marketShare survival annualTravel fuelSplit fuelEfficiency emissionRate vehicleExpense travelExpense fuelExpense
     verboseWriteFieldCubeSource "vehicle sales" salesSource sales
     verboseWriteFieldCubeSource "vehicle stock" stockSource stock
     verboseWriteFieldCubeSource "energy consumption" energySource energy
     verboseWriteFieldCubeSource "emission of pollutants" emissionSource emission
+    verboseWriteFieldCubeSource "ownership expenses" ownershipExpenseSource expense
