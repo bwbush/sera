@@ -51,6 +51,13 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 
+trace' = if False then trace else const id
+
+
+prioritization :: Double -> Double
+prioritization x = 1e12 - x -- FIXME
+
+
 data Strategy =
     LiteralInWindow
   | SalvageAtWindowEnd
@@ -218,6 +225,7 @@ data EdgeContext =
     , cashes     :: [Cash]
     , impacts    :: [Impact]
     , reference  :: Maybe Double
+    , credit     :: Double
     }
   | EdgeReverseContext Edge
 
@@ -242,7 +250,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
           , (
               \edgeContext ->
                 case edge of
-                  DemandEdge{}         -> edgeContext
+                  DemandEdge{}         -> edgeContext { credit = prioritization . sum . capacity $ edgeContext }
                   PathwayReverseEdge{} -> edgeContext
                   _                    -> let
                                             (flows', cashes', impacts') = costEdge' LiteralInWindow years (reserved edgeContext) edgeContext
@@ -266,6 +274,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , cashes     = []
                                                            , impacts    = []
                                                            , reference  = Nothing
+                                                           , credit     = 0
                                                            }
               ExistingEdge infrastructure               -> let
                                                              existing = existingCube ! (fInfrastructure =: infrastructure)
@@ -311,6 +320,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              , cashes     = []
                                                              , impacts    = []
                                                              , reference  = Nothing
+                                                             , credit     = 0
                                                              }
               CentralEdge location technology           -> EdgeContext
                                                            {
@@ -334,6 +344,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , cashes     = []
                                                            , impacts    = []
                                                            , reference  = Nothing
+                                                           , credit     = 0
                                                            }
               OnsiteEdge location technology            -> EdgeContext
                                                            {
@@ -357,6 +368,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                            , cashes     = []
                                                            , impacts    = []
                                                            , reference  = Nothing
+                                                           , credit     = 0
                                                            }
               PathwayForwardEdge location pathway stage -> let
                                                              pathwayStage = pathwayCube ! (fPathway =: pathway <+> fStage =: stage)
@@ -392,6 +404,7 @@ buildContext Graph{..} Network{..} processLibrary@ProcessLibrary{..} intensityCu
                                                              , cashes     = []
                                                              , impacts    = []
                                                              , reference  = Nothing
+                                                             , credit     = 0
                                                              }
               PathwayReverseEdge location pathway stage -> EdgeReverseContext $ PathwayForwardEdge location pathway stage
           )
@@ -632,10 +645,10 @@ costFunction year (Capacity flow) context edge =
     guard
       $ (const 0 <$> year) #<# capacity' || canBuild
     case edge of
-      DemandEdge _                              -> return (Sum 0, context)
+      DemandEdge _                              -> return $ (\x -> trace' (show ("COST", edge, fst x)) x) $ (Sum $ credit edgeContext, context)
       ExistingEdge _                            -> return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
       PathwayReverseEdge location pathway stage -> costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-      _                                         -> return (Sum $ marginalCost (strategizing context) (discounting context) year flow edgeContext, context)
+      _                                         -> return $ (\x -> trace' (show ("COST", edge, fst x)) x) $ (Sum $ marginalCost (strategizing context) (discounting context) year flow edgeContext, context)
 costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
 
@@ -671,7 +684,7 @@ flowFunction year (Capacity flow) context edge =
           update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' { reference = Nothing } ) $ edgeContexts context }
           (capacity', builder') =
             case edgeContext of
-              EdgeContext{..}          -> (capacity .-. (abs <$> reserved), builder)
+              EdgeContext{..}          -> (\x -> trace' (show ("FLOW", edge, fst x)) x) $ (capacity .-. (abs <$> reserved), builder)
               EdgeReverseContext edge' -> (\z -> capacity z .-. (abs <$> reserved z)) &&& builder $ edgeContexts context M.! edge'
           canBuild =  canBuild' year flow builder'
         guard
@@ -710,7 +723,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                   in
                     edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
                 rebuild PathwayReverseEdge{}  edgeContext = edgeContext
-                rebuild (DemandEdge location) _           = EdgeContext
+                rebuild (DemandEdge location) edgeContext = EdgeContext
                                                             {
                                                               builder    = Nothing
                                                             , capacity   = [
@@ -726,6 +739,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
+                                                            , credit     = credit edgeContext -- FIXME
                                                             }
                 rebuild _                     edgeContext = reflow $ edgeContext
                                                             {
@@ -750,6 +764,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
+                                                            , credit     = credit edgeContext
                                                             }
                 context' =
                   if years == head yearses
