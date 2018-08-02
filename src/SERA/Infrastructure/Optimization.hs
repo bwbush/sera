@@ -51,6 +51,13 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 
+trace' = if False then trace else const id
+
+
+prioritization :: Double -> Double
+prioritization x = 1e12 - x -- FIXME
+
+
 data Strategy =
     LiteralInWindow
   | SalvageAtWindowEnd
@@ -326,7 +333,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
           , (
               \edgeContext ->
                 case edge of
-                  DemandEdge{}         -> edgeContext
+                  DemandEdge{}         -> edgeContext { credit = prioritization . sum . capacity $ edgeContext }
                   PathwayReverseEdge{} -> edgeContext
                   _                    -> let
                                             (flows', cashes', impacts') = costEdge' strategizing yearz ({- FIXME: Checkt this. -} const 0 <$> yearz) edgeContext
@@ -713,10 +720,10 @@ costFunction year (Capacity flow) context edge =
     guard
       $ (const 0 <$> year) #<# capacity' || canBuild
     case edge of
-      DemandEdge _                              -> return (Sum 0, context)
+      DemandEdge _                              -> return $ (\x -> trace' (show ("COST", edge, fst x)) x) $ (Sum $ credit edgeContext, context)
       ExistingEdge _                            -> return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
       PathwayReverseEdge location pathway stage -> costFunction year (Capacity (negate <$> flow)) context $ PathwayForwardEdge location pathway stage
-      _                                         -> return (Sum $ marginalCost (strategizing context) (discounting context) year flow edgeContext, context)
+      _                                         -> return $ (\x -> trace' (show ("COST", edge, fst x)) x) $ (Sum $ marginalCost (strategizing context) (discounting context) year flow edgeContext, context)
 costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
 
@@ -752,7 +759,7 @@ flowFunction year (Capacity flow) context edge =
           update edgeContext' = context { edgeContexts = M.insert edge (edgeContext' { reference = Nothing } ) $ edgeContexts context }
           (capacity', builder') =
             case edgeContext of
-              EdgeContext{..}          -> (capacity .-. (abs <$> reserved), builder)
+              EdgeContext{..}          -> (\x -> trace' (show ("FLOW", edge, fst x)) x) $ (capacity .-. (abs <$> reserved), builder)
               EdgeReverseContext edge' -> (\z -> capacity z .-. (abs <$> reserved z)) &&& builder $ edgeContexts context M.! edge'
           canBuild =  canBuild' year flow builder'
         guard
@@ -807,6 +814,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
+                                                            , credit     = credit edgeContext -- FIXME
                                                             }
                 rebuild _                     edgeContext = reflow $ edgeContext
                                                             {
@@ -831,6 +839,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                             , cashes     = []
                                                             , impacts    = []
                                                             , reference  = Nothing
+                                                            , credit     = credit edgeContext
                                                             }
                 context' =
                   if years == head yearses
