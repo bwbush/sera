@@ -1,5 +1,5 @@
 name: sera
-version: 3.3.0.0
+version: 3.3.0.1
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -78,6 +78,7 @@ library
                     SERA.Finance.Summarization
                     SERA.Finance.Types
                     SERA.Infrastructure
+                    SERA.Infrastructure.Flows
                     SERA.Infrastructure.Optimization
                     SERA.Material
                     SERA.Network
