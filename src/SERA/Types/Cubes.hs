@@ -42,6 +42,7 @@ module SERA.Types.Cubes (
 , ModelYearCube
 , NodeCube
 , PathwayCube
+, PeriodCube
 , PriceCube
 , ProcessCostCube
 , ProcessInputCube
@@ -73,7 +74,7 @@ import Data.Daft.DataCube (Rekeyer(..), evaluate, rekey)
 import Data.Vinyl.Derived (ElField(Field), getField)
 import Data.Vinyl.Core (Rec((:&)))
 import Data.Vinyl.TypeLevel (type (++))
-import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRegion, FRent, FSale, FSales, FSalvage, FStage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone, Region, Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, fModelYear, FPollutant, FPurchases, FStock, Survival, FSurvival, fSurvival, FTravel, Vehicle, FVehicle, fVehicle, Vocation, FVocation, fVocation, FWilderRegion, fWilderRegion, Year, FOwnershipExpense, FVehicleExpense, FTravelExpense, FFuelExpense)
+import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDuration, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPeriod, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRegion, FRent, FSale, FSales, FSalvage, FStage, FStorage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone, Region, Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, fModelYear, FPollutant, FPurchases, FStock, Survival, FSurvival, fSurvival, FTravel, Vehicle, FVehicle, fVehicle, Vocation, FVocation, fVocation, FWilderRegion, fWilderRegion, Year, FOwnershipExpense, FVehicleExpense, FTravelExpense, FFuelExpense)
 import SERA.Types.Records (ProcessCost)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Maybe (fromMaybe)
@@ -89,13 +90,13 @@ type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProdu
 type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate, FConsumptionRateStretch]
 
 
-type DemandAreaCube = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption, FArea]
+type DemandAreaCube = '[FLocation, FYear, FPeriod] *↝ '[FFuelConsumption, FNonFuelConsumption, FArea]
 
 
-type DemandCube = '[FLocation, FYear] *↝ '[FFuelConsumption, FNonFuelConsumption]
+type DemandCube = '[FLocation, FYear, FPeriod] *↝ '[FFuelConsumption, FNonFuelConsumption]
 
 
-type ExistingCube = '[FInfrastructure] *↝ '[FTechnology, FLocation, FYear, FCapacity, FYield, FCost]
+type ExistingCube = '[FInfrastructure] *↝ '[FTechnology, FLocation, FYear, FPeriod, FCapacity, FYield, FCost]
 
 
 type FlowCube = '[FInfrastructure, FYear] *↝ '[FTechnology, FProduction, FFlow, FLoss, FSale, FSalvage, FGeometry]
@@ -119,6 +120,9 @@ type NodeCube = '[FLocation] *↝ '[FX, FY, FArea, FProductive, FSale, FRent]
 type PathwayCube = '[FPathway, FStage] *↝  '[FTechnology, FYield, FExtended, FTransmission, FDelivery, FFormat]
 
 
+type PeriodCube = '[FPeriod] *↝ '[FDuration]
+
+
 type PriceCube key = (key ++ '[FMaterial, FYear, FQuantity]) *↝ '[FPrice, FBillable]
 
 
@@ -128,7 +132,7 @@ type ProcessCostCube = ProcessKey *↝ ProcessCost
 type ProcessInputCube = ConsumptionCube ProcessKey'
 
 
-type ProcessKey = '[FTechnology, FYear, FNameplate, FDutyCycle]
+type ProcessKey = '[FTechnology, FYear, FNameplate, FStorage, FDutyCycle]
 
 
 type ProcessKey' = '[FTechnology, FYear, FNameplate]

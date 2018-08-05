@@ -31,7 +31,7 @@ module SERA.Types.Records (
 
 
 import Data.Vinyl.Derived (FieldRec)
-import SERA.Types.Fields (FArea, FCapitalCostStretch, FCostCategory, FFuelConsumption, FDelivery, FInfrastructure, FLength, FLocation, FNameplate, FCapitalCost, FDutyCycle, FFixedCost, FFixedCostStretch, FFlow, FFrom, FImpactCategory, FLifetime, FLoss, FMaterial, FNonFuelConsumption, FPosition, FProduction, FProductive, FQuantity, FRent, FSale, FSalvage, FScaling, FTechnology, FTo, FTransmission, FVariableCost, FVariableCostStretch, FX, FY, FYear)
+import SERA.Types.Fields (FArea, FCapitalCostStretch, FCostCategory, FFuelConsumption, FDelivery, FInfrastructure, FLength, FLocation, FNameplate, FCapitalCost, FDutyCycle, FFixedCost, FFixedCostStretch, FFlow, FFrom, FImpactCategory, FLifetime, FLoss, FMaterial, FNonFuelConsumption, FPeriod, FPosition, FProduction, FProductive, FQuantity, FRent, FSale, FSalvage, FScaling, FTechnology, FTo, FTransmission, FVariableCost, FVariableCostStretch, FX, FY, FYear)
 
 
 type Cash = FieldRec '[FInfrastructure, FYear, FCostCategory, FSale]
@@ -40,7 +40,7 @@ type Cash = FieldRec '[FInfrastructure, FYear, FCostCategory, FSale]
 type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost]
 
 
-type DemandRec = FieldRec '[FLocation, FYear, FFuelConsumption, FNonFuelConsumption]
+type DemandRec = FieldRec '[FLocation, FYear, FPeriod, FFuelConsumption, FNonFuelConsumption]
 
 
 type Flow = FieldRec '[FInfrastructure, FYear, FTechnology, FProduction, FFlow, FLoss, FSale, FSalvage]

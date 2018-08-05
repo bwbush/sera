@@ -43,12 +43,16 @@ import SERA.Material (Pricer, localize, makePricer)
 import SERA.Network (Network(..))
 import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
-import SERA.Types.Cubes (DemandCube, IntensityCube, PriceCube)
-import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fNonFuelConsumption, fSale, fSalvage, Pathway(..), fPathway, Productive(..), fProductive, fQuantity, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Cubes (DemandCube, IntensityCube, PeriodCube, PriceCube)
+import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fFuelConsumption, fLength, Location, FLocation, fLocation, fNonFuelConsumption, fSale, fSalvage, Pathway(..), fPathway, Period(..), fPeriod, Productive(..), fProductive, fQuantity, fStage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+
+
+entireYear :: Period
+entireYear = Period "Year"
 
 
 prioritization :: Double -> Double
@@ -344,7 +348,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                              builder    = Nothing
                                                            , capacity   = [
                                                                             maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec)
-                                                                              $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
+                                                                              $ demandCube `evaluate` (fLocation =: location <+> fYear =: year <+> fPeriod =: entireYear)
                                                                           |
                                                                             year <- yearz
                                                                           ]
@@ -784,8 +788,8 @@ flowFunction year (Capacity flow) context edge =
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
-optimize :: SeraLog m => [[Year]] -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> Double -> Double -> Strategy -> m (Bool, Optimum)
-optimize yearses network demandCube intensityCube processLibrary priceCube discountRate _escalationRate strategy =
+optimize :: SeraLog m => [[Year]] -> PeriodCube -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> Double -> Double -> Strategy -> m (Bool, Optimum)
+optimize yearses periodCube network demandCube intensityCube processLibrary priceCube discountRate _escalationRate strategy =
   do
     let
       graph = networkGraph network demandCube processLibrary
@@ -806,7 +810,7 @@ optimize yearses network demandCube intensityCube processLibrary priceCube disco
                                                               builder    = Nothing
                                                             , capacity   = [
                                                                              maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec)
-                                                                               $ demandCube `evaluate` (fLocation =: location <+> fYear =: year)
+                                                                               $ demandCube `evaluate` (fLocation =: location <+> fYear =: year <+> fPeriod =: entireYear)
                                                                            |
                                                                              year <- years
                                                                            ] -- FIXME: Is this needed?

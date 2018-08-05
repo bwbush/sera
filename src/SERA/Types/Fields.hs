@@ -41,6 +41,7 @@ module SERA.Types.Fields (
 , ModelYear
 , OwnershipExpense(..)
 , Pathway(..)
+, Period(..)
 , Pollutant
 , Position(..)
 , Productive(..)
@@ -75,6 +76,7 @@ module SERA.Types.Fields (
 , FCostCategory
 , FDelivery
 , FDistance
+, FDuration
 , FDutyCycle
 , FEmission
 , FEmissionRate
@@ -105,6 +107,7 @@ module SERA.Types.Fields (
 , FNetPrice
 , FNonFuelConsumption
 , FPathway
+, FPeriod
 , FPollutant
 , FPosition
 , FPrice
@@ -124,6 +127,7 @@ module SERA.Types.Fields (
 , FScaling
 , FStage
 , FStock
+, FStorage
 , FSurvival
 , FTechnology
 , FTerritory
@@ -166,6 +170,7 @@ module SERA.Types.Fields (
 , fCostCategory
 , fDelivery
 , fDistance
+, fDuration
 , fDutyCycle
 , fEmission
 , fEmissionRate
@@ -196,6 +201,7 @@ module SERA.Types.Fields (
 , fNetPrice
 , fNonFuelConsumption
 , fPathway
+, fPeriod
 , fPollutant
 , fPosition
 , fPrice
@@ -215,6 +221,7 @@ module SERA.Types.Fields (
 , fScaling
 , fStage
 , fStock
+, fStorage
 , fSurvival
 , fTechnology
 , fTerritory
@@ -523,3 +530,13 @@ data OwnershipExpense =
     deriving (Eq, Ord, Read, Show)
 
 $(makeField "OwnershipExpense"    "Expense Type" ''OwnershipExpense)
+
+
+
+$(makeField "Storage" "Storage Capacity [kg]" ''Double)
+
+
+$(makeStringField "Period" "Period") 
+
+
+$(makeField "Duration" "Duration [yr/yr]" ''Double)

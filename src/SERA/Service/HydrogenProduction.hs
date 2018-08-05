@@ -46,7 +46,7 @@ import Data.String (IsString)
 import Data.Vinyl.Derived (FieldRec)
 import GHC.Generics (Generic)
 import SERA (SeraLog)
-import SERA.Demand (checkDemands, readDemands)
+import SERA.Demand (checkDemands, readDemands, readPeriods)
 import SERA.Infrastructure (InfrastructureFiles(..))
 import SERA.Infrastructure.Optimization (Optimum(..), Strategy(..), optimize)
 import SERA.Material (checkIntensities, checkPrices, materials, readIntensities, readPrices, rezoneIntensities, rezonePrices, upstreamMaterials)
@@ -76,6 +76,7 @@ data ConfigProduction =
   , pathwayFiles        :: [FilePath]
   , networkFiles        :: NetworkFiles
   , demandFiles         :: [FilePath]
+  , periodFiles         :: [FilePath]
   , infrastructureFiles :: InfrastructureFiles
   }
     deriving (Eq, Generic, Ord, Read, Show)
@@ -92,6 +93,9 @@ productionMain :: (IsString e, MonadError e m, MonadIO m, SeraLog m)
 productionMain ConfigProduction{..} =
 
   do
+
+    logInfo ""
+    periodCube <- readPeriods periodFiles
 
     logInfo ""
     priceCube' <- readPrices priceFiles
@@ -156,6 +160,7 @@ productionMain ConfigProduction{..} =
     (failure, Optimum constructions flows cashes impacts) <-
       optimize
         (chunksOf timeWindow [firstYear..lastYear])
+        periodCube
         network
         demandCube'
         intensityCube
