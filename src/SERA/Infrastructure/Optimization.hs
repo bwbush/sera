@@ -859,7 +859,7 @@ optimize' graph context@NetworkContext{..} =
                                                {
                                                  capacity   = case builder edgeContext of
                                                                 Nothing -> capacity edgeContext
-                                                                Just _  -> constantFlows timeContext [
+                                                                Just _  -> constantFlows timeContext [ -- FIXME: Is the needed?
                                                                              sum
                                                                                [
                                                                                  if fYear <: fixed' <= year
