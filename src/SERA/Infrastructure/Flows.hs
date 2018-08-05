@@ -5,11 +5,11 @@ module SERA.Infrastructure.Flows where
 
 
 import Control.Arrow (second)
-import Control.Monad (ap)
+import Control.Monad (ap, guard)
 import Data.Daft.DataCube (evaluate)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
-import SERA.Types.Cubes (DemandCube)
-import SERA.Types.Fields (fFuelConsumption, Location, fLocation, fNonFuelConsumption, Period(..), fPeriod, Year, fYear)
+import SERA.Types.Cubes (DemandCube, ExistingCube)
+import SERA.Types.Fields (fCapacity, fFuelConsumption, Infrastructure, fInfrastructure, Location, fLocation, fNonFuelConsumption, Period(..), fPeriod, Year, fYear)
 
 
 data TimeContext =
@@ -97,6 +97,28 @@ varyingFlows TimeContext{..} demandCube location =
           duration
         , maybe 0 (\rec -> fFuelConsumption <: rec + fNonFuelConsumption <: rec)
           $ demandCube `evaluate` (fLocation =: location <+> fYear =: year <+> fPeriod =: period)
+        )
+      |
+        (period, duration) <- zip periods durations
+      ]
+    |
+      year <- yearz
+    ]
+
+
+varyingFlows':: TimeContext -> ExistingCube -> Infrastructure -> VaryingFlows
+varyingFlows' TimeContext{..} existingCube infrastructure =
+  VaryingFlows
+    [
+      VaryingFlow [
+        (
+          duration
+        , maybe 0 (\rec -> fCapacity <: rec)
+          $ do
+             existing <- existingCube `evaluate` (fInfrastructure =: infrastructure <+> fPeriod =: period)
+             guard
+               $ fYear <: existing <= year
+             return existing
         )
       |
         (period, duration) <- zip periods durations

@@ -96,7 +96,7 @@ type DemandAreaCube = '[FLocation, FYear, FPeriod] *↝ '[FFuelConsumption, FNon
 type DemandCube = '[FLocation, FYear, FPeriod] *↝ '[FFuelConsumption, FNonFuelConsumption]
 
 
-type ExistingCube = '[FInfrastructure] *↝ '[FTechnology, FLocation, FYear, FPeriod, FCapacity, FYield, FCost]
+type ExistingCube = '[FInfrastructure, FPeriod] *↝ '[FTechnology, FLocation, FYear, FCapacity, FYield, FCost]
 
 
 type FlowCube = '[FInfrastructure, FYear] *↝ '[FTechnology, FProduction, FFlow, FLoss, FSale, FSalvage, FGeometry]
