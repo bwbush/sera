@@ -52,6 +52,9 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 
+trace' = if False then trace else const id
+
+
 entireYear :: Period
 entireYear = Period "Year"
 
@@ -349,7 +352,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
               DemandEdge location                       -> EdgeContext
                                                            {
                                                              builder    = Nothing
-                                                           , capacity   = varyingFlows timeContext demandCube location
+                                                           , capacity   = (\x -> trace' ("DEMAND\t" ++ show location ++ "\t" ++ show x) x) $ varyingFlows timeContext demandCube location
                                                            , reserved   = zeroFlows timeContext
                                                            , fixed      = []
                                                            , adjustable = Nothing
@@ -702,7 +705,7 @@ costFunction _ _ _ _ = Nothing -- error "costFunction: no flow."
 
 capacityFunction :: [Year] -> NetworkContext -> Edge -> Maybe (Capacity, NetworkContext)
 capacityFunction year context edge =
-  case edgeContexts context M.! edge of
+  (\x -> trace' ("CAPACITY\t" ++ show edge ++ "\t" ++ show (fst <$> x)) x) $ case edgeContexts context M.! edge of
     EdgeContext{..}          -> do
                                   let
                                     canBuild =  canBuild' year (veryConstantFlows (timeContext context) 1) builder
@@ -736,7 +739,7 @@ flowFunction year (Capacity flow) context edge =
               EdgeReverseContext edge' -> (\z -> capacity z .-. abs (reserved z)) &&& builder $ edgeContexts context M.! edge'
           canBuild =  canBuild' year flow builder'
         guard
-          $ (zeroFlows $ timeContext context) #<# capacity' || canBuild
+          $ zeroFlows (timeContext context) #<# capacity' || canBuild
         case edge of
           DemandEdge _                              -> return . update $ edgeContext { reserved = reserved edgeContext .+. flow}
           ExistingEdge _                            -> return . update $ let
@@ -750,7 +753,7 @@ flowFunction year (Capacity flow) context edge =
                                                                   , impacts  = impacts'
                                                                   }
           PathwayReverseEdge location pathway stage -> return $ flowFunction year (Capacity (negate flow)) context $ PathwayForwardEdge location pathway stage
-          _                                         -> update <$> adjustEdge (strategizing context) year flow edgeContext
+          _                                         -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show flow) $ update <$> adjustEdge (strategizing context) year flow edgeContext
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 

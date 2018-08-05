@@ -77,7 +77,7 @@ zeroFlows' (VaryingFlows dfs) = VaryingFlows $ VaryingFlow . (second (const 0) <
 
 
 veryConstantFlows :: TimeContext -> Double -> VaryingFlows
-veryConstantFlows tc@TimeContext{..} =  constantFlows tc . replicate (length durations)
+veryConstantFlows tc@TimeContext{..} =  constantFlows tc . replicate (length yearz)
 
 
 constantFlows :: TimeContext -> [Double] -> VaryingFlows
