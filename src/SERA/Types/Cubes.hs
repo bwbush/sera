@@ -74,7 +74,7 @@ import Data.Daft.DataCube (Rekeyer(..), evaluate, rekey)
 import Data.Vinyl.Derived (ElField(Field), getField)
 import Data.Vinyl.Core (Rec((:&)))
 import Data.Vinyl.TypeLevel (type (++))
-import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDuration, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPeriod, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRegion, FRent, FSale, FSales, FSalvage, FStage, FStorage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone, Region, Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, fModelYear, FPollutant, FPurchases, FStock, Survival, FSurvival, fSurvival, FTravel, Vehicle, FVehicle, fVehicle, Vocation, FVocation, fVocation, FWilderRegion, fWilderRegion, Year, FOwnershipExpense, FVehicleExpense, FTravelExpense, FFuelExpense)
+import SERA.Types.Fields (FArea, FBillable, FCapacity, FCapitalCost, FCategory, FConsumption, FConsumptionRate, FConsumptionRateStretch, FCost, FCostCategory, FDelivery, FDuration, FDutyCycle, FExtended, FFixedCost, FFlow, FFormat, FFraction, FFrom, FFuelConsumption, FGeometry, FImpactCategory, FInfrastructure, FIntensity, FLength, FLifetime, FLocation, FLoss, FMaterial, FNameplate, FNetPrice, FNonFuelConsumption, FPathway, FPeriod, FPosition, FPrice, FProduction, FProductionRate, FProductionRateStretch, FProductive, FQuantity, FRegion, FRent, FSale, FSales, FSalvage, FStage, FStorage, FTechnology, FTerritory, FTo, FTransmission, FUpstreamMaterial, FVariableCost, FX, FY, FYear, FYield, FZone, Region, Age, FAge, fAge, FAnnualTravel, FEmission, FEmissionRate, FEnergy, FFuel, FFuelEfficiency, FFuelSplit, FMarketShare, FModelYear, fModelYear, FPollutant, FPurchases, FStock, Survival, FSurvival, fSurvival, FTravel, Vehicle, FVehicle, fVehicle, Vocation, FVocation, fVocation, FWilderRegion, fWilderRegion, Year, FOwnershipExpense, FVehicleExpense, FTravelExpense, FFuelExpense)
 import SERA.Types.Records (ProcessCost)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Maybe (fromMaybe)
@@ -217,16 +217,16 @@ asSurvivalFunction cube region vocation vehicle modelYear age =
     <$> evaluate cube (fWilderRegion =: region <+> fVocation =: vocation <+> fVehicle =: vehicle <+> fModelYear =: modelYear <+> fAge =: age)
 
 
-type VehicleExpenseCube = '[FWilderRegion, FVocation, FVehicle, FModelYear] ↝ '[FVehicleExpense]
+type VehicleExpenseCube = '[FWilderRegion, FVocation, FVehicle, FModelYear, FCategory] ↝ '[FVehicleExpense]
 
 
-type TravelExpenseCube = '[FWilderRegion, FVocation, FVehicle, FModelYear, FAge] ↝ '[FTravelExpense]
+type TravelExpenseCube = '[FWilderRegion, FVocation, FVehicle, FModelYear, FAge, FCategory] ↝ '[FTravelExpense]
 
 
-type FuelExpenseCube = '[FWilderRegion, FYear, FFuel] ↝ '[FFuelExpense]
+type FuelExpenseCube = '[FWilderRegion, FYear, FFuel, FCategory] ↝ '[FFuelExpense]
 
 
-type OwnershipExpenseCube = '[FYear, FWilderRegion, FVocation, FVehicle, FOwnershipExpense] ↝ '[FSale]
+type OwnershipExpenseCube = '[FYear, FWilderRegion, FVocation, FVehicle, FOwnershipExpense, FCategory] ↝ '[FSale]
 
 
 wilderRegions :: Ord (Rec ElField k)

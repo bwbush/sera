@@ -67,6 +67,7 @@ module SERA.Types.Fields (
 , FCapacity
 , FCapitalCost
 , FCapitalCostStretch
+, FCategory
 , FCluster
 , FCondition
 , FConsumption
@@ -161,6 +162,7 @@ module SERA.Types.Fields (
 , fCapacity
 , fCapitalCost
 , fCapitalCostStretch
+, fCategory
 , fCluster
 , fCondition
 , fConsumption
@@ -532,7 +534,6 @@ data OwnershipExpense =
 $(makeField "OwnershipExpense"    "Expense Type" ''OwnershipExpense)
 
 
-
 $(makeField "Storage" "Storage Capacity [kg]" ''Double)
 
 
@@ -540,3 +541,6 @@ $(makeStringField "Period" "Period")
 
 
 $(makeField "Duration" "Duration [yr/yr]" ''Double)
+
+
+$(makeStringField "Category" "Category")
