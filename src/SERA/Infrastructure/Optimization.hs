@@ -157,8 +157,8 @@ networkGraph Network{..} demandCube ProcessLibrary{..} =
       , let location = fLocation <: link
             from = fFrom <: link
             to   = fTo   <: link
-            from' = PathwayVertex from pathway stage
-            to'   = PathwayVertex to   pathway stage
+            from' = PathwayVertex from pathway stage'
+            to'   = PathwayVertex to   pathway stage'
       ]
     |
       pathway <- S.toList $ S.map (fPathway <:) $ knownKeys pathwayCube
