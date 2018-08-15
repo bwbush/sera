@@ -44,8 +44,8 @@ import qualified Data.Set as S (findMin, map, toList)
 
 
 -- | Add calendar year to a key.
-byYear :: '[FWilderRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v  -- ^ The data cube.
-       -> '[FYear, FWilderRegion, FVocation, FVehicle, FModelYear] ↝ v -- ^ The data cube year added to the key.
+byYear :: '[       FWilderRegion, FModelYear, FVocation, FVehicle, FAge] ↝ v  -- ^ The data cube.
+       -> '[FYear, FWilderRegion, FVocation, FVehicle, FModelYear, FAge] ↝ v -- ^ The data cube year added to the key.
 byYear =
   rekey Rekeyer{..}
     where
@@ -70,7 +70,7 @@ computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuel
     modelYears = ω regionalPurchases :: Set (FieldRec '[FModelYear])
     firstYear = fModelYear <: S.findMin modelYears
     years = ((fYear =:) . tame . (fModelYear <:)) `S.map` modelYears
-    ages = ((fAge =:) . liftA2 (-) firstYear . (fModelYear <:)) `S.map`  modelYears
+    ages = ((fAge =:) . liftA2 (flip (-)) firstYear . (fModelYear <:)) `S.map` modelYears
     fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
     traveling key rec =
       let
@@ -82,8 +82,8 @@ computeStock regionalPurchases marketShares survival annualTravel fuelSplit fuel
             fPurchases  =: sales'
         <+> fStock  =: stock
         <+> fTravel =: travel'
-    travel =
-      ρ (years × ω marketShares)
+    travel = 
+      ρ (years × (ω marketShares :: Set (FieldRec '[FWilderRegion, FVocation, FVehicle, FModelYear])) × ages)
       $ byYear
       (
         π traveling
@@ -168,9 +168,9 @@ recomputeStock regionalPurchases' travelReduction survival annualTravel fuelSpli
   let
     regionalPurchases = wilderRegions regionalPurchases'
     modelYears = ω regionalPurchases :: Set (FieldRec '[FModelYear])
-    firstYear = fModelYear <: (S.findMin modelYears)
+    firstYear = fModelYear <: S.findMin modelYears
     years = ((fYear =:) . tame . (fModelYear <:)) `S.map` modelYears
-    ages = ((fAge =:) . (liftA2 (-) firstYear) . (fModelYear <:)) `S.map`  modelYears
+    ages = ((fAge =:) . liftA2 (flip (-)) firstYear . (fModelYear <:)) `S.map` modelYears
     fuels = ω fuelEfficiency :: Set (FieldRec '[FFuel])
     traveling key rec =
       let
@@ -183,7 +183,7 @@ recomputeStock regionalPurchases' travelReduction survival annualTravel fuelSpli
         <+> fStock  =: stock
         <+> fTravel =: travel'
     travel =
-      ρ (years × ω regionalPurchases)
+      ρ (years × (ω regionalPurchases :: Set (FieldRec '[FWilderRegion, FVocation, FVehicle, FModelYear])) × ages)
       $ byYear
       (
         π traveling
