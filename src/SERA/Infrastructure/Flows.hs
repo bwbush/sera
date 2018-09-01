@@ -193,6 +193,15 @@ VaryingFlows x #<# VaryingFlows y =
     x' /= y' && and (zipWith (<=) x' y')
 
 
+compatibleFlow :: VaryingFlows -> VaryingFlows -> Bool
+VaryingFlows x `compatibleFlow` VaryingFlows y =
+  let
+    x' = abs . snd <$> concat (unvaryingFlow <$> x)
+    y' =       snd <$> concat (unvaryingFlow <$> y)
+  in
+    and (zipWith (\x'' y'' -> (x'' /= 0) == (y'' /= 0)) x' y')
+
+
 sumAbs :: VaryingFlows -> Double
 sumAbs (VaryingFlows dfs) = sum $ abs . uncurry (*) <$> concat (unvaryingFlow <$> dfs)
 

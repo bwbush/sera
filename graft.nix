@@ -1,11 +1,11 @@
 { mkDerivation, fetchgit, base, containers, heaps, raft, stringbuilder, stdenv }:
 mkDerivation {
   pname = "graft";
-  version = "0.1.2.10";
+  version = "0.1.2.11";
   src = fetchgit {
     url = "git://10.40.9.156/";
-    rev = "6b4a8e6f66765f5053cdceaced990ac613bafd9f";
-    sha256 = "14h6w21yypzqipih6b1gxxz52nwx2aw0cnfjb81x7r52j7m7hdnq";
+    rev = "49475b5d32a3d957c00d78d444f6f2a4c647130b";
+    sha256 = "1zgpc8h9766cg92a1w88bxj9bfrb60b9dkmfscp765walfgf8w5w";
   };
   libraryHaskellDepends = [ base containers heaps raft stringbuilder ];
   homepage = "https://bitbucket.org/functionally/graft";

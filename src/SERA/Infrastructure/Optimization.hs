@@ -348,7 +348,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
               DemandEdge location                       -> EdgeContext
                                                            {
                                                              builder    = Nothing
-                                                           , capacity   = (\x -> trace' ("DEMAND\t" ++ show location ++ "\t" ++ show x) x) $ varyingFlows timeContext demandCube location
+                                                           , capacity   = varyingFlows timeContext demandCube location
                                                            , reserved   = zeroFlows timeContext
                                                            , fixed      = []
                                                            , adjustable = Nothing
@@ -671,10 +671,13 @@ instance Monoid Capacity where
                                                                              (VaryingFlow x', VaryingFlow y') <- zip x y
                                                                            ]
 
+positiveFlow :: VaryingFlows -> Bool
+positiveFlow (VaryingFlows x) = or $ any ((> 0) . snd) . unvaryingFlow <$> x
+
 
 costFunction :: [Year] -> Capacity -> NetworkContext -> Edge -> Maybe (Sum Double, NetworkContext)
 costFunction year (Capacity flow) context edge =
-  do
+  (\x -> trace' ("COST\t" ++ show edge ++ "\t" ++ show (fst <$> x) ++ "\t" ++ show flow) x) $ do
     let
       edgeContext = edgeContexts context M.! edge
       (capacity', builder') =
@@ -683,7 +686,7 @@ costFunction year (Capacity flow) context edge =
           EdgeReverseContext edge' -> (\z -> capacity z .-. (absFlows $ reserved z)) &&& builder $ edgeContexts context M.! edge'
       canBuild =  canBuild' year flow builder'
     guard
-      $ (zeroFlows' capacity') #<# capacity' || canBuild
+      $ positiveFlow capacity' && compatibleFlow capacity' flow || canBuild
     case edge of
       DemandEdge _                              -> return (Sum $ debit edgeContext, context)
       ExistingEdge _                            -> return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
@@ -728,10 +731,10 @@ flowFunction year (Capacity flow) context edge =
               EdgeReverseContext edge' -> (\z -> capacity z .-. abs (reserved z)) &&& builder $ edgeContexts context M.! edge'
           canBuild =  canBuild' year flow builder'
         guard
-          $ zeroFlows (timeContext context) #<# capacity' || canBuild
+          $ positiveFlow capacity' || canBuild
         case edge of
-          DemandEdge _                              -> return . update $ edgeContext { reserved = reserved edgeContext .+. flow}
-          ExistingEdge _                            -> return . update $ let
+          DemandEdge _                              -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show flow) $ return . update $ edgeContext { reserved = reserved edgeContext .+. flow}
+          ExistingEdge _                            -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show flow) $ return . update $ let
                                                                   (flows', cashes', impacts') = costEdge' (strategizing context) year (zeroFlows $ timeContext context) $ edgeContext { reserved = reserved edgeContext .+. flow }
                                                                 in
                                                                   edgeContext
@@ -767,7 +770,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                 rebuild (DemandEdge location) edgeContext = edgeContext
                                                             {
                                                               builder    = Nothing
-                                                            , capacity   = (\x -> trace' ("DEMAND\t" ++ show location ++ "\t" ++ show x ++ "\t" ++ show years ++ "\t" ++ show timeContext') x) $ varyingFlows timeContext' demandCube location
+                                                            , capacity   = varyingFlows timeContext' demandCube location
                                                             , reserved   = zeroFlows timeContext'
                                                             , fixed      = []
                                                             , adjustable = Nothing
