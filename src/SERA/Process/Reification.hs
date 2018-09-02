@@ -47,7 +47,7 @@ import SERA (trace')
 import SERA.Material (Pricer)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (IntensityCube)
-import SERA.Types.Fields (fCapitalCost, fCapitalCostStretch, CostCategory(..), fConsumptionRate, fConsumptionRateStretch, fCostCategory, FDutyCycle, fDutyCycle, fFixedCost, fFixedCostStretch, fFlow, ImpactCategory(..), fImpactCategory, FInfrastructure, fInfrastructure, FIntensity, fIntensity, fLength, fLifetime, FLocation, fLoss, Material, FMaterial, fMaterial, FNameplate, fNameplate, fProduction, fProductionRate, fProductionRateStretch, Productive(..), fProductive, fQuantity, fSale, fSalvage, fScaling, Technology, FTechnology, fTechnology, FUpstreamMaterial, fUpstreamMaterial, fVariableCost, fVariableCostStretch, Year, FYear, fYear)
+import SERA.Types.Fields (fCapitalCost, fCapitalCostStretch, CostCategory(..), fConsumptionRate, fConsumptionRateStretch, fCostCategory, FDutyCycle, fDutyCycle, fFixedCost, fFixedCostStretch, fFlow, ImpactCategory(..), fImpactCategory, FInfrastructure, fInfrastructure, FIntensity, fIntensity, fLength, fLifetime, FLocation, fLoss, Material, FMaterial, fMaterial, FNameplate, fNameplate, fProduction, fProductionRate, fProductionRateStretch, Productive(..), fProductive, fQuantity, fSale, fSalvage, fScaling, fStorage, Technology, FTechnology, fTechnology, FUpstreamMaterial, fUpstreamMaterial, fVariableCost, fVariableCostStretch, Year, FYear, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact, ProcessCost)
 
 import qualified Data.Set as S (toList)
@@ -229,6 +229,7 @@ technologyReifier processLibrary@ProcessLibrary{..} intensityCube specifics buil
       costs =  processCostCube ! specification :: FieldRec ProcessCost
       distance = if fProductive <: costs == Central then 0 else distance'
       capacity = maximum [demand / fDutyCycle <: specification, fNameplate <: specification]
+      storage = fStorage <: specification * capacity / fNameplate <: specification
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
           * (capacity / fNameplate <: specification) ** (fScaling <: costs)
@@ -240,6 +241,7 @@ technologyReifier processLibrary@ProcessLibrary{..} intensityCube specifics buil
         <+> fLifetime     =: fLifetime <: costs
         <+> fNameplate    =: capacity
         <+> fDutyCycle    =: fDutyCycle <: specification
+        <+> fStorage      =: storage
         <+> fLength       =: distance
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
