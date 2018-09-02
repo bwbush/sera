@@ -196,10 +196,10 @@ VaryingFlows x #<# VaryingFlows y =
 compatibleFlow :: VaryingFlows -> VaryingFlows -> Bool
 VaryingFlows x `compatibleFlow` VaryingFlows y =
   let
-    x' = abs . snd <$> concat (unvaryingFlow <$> x)
-    y' =       snd <$> concat (unvaryingFlow <$> y)
+    x' = snd <$> concat (unvaryingFlow <$> x)
+    y' = snd <$> concat (unvaryingFlow <$> y)
   in
-    and (zipWith (\x'' y'' -> (x'' /= 0) == (y'' /= 0)) x' y')
+    and (zipWith (\x'' y'' -> x'' /= 0 || y'' == 0) x' y')
 
 
 sumAbs :: VaryingFlows -> Double
