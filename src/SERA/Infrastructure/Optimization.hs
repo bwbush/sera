@@ -859,6 +859,8 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
 -- TODO: change in file format
 -- TODO: walk graph and rewrite as storage becomes advantageous
 -- TODO: record storage costs
+-- TODO: turn off storage model
+-- TODO: aggressiveness of seeking storage optimization
     sequence_
       [
         logInfo $ show edge
