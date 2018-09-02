@@ -202,6 +202,41 @@ VaryingFlows x `compatibleFlow` VaryingFlows y =
     and (zipWith (\x'' y'' -> x'' /= 0 || y'' == 0) x' y')
 
 
+storageRequirements :: VaryingFlows -> Double
+storageRequirements (VaryingFlows xs) = maximum $ storageRequirement <$> xs
+
+
+storageRequirement :: VaryingFlow -> Double
+storageRequirement (VaryingFlow x) =
+  let
+    average = sum $ uncurry (*) <$> x
+    x' = second (flip (-) average) <$> x
+    cumulative = scanl1 (+) $ uncurry (*) <$> x'
+  in
+    maximum cumulative - minimum cumulative
+
+
+levelizeCapacities :: VaryingFlows -> VaryingFlows
+levelizeCapacities (VaryingFlows xs) = VaryingFlows $ levelizeCapacity <$> xs
+
+
+levelizeCapacity :: VaryingFlow -> VaryingFlow
+levelizeCapacity (VaryingFlow x) =
+  let
+    average = sum $ uncurry (*) <$> x
+  in
+    VaryingFlow $ second (const average) <$> x
+
+
+utilization :: VaryingFlows -> Double
+utilization (VaryingFlows xs) =
+  let
+    total = sum $ sumFlow <$> xs
+    peak = maximum $ peakFlow <$> xs
+  in
+    abs $ total / peak
+
+
 sumAbs :: VaryingFlows -> Double
 sumAbs (VaryingFlows dfs) = sum $ abs . uncurry (*) <$> concat (unvaryingFlow <$> dfs)
 

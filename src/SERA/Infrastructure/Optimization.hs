@@ -562,6 +562,40 @@ costTechnology pricer year flow TechnologyContext{..} =                         
       else ([flows'], cashes', impacts', residue)
 
 
+rebuildEdgeContext :: String -> [Year] -> VaryingFlows -> EdgeContext -> EdgeContext
+rebuildEdgeContext label years reserved' edgeContext@EdgeContext{..} =
+  let
+    flow = foldl mostExtreme 0 . fmap snd . unvaryingFlow <$> unvaryingFlows reserved'
+    Just builder' = builder
+    Just adjustable' = builder' (length fixed + 1) years flow
+  in
+    {- (\x -> trace (label ++ "\tBEFORE\t" ++ show reserved ++ "\t" ++ show (utilization reserved) ++ "\t" ++ show capacity ++ "\tAFTER\t" ++ show reserved' ++ "\t" ++ show (utilization reserved') ++ "\t" ++ show (SERA.Infrastructure.Optimization.capacity x)) x) $ -} edgeContext
+    {
+      capacity = constantFlows' reserved' [
+                   sum
+                     [
+                       if fYear <: fixed' <= year
+                         then fNameplate <: fixed' * fDutyCycle <: fixed'
+                         else 0
+                     | fixed' <- construction <$> adjustable' : fixed
+                     ]
+                 |
+                   year <- years
+                 ]
+    , reserved = reserved'
+    , adjustable = Just adjustable'
+    }
+
+
+deltaCost :: Strategy -> Double -> [Year] -> VaryingFlows -> EdgeContext -> Double
+deltaCost strategy discount years reserved' edgeContext@EdgeContext{..} =
+   let
+     oldCost = costEdge strategy discount years (zeroFlows' reserved ) {- $ rebuildEdgeContext "OLD" years reserved  -} edgeContext
+     newCost = costEdge strategy discount years (zeroFlows' reserved')    $ rebuildEdgeContext "NEW" years reserved'    edgeContext
+   in
+     newCost - oldCost / utilization reserved
+
+
 marginalCost :: Strategy -> Double -> [Year] -> VaryingFlows -> EdgeContext -> Double
 marginalCost strategy discount year delta edgeContext =
   fromMaybe
@@ -755,8 +789,8 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
   do
     let
       graph = networkGraph network demandCube processLibrary
-    snd
-      <$> foldlM
+    (context'', answer) <-
+      foldlM
         (
           \(context, (failure, optimum)) years ->
             do
@@ -820,6 +854,58 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
         )
         (undefined, (False, mempty))
         yearses
+-- TODO: fixed vs variable costs
+-- TODO: prlems with input files
+-- TODO: change in file format
+-- TODO: walk graph and rewrite as storage becomes advantageous
+-- TODO: record storage costs
+    sequence_
+      [
+        logInfo $ show edge
+                ++ "\t" ++ show (storageRequirements reserved)
+                ++ "\t" ++ show (
+                                  case edge of
+                                    DemandEdge        {} -> 0
+                                    ExistingEdge      {} -> - totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
+                                    PathwayReverseEdge{} -> inf
+                                    _                    -> deltaCost
+                                                              (strategizing context'')
+                                                              (discounting context'')
+                                                              [2050]
+                                                              (levelizeCapacities reserved)
+                                                              edgeContext
+                                )
+                ++ "\t" ++ show (totalFlow reserved)
+      |
+        (edge, edgeContext) <- M.toList $ edgeContexts context''
+      , case edgeContext of
+          EdgeContext{..} -> positiveFlow reserved
+          _               -> False
+      , let EdgeContext{..} = edgeContext
+      ]
+    logInfo $ "Storage savings: " ++
+      show (
+        sum
+          [
+            case edge of
+              DemandEdge        {} -> 0
+              ExistingEdge      {} -> - totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
+              PathwayReverseEdge{} -> inf
+              _                    -> deltaCost
+                                        (strategizing context'')
+                                        (discounting context'')
+                                        [2050]
+                                        (levelizeCapacities reserved)
+                                        edgeContext
+          |
+            (edge, edgeContext) <- M.toList $ edgeContexts context''
+          , case edgeContext of
+              EdgeContext{..} -> positiveFlow reserved
+              _               -> False
+          , let EdgeContext{..} = edgeContext
+          ]
+      )
+    return answer
 
 
 
