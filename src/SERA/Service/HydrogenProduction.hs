@@ -17,7 +17,6 @@
 {-# LANGUAGE FlexibleContexts  #-} 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE TypeOperators     #-}
 
 
@@ -70,6 +69,7 @@ data ConfigProduction =
   , interpolate         :: Maybe Bool
   , maximumPathLength   :: Maybe Double
   , singleLinkPaths     :: Maybe Bool
+  , storageAvailable    :: Maybe Bool
   , priceFiles          :: [FilePath]
   , intensityFiles      :: [FilePath]
   , processLibraryFiles :: [ProcessLibraryFiles]
@@ -135,10 +135,11 @@ productionMain ConfigProduction{..} =
     list "Priced materials"     $ materials            priceCube'
 
     let
-      strategy'       = fromMaybe LiteralInWindow strategy
-      discountRate'   = fromMaybe 0               discountRate
-      escalationRate' = fromMaybe 0               escalationRate
-      interpolate'    = fromMaybe True            interpolate
+      strategy'         = fromMaybe LiteralInWindow strategy
+      discountRate'     = fromMaybe 0               discountRate
+      escalationRate'   = fromMaybe 0               escalationRate
+      interpolate'      = fromMaybe True            interpolate
+      storageAvailable' = fromMaybe False           storageAvailable
 
     logInfo ""
     logInfo "Optimization parameters:"
@@ -149,6 +150,7 @@ productionMain ConfigProduction{..} =
     logInfo $ "  Discount Rate [/yr]:   " ++ show discountRate'
     logInfo $ "  Escalation Rate [/yr]: " ++ show escalationRate'
     logInfo $ "  Interpolate?           " ++ show interpolate'
+    logInfo $ "  Storage Available?     " ++ show storageAvailable'
 
     let
 
@@ -169,6 +171,7 @@ productionMain ConfigProduction{..} =
         discountRate'
         escalationRate'
         strategy'
+        storageAvailable'
 
     let
 

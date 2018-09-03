@@ -784,8 +784,8 @@ flowFunction year (Capacity flow) context edge =
 flowFunction _ _ _ _ = error "flowFunction: no flow."
 
 
-optimize :: SeraLog m => [[Year]] -> PeriodCube -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> Double -> Double -> Strategy -> m (Bool, Optimum)
-optimize yearses periodCube network demandCube intensityCube processLibrary priceCube discountRate _escalationRate strategy =
+optimize :: SeraLog m => [[Year]] -> PeriodCube -> Network -> DemandCube -> IntensityCube '[FLocation] -> ProcessLibrary -> PriceCube '[FLocation] -> Double -> Double -> Strategy -> Bool -> m (Bool, Optimum)
+optimize yearses periodCube network demandCube intensityCube processLibrary priceCube discountRate _escalationRate strategy storageAvailable =
   do
     let
       graph = networkGraph network demandCube processLibrary
@@ -856,54 +856,55 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
         yearses
 -- TODO: walk graph and rewrite as storage becomes advantageous
 -- TODO: record storage costs
--- TODO: turn off storage model
 -- TODO: aggressiveness of seeking storage optimization
-    sequence_
-      [
-        logInfo $ show edge
-                ++ "\t" ++ show (storageRequirements reserved)
-                ++ "\t" ++ show (
-                                  case edge of
-                                    DemandEdge        {} -> 0
-                                    ExistingEdge      {} -> - totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
-                                    PathwayReverseEdge{} -> inf
-                                    _                    -> deltaCost
-                                                              (strategizing context'')
-                                                              (discounting context'')
-                                                              [2050]
-                                                              (levelizeCapacities reserved)
-                                                              edgeContext
-                                )
-                ++ "\t" ++ show (totalFlow reserved)
-      |
-        (edge, edgeContext) <- M.toList $ edgeContexts context''
-      , case edgeContext of
-          EdgeContext{..} -> positiveFlow reserved
-          _               -> False
-      , let EdgeContext{..} = edgeContext
-      ]
-    logInfo $ "Storage savings: " ++
-      show (
-        sum
-          [
-            case edge of
-              DemandEdge        {} -> 0
-              ExistingEdge      {} -> - totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
-              PathwayReverseEdge{} -> inf
-              _                    -> deltaCost
-                                        (strategizing context'')
-                                        (discounting context'')
-                                        [2050]
-                                        (levelizeCapacities reserved)
-                                        edgeContext
-          |
-            (edge, edgeContext) <- M.toList $ edgeContexts context''
-          , case edgeContext of
-              EdgeContext{..} -> positiveFlow reserved
-              _               -> False
-          , let EdgeContext{..} = edgeContext
-          ]
-      )
+    when storageAvailable
+      $ do
+      when (length yearses > 1)
+        $ error "Storage computations only available when there is just a single optimization period."
+      sequence_
+        [
+          logDebug $ show edge
+                  ++ "\t" ++ show (storageRequirements reserved)
+                  ++ "\t" ++ show (
+                                    case edge of
+                                      DemandEdge        {} -> 0
+                                      ExistingEdge      {} -> - totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
+                                      _                    -> deltaCost
+                                                                (strategizing context'')
+                                                                (discounting context'')
+                                                                (head yearses)
+                                                                (levelizeCapacities reserved)
+                                                                edgeContext
+                                  )
+                  ++ "\t" ++ show (totalFlow reserved)
+        |
+          (edge, edgeContext) <- M.toList $ edgeContexts context''
+        , case edgeContext of
+            EdgeContext{..} -> positiveFlow reserved
+            _               -> False
+        , let EdgeContext{..} = edgeContext
+        ]
+      logNotice $ "Cost of varying flow: " ++
+        show (
+          sum
+            [
+              case edge of
+                DemandEdge        {} -> 0
+                ExistingEdge      {} -> totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
+                _                    -> - deltaCost
+                                            (strategizing context'')
+                                            (discounting context'')
+                                            (head yearses)
+                                            (levelizeCapacities reserved)
+                                            edgeContext
+            |
+              (edge, edgeContext) <- M.toList $ edgeContexts context''
+            , case edgeContext of
+                EdgeContext{..} -> positiveFlow reserved
+                _               -> False
+            , let EdgeContext{..} = edgeContext
+            ]
+        ) ++ " USD."
     return answer
 
 
