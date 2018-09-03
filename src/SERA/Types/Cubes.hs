@@ -84,7 +84,7 @@ import SERA.Util.Wilder (Wilder(Tame), tame)
 type CashCube = '[FInfrastructure, FYear, FCostCategory] *↝ '[FSale, FGeometry]
 
 
-type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FStorage, FLength, FCapitalCost, FFixedCost, FVariableCost, FGeometry]
+type ConstructionCube = '[FInfrastructure] *↝ '[FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost, FStorage, FGeometry]
 
 
 type ConsumptionCube key = (FMaterial ': key) *↝ '[FConsumptionRate, FConsumptionRateStretch]
@@ -132,7 +132,7 @@ type ProcessCostCube = ProcessKey *↝ ProcessCost
 type ProcessInputCube = ConsumptionCube ProcessKey'
 
 
-type ProcessKey = '[FTechnology, FYear, FNameplate, FStorage, FDutyCycle]
+type ProcessKey = '[FTechnology, FYear, FNameplate, FDutyCycle]
 
 
 type ProcessKey' = '[FTechnology, FYear, FNameplate]

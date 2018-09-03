@@ -37,7 +37,7 @@ import SERA.Types.Fields (FArea, FCapitalCostStretch, FCostCategory, FFuelConsum
 type Cash = FieldRec '[FInfrastructure, FYear, FCostCategory, FSale]
 
 
-type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FStorage, FLength, FCapitalCost, FFixedCost, FVariableCost]
+type Construction = FieldRec '[FInfrastructure, FLocation, FTechnology, FProductive, FYear, FLifetime, FNameplate, FDutyCycle, FLength, FCapitalCost, FFixedCost, FVariableCost, FStorage]
 
 
 type DemandRec = FieldRec '[FLocation, FYear, FPeriod, FFuelConsumption, FNonFuelConsumption]
@@ -58,4 +58,4 @@ type Node = FieldRec '[FLocation, FX, FY, FArea, FProductive, FSale, FRent]
 type Link = FieldRec '[FLocation, FFrom, FTo, FLength, FSale, FRent, FTransmission, FDelivery]
 
 
-type ProcessCost = '[FProductive, FLifetime, FScaling, FCapitalCost, FCapitalCostStretch, FFixedCost, FFixedCostStretch, FVariableCost, FVariableCostStretch]
+type ProcessCost = '[FProductive, FLifetime, FScaling, FCapitalCost, FCapitalCostStretch, FFixedCost, FFixedCostStretch, FVariableCost, FVariableCostStretch, FStorage]

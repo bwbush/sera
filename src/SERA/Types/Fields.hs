@@ -49,6 +49,8 @@ module SERA.Types.Fields (
 , Region(..)
 , RelativeMarketShare
 , Stock
+, Storage(..)
+, noStorage
 , Survival
 , Technology(..)
 , Territory(..)
@@ -534,7 +536,11 @@ data OwnershipExpense =
 $(makeField "OwnershipExpense"    "Expense Type" ''OwnershipExpense)
 
 
-$(makeField "Storage" "Storage Capacity [kg]" ''Double)
+$(makeStringField "Storage" "Storage Technology")
+
+
+noStorage :: Storage
+noStorage = Storage "No Storage"
 
 
 $(makeStringField "Period" "Period") 

@@ -45,7 +45,7 @@ import SERA.Network (Network(..))
 import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (DemandCube, IntensityCube, PeriodCube, PriceCube)
-import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDuration, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fLength, Location, FLocation, fLocation, fSale, fSalvage, Pathway(..), fPathway, fPeriod, Productive(..), fProductive, fQuantity, fStage, fStorage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDuration, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fLength, Location, FLocation, fLocation, fSale, fSalvage, Pathway(..), fPathway, fPeriod, Productive(..), fProductive, fQuantity, fStage, fStorage, noStorage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Map as M
@@ -377,11 +377,11 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                                                                <+> fLifetime       =: 1000
                                                                                                <+> fNameplate      =: fCapacity <: existing
                                                                                                <+> fDutyCycle      =: 1
-                                                                                               <+> fStorage        =: 0
                                                                                                <+> fLength         =: 0
                                                                                                <+> fCapitalCost    =: 0
                                                                                                <+> fFixedCost      =: 0
                                                                                                <+> fVariableCost   =: fCost <: existing -- FIXME: Costs may vary.
+                                                                                               <+> fStorage        =: noStorage
                                                                               in
                                                                                 TechnologyContext
                                                                                 {
@@ -854,9 +854,6 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
         )
         (undefined, (False, mempty))
         yearses
--- TODO: fixed vs variable costs
--- TODO: prlems with input files
--- TODO: change in file format
 -- TODO: walk graph and rewrite as storage becomes advantageous
 -- TODO: record storage costs
 -- TODO: turn off storage model

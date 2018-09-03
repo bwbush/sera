@@ -229,7 +229,6 @@ technologyReifier processLibrary@ProcessLibrary{..} intensityCube specifics buil
       costs =  processCostCube ! specification :: FieldRec ProcessCost
       distance = if fProductive <: costs == Central then 0 else distance'
       capacity = maximum [demand / fDutyCycle <: specification, fNameplate <: specification]
-      storage = fStorage <: specification * capacity / fNameplate <: specification
       scaleCost cost stretch =
         (cost <: costs + distance * stretch <: costs)
           * (capacity / fNameplate <: specification) ** (fScaling <: costs)
@@ -241,11 +240,11 @@ technologyReifier processLibrary@ProcessLibrary{..} intensityCube specifics buil
         <+> fLifetime     =: fLifetime <: costs
         <+> fNameplate    =: capacity
         <+> fDutyCycle    =: fDutyCycle <: specification
-        <+> fStorage      =: storage
         <+> fLength       =: distance
         <+> fCapitalCost  =: scaleCost fCapitalCost fCapitalCostStretch 
         <+> fFixedCost    =: scaleCost fFixedCost fFixedCostStretch
         <+> fVariableCost =: fVariableCost <: costs + distance * fVariableCostStretch <: costs
+        <+> fStorage      =: fStorage <: costs
     return (construction, operationReifier processLibrary intensityCube construction)
 
 
