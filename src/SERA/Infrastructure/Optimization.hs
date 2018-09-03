@@ -20,7 +20,7 @@ module SERA.Infrastructure.Optimization (
 ) where
 
 
-import Control.Arrow ((&&&), (***))
+import Control.Arrow ((&&&), (***), second)
 import Control.Monad (guard, when)
 import Control.Monad.Log (logDebug, logError, logInfo, logNotice)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
@@ -28,13 +28,16 @@ import Data.Daft.DataCube (evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
 import Data.Daft.Vinyl.FieldRec ((=:), (<:), (<+>))
 import Data.Default.Util (inf)
-import Data.Foldable (foldlM)
+import Data.Foldable (foldlM, toList)
 import Data.Graph.Legacy.Algorithms (minimumCostFlow)
 import Data.Graph.Legacy.Types (Graph(..), makeGraph)
-import Data.List (find, nub, unzip4)
+import Data.List (find, nub, partition, unzip4)
 import Data.Map (Map)
 import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Monoid (Sum(..), (<>))
+import Data.Sequence (Seq)
+import Data.Set (Set)
+import Data.Tuple (swap)
 import Data.Tuple.Util (snd3)
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
@@ -48,8 +51,11 @@ import SERA.Types.Cubes (DemandCube, IntensityCube, PeriodCube, PriceCube)
 import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDuration, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fLength, Location, FLocation, fLocation, fSale, fSalvage, Pathway(..), fPathway, fPeriod, Productive(..), fProductive, fQuantity, fStage, fStorage, noStorage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
+import qualified Data.Graph.Legacy.Types as G
 import qualified Data.Map as M
+import qualified Data.Sequence as Q
 import qualified Data.Set as S
+import qualified Numeric.LinearProgramming as L
 
 
 trace' = if False then trace else const id
@@ -562,14 +568,14 @@ costTechnology pricer year flow TechnologyContext{..} =                         
       else ([flows'], cashes', impacts', residue)
 
 
-rebuildEdgeContext :: String -> [Year] -> VaryingFlows -> EdgeContext -> EdgeContext
-rebuildEdgeContext label years reserved' edgeContext@EdgeContext{..} =
+rebuildEdgeContext :: [Year] -> VaryingFlows -> EdgeContext -> EdgeContext
+rebuildEdgeContext years reserved' edgeContext@EdgeContext{..} =
   let
     flow = foldl mostExtreme 0 . fmap snd . unvaryingFlow <$> unvaryingFlows reserved'
     Just builder' = builder
     Just adjustable' = builder' (length fixed + 1) years flow
   in
-    {- (\x -> trace (label ++ "\tBEFORE\t" ++ show reserved ++ "\t" ++ show (utilization reserved) ++ "\t" ++ show capacity ++ "\tAFTER\t" ++ show reserved' ++ "\t" ++ show (utilization reserved') ++ "\t" ++ show (SERA.Infrastructure.Optimization.capacity x)) x) $ -} edgeContext
+    edgeContext
     {
       capacity = constantFlows' reserved' [
                    sum
@@ -590,8 +596,8 @@ rebuildEdgeContext label years reserved' edgeContext@EdgeContext{..} =
 deltaCost :: Strategy -> Double -> [Year] -> VaryingFlows -> EdgeContext -> Double
 deltaCost strategy discount years reserved' edgeContext@EdgeContext{..} =
    let
-     oldCost = costEdge strategy discount years (zeroFlows' reserved ) {- $ rebuildEdgeContext "OLD" years reserved  -} edgeContext
-     newCost = costEdge strategy discount years (zeroFlows' reserved')    $ rebuildEdgeContext "NEW" years reserved'    edgeContext
+     oldCost = costEdge strategy discount years (zeroFlows' reserved ) {- $ rebuildEdgeContext years reserved  -} edgeContext
+     newCost = costEdge strategy discount years (zeroFlows' reserved')    $ rebuildEdgeContext years reserved'    edgeContext
    in
      newCost - oldCost / utilization reserved
 
@@ -854,13 +860,165 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
         )
         (undefined, (False, mempty))
         yearses
--- TODO: walk graph and rewrite as storage becomes advantageous
--- TODO: record storage costs
--- TODO: aggressiveness of seeking storage optimization
     when storageAvailable
       $ do
       when (length yearses > 1)
         $ error "Storage computations only available when there is just a single optimization period."
+      logNotice $ "Cost of subannual variation in flows: " ++
+        show (
+          sum
+            [
+              case edge of
+                DemandEdge        {} -> 0
+                ExistingEdge      {} -> totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
+                _                    -> - deltaCost
+                                            (strategizing context'')
+                                            (discounting context'')
+                                            (head yearses)
+                                            (levelizeCapacities reserved)
+                                            edgeContext
+            |
+              (edge, edgeContext) <- M.toList $ edgeContexts context''
+            , case edgeContext of
+                EdgeContext{..} -> positiveFlow reserved
+                _               -> False
+            , let EdgeContext{..} = edgeContext
+            ]
+        ) ++ " USD."
+      let
+        canStore :: EdgeContext -> Bool
+        canStore EdgeContext{..} = any ((/= noStorage) . (fStorage <:) . construction) $ maybe id (:) adjustable fixed
+        canStore (EdgeReverseContext edge) = canStore $ edgeContexts context'' M.! edge
+        visitVertices :: (Seq Vertex, Set Edge, Set Edge) -> Seq Vertex -> Set Edge -> (Seq Vertex, Set Edge, Set Edge)
+        visitVertices (vertexResult, edgeResult, storageResult) pending visited
+          | Q.null pending = (vertexResult, edgeResult, storageResult)
+          | otherwise      = let
+                               vertex = pending `Q.index` 0
+                               vertexResult' = vertexResult Q.|> vertex
+                               edges =
+                                 [
+                                   vertexEdge
+                                 |
+                                   vertexEdge@(_, edge) <- S.toList . M.findWithDefault S.empty vertex $ G.outgoingEdges graph
+                                 , case edgeContexts context'' M.! edge of
+                                     EdgeContext{..}          -> totalFlow reserved > 0
+                                     EdgeReverseContext edge' -> totalFlow (reserved $ edgeContexts context'' M.! edge') < 0
+                                 ]
+                               edgeResult' = foldl (flip $ S.insert . snd) edgeResult edges
+                               storageResult' = foldl (flip $ S.insert . snd) storageResult $ filter (canStore . (edgeContexts context'' M.!) . snd) edges
+                               (pending', visited') =
+                                 foldl
+                                   (
+                                     \(pending'', visited'') (vertex', edge) ->
+                                       (
+                                         if S.singleton edge == S.map snd (M.findWithDefault S.empty vertex' (G.incomingEdges graph)) S.\\ visited''
+                                           then pending'' Q.|> vertex'
+                                           else pending''
+                                       , S.insert edge visited''
+                                       )
+                                   ) 
+                                   (1 `Q.drop` pending, visited)
+                                   edges
+                             in
+                               visitVertices (vertexResult', edgeResult', storageResult') pending' visited'
+        nTimes = length . periods $ timeContext context''
+        times = [0..(nTimes-1)]
+        lpVertices :: Set     Vertex
+        lpEdges    :: Map Int Edge
+        lpStorages :: Map Int Edge
+        (lpVertices, lpEdges, lpStorages) =
+          let
+            (vertices, edges, storages) =
+              visitVertices
+                (Q.empty, S.empty, S.empty)
+                (Q.singleton SuperSource)
+                $ S.fromList
+                  [
+                    edge
+                  |
+                    edge <- S.toList $ G.allEdges graph
+                  , not $ case edgeContexts context'' M.! edge of
+                      EdgeContext{..}          -> totalFlow reserved > 0
+                      EdgeReverseContext edge' -> totalFlow (reserved $ edgeContexts context'' M.! edge') < 0
+                  ]
+          in
+            (
+              S.fromList                              $   toList vertices
+            , M.fromList . zip [(0               )..] $ S.toList edges   
+            , M.fromList . zip [(0 + length edges)..] $ S.toList storages
+            )
+        lpEdgesInverse = M.fromList $ swap <$> M.toList lpEdges
+        balanceConstraints =
+          [
+            (
+              [
+                1 L.# j
+              |   
+                (_, edge) <- incoming
+              , let i = lpEdgesInverse M.! edge
+                    j = nTimes * i + t + 1
+              ]
+              ++
+              [
+                -1 L.# j
+              |   
+                (_, edge) <- outgoing
+              , let i = lpEdgesInverse M.! edge
+                    j = nTimes * i + t + 1
+              ]
+            ) L.:==: 0
+          |
+            vertex <- S.toList lpVertices
+          , vertex `notElem` [SuperSource, SuperSink]
+          , let incoming = filter (flip M.member lpEdgesInverse . snd) . S.toList $ G.incomingEdges graph M.! vertex
+          , let outgoing = filter (flip M.member lpEdgesInverse . snd) . S.toList $ G.outgoingEdges graph M.! vertex
+          , t <- times
+          ]
+        flowConstraints =
+          concat
+            [
+              case edge of
+                DemandEdge{} -> [ [ 1 L.# j] L.:==: c ]
+                _            -> [
+                                  [ 1 L.# j] L.:<=: c
+                                , [-1 L.# j] L.:<=: c
+                                ]
+            |
+              (i, edge) <- M.toList lpEdges
+            , let VaryingFlows [VaryingFlow cs] = case edgeContexts context'' M.! edge of
+                                                    EdgeContext{..} -> capacity
+                                                    EdgeReverseContext edge' -> capacity $ edgeContexts context'' M.! edge'
+            , (t, c) <- zip times $ uncurry (*) <$> cs
+            , let j = nTimes * i + t + 1
+            ]
+        check =
+          [
+            (i, t, edge, c, f, reserved)
+          |
+            (i, edge) <- M.toList lpEdges
+          , let ec@EdgeContext{..} = case edgeContexts context'' M.! edge of
+                                       x@EdgeContext{}          -> x
+                                       EdgeReverseContext edge' -> edgeContexts context'' M.! edge'
+                f = totalFlow reserved
+                c = costEdge strategy discountRate (head yearses) (zeroFlows $ timeContext context'') ec
+          , t <- times
+          ]
+        problem =
+          L.Minimize
+            [
+              abs $ c / f
+            |
+              (_, _, _, c, f, _) <- check
+            ]
+        L.Optimal (value, solution) = L.simplex problem (L.Sparse $ balanceConstraints ++ flowConstraints) []
+      logDebug $ "LP MINIMUM = " ++ show value
+      sequence_
+        [
+          logDebug $ "LP\t" ++ show (j, i, t) ++ "\t" ++ show edge ++ "\t" ++ show x ++ "\t" ++ show f ++ "\t" ++ show c ++ "\t" ++ show (uncurry (*) $ r !! t)
+        |
+          (x, (i, t, edge, c, f, VaryingFlows [VaryingFlow r])) <- zip solution check
+        , let j = nTimes * i + t + 1
+        ]
       sequence_
         [
           logDebug $ show edge
@@ -884,27 +1042,6 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             _               -> False
         , let EdgeContext{..} = edgeContext
         ]
-      logNotice $ "Cost of varying flow: " ++
-        show (
-          sum
-            [
-              case edge of
-                DemandEdge        {} -> 0
-                ExistingEdge      {} -> totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
-                _                    -> - deltaCost
-                                            (strategizing context'')
-                                            (discounting context'')
-                                            (head yearses)
-                                            (levelizeCapacities reserved)
-                                            edgeContext
-            |
-              (edge, edgeContext) <- M.toList $ edgeContexts context''
-            , case edgeContext of
-                EdgeContext{..} -> positiveFlow reserved
-                _               -> False
-            , let EdgeContext{..} = edgeContext
-            ]
-        ) ++ " USD."
     return answer
 
 

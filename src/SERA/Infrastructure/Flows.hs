@@ -202,6 +202,14 @@ VaryingFlows x `compatibleFlow` VaryingFlows y =
     and (zipWith (\x'' y'' -> x'' /= 0 || y'' == 0) x' y')
 
 
+nonZeroFlows :: VaryingFlows -> Bool
+nonZeroFlows (VaryingFlows xs) = all nonZeroFlow xs
+
+
+nonZeroFlow :: VaryingFlow -> Bool
+nonZeroFlow (VaryingFlow x) = all ((/= 0) . snd) x
+
+
 storageRequirements :: VaryingFlows -> Double
 storageRequirements (VaryingFlows xs) = maximum $ storageRequirement <$> xs
 

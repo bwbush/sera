@@ -1,5 +1,5 @@
 name: sera
-version: 3.3.1.1
+version: 3.3.1.2
 cabal-version: >= 1.10
 build-type: Simple
 license: AllRightsReserved
@@ -135,6 +135,7 @@ library
                   , data-default
                   , file-embed
                   , graft
+                  , hmatrix-glpk
                   , logging-effect
                   , MonadRandom
                   , monoid-extras
@@ -174,6 +175,7 @@ executable sera
                   , file-embed
                   , filepath
                   , graft
+                  , hmatrix-glpk
                   , logging-effect
                   , monoid-extras
                   , mtl
