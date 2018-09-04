@@ -1,14 +1,26 @@
-{ mkDerivation, fetchgit, base, containers, heaps, raft, stringbuilder, stdenv }:
+{
+  mkDerivation, stdenv, fetchgit
+, base, containers, heaps, monoid-absorbing, mtl, non-negative, raft, stringbuilder
+, fgl, fgl-arbitrary, hmatrix-glpk, QuickCheck
+}:
 mkDerivation {
   pname = "graft";
-  version = "0.1.2.11";
+  version = "0.2.1.0";
   src = fetchgit {
-    url = "git://10.40.9.156/";
-    rev = "49475b5d32a3d957c00d78d444f6f2a4c647130b";
-    sha256 = "1zgpc8h9766cg92a1w88bxj9bfrb60b9dkmfscp765walfgf8w5w";
+    url = "git://github.com/bwbush/graft.git";
+  # url = "git://bitbucket.org/functionally/graft.git";
+    rev = "64f4224c4eea3b5165f66980b25a36fb9b81b5b7";
+    sha256 = "0ixczmpi06sdm2a8kw7y1skqsjmd8npiij1n2csv50qpax6qbw8v";
   };
-  libraryHaskellDepends = [ base containers heaps raft stringbuilder ];
+  libraryHaskellDepends = [
+    base containers heaps monoid-absorbing mtl non-negative raft stringbuilder
+  ];
   homepage = "https://bitbucket.org/functionally/graft";
   description = "Graph algorithms";
   license = stdenv.lib.licenses.mit;
+  testHaskellDepends = [
+    fgl fgl-arbitrary hmatrix-glpk QuickCheck
+  ];
+  doCheck = false;
+  doHaddock = false;
 }

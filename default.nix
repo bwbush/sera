@@ -1,8 +1,6 @@
-{ mkDerivation, aeson, base, bytestring, cmdargs, containers, daft
-, data-default, directory, file-embed, filepath, graft, hmatrix-glpk, logging-effect, MonadRandom
-, monoid-extras, mtl, parallel, pqueue, raft, regex-posix, split
-, statistics, stdenv, template-haskell, text, tostring, vinyl, void
-, yaml, zip-archive
+{
+  mkDerivation, stdenv
+, aeson, base, bytestring, cmdargs, containers, daft, data-default, directory, file-embed, filepath, graft, hmatrix-glpk, logging-effect, MonadRandom, monoid-extras, mtl, parallel, pqueue, raft, regex-posix, split, statistics, template-haskell, text, tostring, vinyl, void, yaml, zip-archive
 }:
 mkDerivation {
   pname = "sera";
@@ -11,16 +9,10 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring containers daft data-default file-embed graft hmatrix-glpk logging-effect
-    MonadRandom monoid-extras mtl parallel pqueue raft regex-posix
-    split statistics template-haskell text tostring vinyl void yaml
-    zip-archive
+    aeson base bytestring containers daft data-default file-embed graft hmatrix-glpk logging-effect MonadRandom monoid-extras mtl parallel pqueue raft regex-posix split statistics template-haskell text tostring vinyl void yaml zip-archive
   ];
   executableHaskellDepends = [
-    aeson base bytestring cmdargs containers daft data-default
-    directory file-embed filepath hmatrix-glpk graft logging-effect monoid-extras mtl pqueue raft
-    regex-posix split statistics template-haskell text tostring vinyl
-    void yaml zip-archive
+    aeson base bytestring cmdargs containers daft data-default directory file-embed filepath hmatrix-glpk logging-effect monoid-extras mtl pqueue raft regex-posix split statistics template-haskell text tostring vinyl void yaml zip-archive
   ];
   enableSharedExecutables = false;
   doHaddock = false;
