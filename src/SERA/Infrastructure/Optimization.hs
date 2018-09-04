@@ -1135,20 +1135,25 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                             ec@EdgeContext{}         -> (ec                               , 1)
                             EdgeReverseContext edge' -> (edgeContexts context'' M.! edge', -1)
                         VaryingFlows [VaryingFlow rs] = reserved edgeContext
-                        xs =
-                          [
-                            solution !! j
-                          |
-                            t <- times
-                          , let j = nTimes * i + t + 1
-                          ]
+                        reserved' =
+                          VaryingFlows
+                            [
+                              VaryingFlow
+                                [
+                                  (df, sense * x / df)
+                                |
+                                  ((df, _), t) <- zip rs times
+                                , let j = nTimes * i + t + 1
+                                      x = solution !! (j - 1)
+                                ]
+                            ]
                         edgeContext' =
                           case edge of
                             DemandEdge{}   -> edgeContext
-                            ExistingEdge{} -> edgeContext FIX THIS !!!!!!!!!!!!!!!!!
+                            ExistingEdge{} -> edgeContext { reserved = reserved' }
                             _              -> rebuildEdgeContext
                                                 (head yearses)
-                                                (VaryingFlows [VaryingFlow $ zipWith (\(df, _) x -> (df, sense * x)) rs xs]) PROBLEM IS HERE?
+                                                reserved'
                                                 edgeContext
                         (flows', cashes', impacts') = costEdge' strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
                       in
@@ -1156,15 +1161,15 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                   )
                   $ lpEdges
               )
-          solution                    -> do
-                                           logDebug $ "LP Edges: " ++ show lpEdges
-                                           logDebug $ "LP Storage: " ++ show lpStorages
-                                           logDebug $ "LP Balance constraints: " ++ show balanceConstraints
-                                           logDebug $ "LP Periodicity constraints: " ++ show periodicityConstraints
-                                           logDebug $ "LP Flow constraints: " ++ show flowConstraints
-                                           logDebug $ "LP Problem: " ++ show problem
-                                           logCritical $ "LP Failed: " ++ show solution
-                                           return answer
+          solution -> do
+            logDebug    $ "LP Edges: "                    ++ show lpEdges
+            logDebug    $ "LP Storage: "                  ++ show lpStorages
+            logDebug    $ "LP Balance constraints: "      ++ show balanceConstraints
+            logDebug    $ "LP Periodicity constraints: "  ++ show periodicityConstraints
+            logDebug    $ "LP Flow constraints: "         ++ show flowConstraints
+            logDebug    $ "LP Problem: "                  ++ show problem
+            logCritical $ "Storage optimization failed: " ++ show solution
+            return answer
 
 
 
