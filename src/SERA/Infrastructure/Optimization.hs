@@ -22,7 +22,7 @@ module SERA.Infrastructure.Optimization (
 
 import Control.Arrow ((&&&), (***), second)
 import Control.Monad (guard, when)
-import Control.Monad.Log (logDebug, logError, logInfo, logNotice)
+import Control.Monad.Log (logCritical, logDebug, logError, logInfo, logNotice)
 import Data.Aeson.Types (FromJSON(..), ToJSON(..))
 import Data.Daft.DataCube (evaluate, knownKeys)
 import Data.Daft.Vinyl.FieldCube ((!), toKnownRecords, σ)
@@ -45,10 +45,10 @@ import SERA (SeraLog)
 import SERA.Infrastructure.Flows
 import SERA.Material (Pricer, localize, makePricer)
 import SERA.Network (Network(..))
-import SERA.Process.Reification (TechnologyOperation, operationReifier, technologyReifier)
+import SERA.Process.Reification (TechnologyOperation, operationReifier, sizeTechnology, technologyReifier)
 import SERA.Process (ProcessLibrary(..), isProduction)
 import SERA.Types.Cubes (DemandCube, IntensityCube, PeriodCube, PriceCube)
-import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDuration, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fLength, Location, FLocation, fLocation, fSale, fSalvage, Pathway(..), fPathway, fPeriod, Productive(..), fProductive, fQuantity, fStage, fStorage, noStorage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
+import SERA.Types.Fields (fArea, fCapacity, fCapitalCost, fCost, CostCategory(Salvage), fCostCategory, fDuration, fDutyCycle, fDelivery, fExtended, fFixedCost, fFrom, ImpactCategory(Consumption), fImpactCategory, Infrastructure(..), fInfrastructure, fLifetime, Material, fMaterial, fNameplate, fLength, Location, FLocation, fLocation, fSale, fSalvage, Pathway(..), fPathway, fPeriod, Productive(..), fProductive, fQuantity, fStage, Storage(..), fStorage, noStorage, Technology(..), fTechnology, fTo, fTransmission, fVariableCost, Year, fYear)
 import SERA.Types.Records (Cash, Construction, Flow, Impact)
 
 import qualified Data.Graph.Legacy.Types as G
@@ -885,6 +885,30 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             , let EdgeContext{..} = edgeContext
             ]
         ) ++ " USD."
+      sequence_
+        [
+          logDebug $ show edge
+                  ++ "\t" ++ show (storageRequirements reserved)
+                  ++ "\t" ++ show (
+                                    case edge of
+                                      DemandEdge        {} -> 0
+                                      ExistingEdge      {} -> - totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
+                                      _                    -> deltaCost
+                                                                (strategizing context'')
+                                                                (discounting context'')
+                                                                (head yearses)
+                                                                (levelizeCapacities reserved)
+                                                                edgeContext
+                                  )
+                  ++ "\t" ++ show (totalFlow reserved)
+                  ++ "\t" ++ show reserved
+        |
+          (edge, edgeContext) <- M.toList $ edgeContexts context''
+        , case edgeContext of
+            EdgeContext{..} -> positiveFlow reserved
+            _               -> False
+        , let EdgeContext{..} = edgeContext
+        ]
       let
         canStore :: EdgeContext -> Bool
         canStore EdgeContext{..} = any ((/= noStorage) . (fStorage <:) . construction) $ maybe id (:) adjustable fixed
@@ -943,11 +967,15 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                   ]
           in
             (
-              S.fromList                              $   toList vertices
-            , M.fromList . zip [(0               )..] $ S.toList edges   
-            , M.fromList . zip [(0 + length edges)..] $ S.toList storages
+              S.fromList             $   toList vertices
+            , M.fromList . zip [0..] $ S.toList edges   
+            , M.fromList . zip [0..] $ S.toList storages
             )
-        lpEdgesInverse = M.fromList $ swap <$> M.toList lpEdges
+        offset = nTimes * M.size lpEdges + 1
+        disableStorage = False
+        capacityRelaxation = 1.5
+        lpEdgesInverse    = M.fromList $ swap <$> M.toList lpEdges
+        lpStoragesInverse = M.fromList $ swap <$> M.toList lpStorages
         balanceConstraints =
           [
             (
@@ -966,23 +994,51 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
               , let i = lpEdgesInverse M.! edge
                     j = nTimes * i + t + 1
               ]
+              ++
+              [
+                if s == 0
+                  then  1 L.# j
+                  else -1 L.# j
+              |
+                not disableStorage
+              , (_, edge) <- storages
+              , let i = lpStoragesInverse M.! edge
+              , s <- [0,1] 
+              , let j = 2 * (nTimes * i + t) + s + offset
+              ]
             ) L.:==: 0
           |
             vertex <- S.toList lpVertices
           , vertex `notElem` [SuperSource, SuperSink]
-          , let incoming = filter (flip M.member lpEdgesInverse . snd) . S.toList $ G.incomingEdges graph M.! vertex
-          , let outgoing = filter (flip M.member lpEdgesInverse . snd) . S.toList $ G.outgoingEdges graph M.! vertex
+          , let incoming = filter (flip M.member lpEdgesInverse    . snd) . S.toList $ G.incomingEdges graph M.! vertex
+          , let outgoing = filter (flip M.member lpEdgesInverse    . snd) . S.toList $ G.outgoingEdges graph M.! vertex
+          , let storages = filter (flip M.member lpStoragesInverse . snd) incoming
           , t <- times
+          ]
+        periodicityConstraints =
+          [
+            [
+              if s == 0
+                then  1 L.# j
+                else -1 L.# j
+            |
+              t <- times
+            , s <- [0, 1]
+            , let j = 2 * (nTimes * i + t) + s + offset
+            ] L.:==: 0
+          |
+            not disableStorage
+          , (i, _) <- M.toList lpStorages
           ]
         flowConstraints =
           concat
             [
               case edge of
-                DemandEdge{} -> [ [ 1 L.# j] L.:==: c ]
-                _            -> [
-                                  [ 1 L.# j] L.:<=: c
-                                , [-1 L.# j] L.:<=: c
-                                ]
+                DemandEdge{}   -> [ [ 1 L.# j] L.:==:  c ]
+                ExistingEdge{} -> [ [ 1 L.# j] L.:<=:  c ]
+                _              -> [
+                                    [ 1 L.# j] L.:<=: (c * capacityRelaxation) -- FIXME
+                                  ]
             |
               (i, edge) <- M.toList lpEdges
             , let VaryingFlows [VaryingFlow cs] = case edgeContexts context'' M.! edge of
@@ -991,9 +1047,9 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             , (t, c) <- zip times $ uncurry (*) <$> cs
             , let j = nTimes * i + t + 1
             ]
-        check =
+        checkEdges =
           [
-            (i, t, edge, c, f, reserved)
+            (i, t, edge, c, d, f, k, reserved)
           |
             (i, edge) <- M.toList lpEdges
           , let ec@EdgeContext{..} = case edgeContexts context'' M.! edge of
@@ -1001,47 +1057,79 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                        EdgeReverseContext edge' -> edgeContexts context'' M.! edge'
                 f = totalFlow reserved
                 c = costEdge strategy discountRate (head yearses) (zeroFlows $ timeContext context'') ec
+                k = capacity
           , t <- times
+          , let VaryingFlows [VaryingFlow rs] = reserved
+                VaryingFlows [VaryingFlow ks] = capacity
+                d = case edge of
+                      DemandEdge{}   -> 0
+                      ExistingEdge{} -> abs $ c / f
+                      _              -> abs $ c / f / (snd (rs !! t) / snd (ks !! t))
+          ]
+        checkStorages =
+          [
+            (i, t, s, edge, p)
+          |
+            (i, edge) <- M.toList lpStorages
+          , t <- times
+          , s <- [0, 1] :: [Int]
+          , let EdgeContext{..} = case edgeContexts context'' M.! edge of
+                                    x@EdgeContext{}          -> x
+                                    EdgeReverseContext edge' -> edgeContexts context'' M.! edge'
+                k = storageRequirements reserved
+                Just (Storage h) = (fStorage <:) . construction <$> adjustable
+                Just specification = sizeTechnology (Technology h) (head $ head yearses) k . knownKeys $ processCostCube processLibrary
+                p = fVariableCost <: (processCostCube processLibrary M.! specification)
           ]
         problem =
-          L.Minimize
+          [
+            d
+          |
+            (_, _, _, _, d, _, _, _) <- checkEdges
+          ]
+          ++
+          [
+            c
+          |
+            not disableStorage
+          , (_, _, _, _, c) <- checkStorages
+          ]
+      case L.simplex (L.Minimize problem) (L.Sparse $ balanceConstraints ++ periodicityConstraints ++ flowConstraints) [] of
+        L.Optimal (value, solution) -> do
+          logDebug $ "LP MINIMUM = " ++ show value
+          sequence_
             [
-              abs $ c / f
+              logDebug $ "LP EDGE\t"      ++ show (j, i, t)
+                             ++ "\t"      ++ show edge
+                             ++ "\t SLN " ++ show x
+                             ++ "\t FLW " ++ show (uncurry (*) $ rs !! t)
+                             ++ "\t CAP " ++ show (uncurry (*) $ ks !! t)
+                             ++ "\t CST " ++ show c
+                             ++ "\t PRC " ++ show (abs $ c / f)
+                             ++ "\t DEL " ++ show d
             |
-              (_, _, _, c, f, _) <- check
+              (x, (i, t, edge, c, d, f, VaryingFlows [VaryingFlow ks], VaryingFlows [VaryingFlow rs])) <- zip solution checkEdges
+            , let j = nTimes * i + t + 1
             ]
-        L.Optimal (value, solution) = L.simplex problem (L.Sparse $ balanceConstraints ++ flowConstraints) []
-      logDebug $ "LP MINIMUM = " ++ show value
-      sequence_
-        [
-          logDebug $ "LP\t" ++ show (j, i, t) ++ "\t" ++ show edge ++ "\t" ++ show x ++ "\t" ++ show f ++ "\t" ++ show c ++ "\t" ++ show (uncurry (*) $ r !! t)
-        |
-          (x, (i, t, edge, c, f, VaryingFlows [VaryingFlow r])) <- zip solution check
-        , let j = nTimes * i + t + 1
-        ]
-      sequence_
-        [
-          logDebug $ show edge
-                  ++ "\t" ++ show (storageRequirements reserved)
-                  ++ "\t" ++ show (
-                                    case edge of
-                                      DemandEdge        {} -> 0
-                                      ExistingEdge      {} -> - totalFlow reserved * sum ((fVariableCost <:) . construction <$> fixed)
-                                      _                    -> deltaCost
-                                                                (strategizing context'')
-                                                                (discounting context'')
-                                                                (head yearses)
-                                                                (levelizeCapacities reserved)
-                                                                edgeContext
-                                  )
-                  ++ "\t" ++ show (totalFlow reserved)
-        |
-          (edge, edgeContext) <- M.toList $ edgeContexts context''
-        , case edgeContext of
-            EdgeContext{..} -> positiveFlow reserved
-            _               -> False
-        , let EdgeContext{..} = edgeContext
-        ]
+          sequence_
+            [
+              logDebug $ "LP STORAGE\t"     ++ (show (j, i, t, s))
+                                ++ "\t"     ++ show edge
+                                ++ "\tSLN " ++ show x
+                                ++ "\tPRC " ++ show c
+            |
+              not disableStorage
+            , (x, (i, t, s, edge, c)) <- zip (drop (length checkEdges) solution) checkStorages
+            , let j = 2 * (nTimes * i + t) + s + offset
+            ]
+        solution                    -> do
+                                         logDebug $ "LP Edges: " ++ show lpEdges
+                                         logDebug $ "LP Storage: " ++ show lpStorages
+                                         logDebug $ "LP Balance constraints: " ++ show balanceConstraints
+                                         logDebug $ "LP Periodicity constraints: " ++ show periodicityConstraints
+                                         logDebug $ "LP Flow constraints: " ++ show flowConstraints
+                                         logDebug $ "LP Problem: " ++ show problem
+                                         logCritical $ "LP Failed: " ++ show solution
     return answer
 
 
