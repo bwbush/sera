@@ -1069,18 +1069,50 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             ]
           checkStorages =
             [
-              (i, t, s, edge, p)
+              ((i, t, s, edge, p), storageContext)
             |
               (i, edge) <- M.toList lpStorages
             , t <- times
             , s <- [0, 1] :: [Int]
-            , let EdgeContext{..} = case edgeContexts context'' M.! edge of
+            , let location = case edge of
+                               CentralEdge        x _   -> x
+                               OnsiteEdge         x _   -> x
+                               PathwayForwardEdge x _ _ -> x
+                               PathwayReverseEdge x _ _ -> x
+                  EdgeContext{..} = case edgeContexts context'' M.! edge of
                                       x@EdgeContext{}          -> x
                                       EdgeReverseContext edge' -> edgeContexts context'' M.! edge'
                   k = storageRequirements reserved
                   Just (Storage h) = (fStorage <:) . construction <$> adjustable
-                  Just specification = sizeTechnology (Technology h) (head $ head yearses) k . knownKeys $ processCostCube processLibrary
-                  p = fVariableCost <: (processCostCube processLibrary M.! specification)
+                  storageContext = rebuildEdgeContext
+                                     (head yearses)
+                                     (if False then veryConstantFlows (timeContext context'') k else reserved) -- FIXME
+                                     $ EdgeContext
+                                       {
+                                         builder    = Just
+                                                        $ \_ year' demand ->
+                                                          uncurry TechnologyContext
+                                                            <$> technologyReifier
+                                                                  processLibrary
+                                                                  (localize intensityCube location)
+                                                                  (fInfrastructure =: Infrastructure ("STOR-" ++ show i) <+> fLocation =: location)
+                                                                  (head year')
+                                                                  (foldl mostExtreme 0 demand)
+                                                                  0
+                                                                  (Technology h)
+                                       , capacity   = zeroFlows $ timeContext context''
+                                       , reserved   = zeroFlows $ timeContext context''
+                                       , fixed      = []
+                                       , adjustable = Nothing
+                                       , flows      = []
+                                       , cashes     = []
+                                       , impacts    = []
+                                       , reference  = Nothing
+                                       , debit      = 0
+                                       , pricer     = pricer
+                                       }
+                  c =  costEdge strategy discountRate (head yearses) (zeroFlows $ timeContext context'') storageContext
+                  p = c / if False then k else totalFlow reserved
             ]
           problem =
             [
@@ -1093,7 +1125,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
               c
             |
               not disableStorage
-            , (_, _, _, _, c) <- checkStorages
+            , ((_, _, _, _, c), _) <- checkStorages
             ]
         case L.simplex (L.Minimize problem) (L.Sparse $ balanceConstraints ++ periodicityConstraints ++ flowConstraints) [] of
           L.Optimal (value, solution) -> do
@@ -1120,7 +1152,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                   ++ "\tPRC " ++ show c
               |
                 not disableStorage
-              , (x, (i, t, s, edge, c)) <- zip (drop (length checkEdges) solution) checkStorages
+              , (x, ((i, t, s, edge, c), _)) <- zip (drop (length checkEdges) solution) checkStorages
               , let j = 2 * (nTimes * i + t) + s + offset
               ]
             return
@@ -1159,7 +1191,44 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                       in
                         Optimum (construction <$> maybe id (:) (adjustable edgeContext') (fixed edgeContext')) flows' cashes' impacts'
                   )
-                  $ lpEdges
+                  lpEdges
+                <>
+                foldMap
+                  (
+                    \((i, _, _, edge, _), edgeContext) ->
+                      let
+                        storageFlows =
+                          [
+                            solution !! (j 0 - 1) - solution !! (j 1 - 1)
+                          |
+                            t <- times
+                          , let j s = 2 * (nTimes * i + t) + s + offset
+                          ]
+                        storageCumulative = scanl1 (+) storageFlows
+                        storageCapacity = maximum storageCumulative - minimum storageCumulative
+                        VaryingFlows [VaryingFlow rs] = reserved edgeContext
+                        reserved' =
+                          VaryingFlows
+                            [
+                              VaryingFlow
+                                [
+                                  (df, abs $ x / df) -- FIXME
+                                |
+                                  ((df, _), x) <- zip rs storageFlows
+                                ]
+                            ]
+                        edgeContext' = (rebuildEdgeContext
+                                         (head yearses)
+                                         (veryConstantFlows (timeContext context'') storageCapacity)
+                                         edgeContext
+                                       ) { reserved = reserved' } -- FIXME
+                        (flows', cashes', impacts') = costEdge' strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
+                      in
+                        if all (== 0) storageFlows
+                          then mempty
+                          else Optimum (construction <$> maybe id (:) (adjustable edgeContext') (fixed edgeContext')) flows' cashes' impacts'
+                  )
+                  (filter (\((_, t, s, _, _), _) -> t == 0 && s == 0) checkStorages)
               )
           solution -> do
             logDebug    $ "LP Edges: "                    ++ show lpEdges
