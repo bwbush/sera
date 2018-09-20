@@ -609,7 +609,8 @@ deltaCost strategy discount years reserved' edgeContext@EdgeContext{..} =
      oldCost = costEdge strategy discount years (zeroFlows' reserved ) {- $ rebuildEdgeContext years reserved  -} edgeContext
      newCost = costEdge strategy discount years (zeroFlows' reserved')    $ rebuildEdgeContext years reserved'    edgeContext
    in
-     newCost - oldCost / utilization reserved
+--   newCost - oldCost / utilization reserved  -- FIXME: This was the utilization correction
+     newCost - oldCost
 
 
 marginalCost :: Bool -> Strategy -> Double -> [Year] -> VaryingFlows -> EdgeContext -> Double
