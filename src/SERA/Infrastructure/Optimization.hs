@@ -1241,7 +1241,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                        ) { reserved = reserved' } -- FIXME
                         (flows', cashes', impacts') = costEdge' strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
                       in
-                        if all (== 0) storageFlows
+                        if all ((< 1e-3) . abs) storageFlows
                           then mempty
                           else Optimum (construction <$> maybe id (:) (adjustable edgeContext') (fixed edgeContext')) flows' cashes' impacts'
                   )
