@@ -1065,6 +1065,17 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
               , (t, c) <- zip times $ uncurry (*) <$> cs
               , let j = nTimes * i + t + 1
               ]
+          availabilityConstraints =
+            [
+              [
+                1 L.# j
+              ] L.:==: 0
+            |
+              not disableStorage
+            , ((i, t, s, _, c), _) <- checkStorages
+            , isInfinite c
+            , let j = 2 * (nTimes * i + t) + s + offset
+            ]
           checkEdges =
             [
               (i, t, edge, c, d, f, k, reserved)
@@ -1139,12 +1150,14 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             ]
             ++
             [
-              c
+              if isInfinite c
+                then 0
+                else c
             |
               not disableStorage
             , ((_, _, _, _, c), _) <- checkStorages
             ]
-        case L.simplex (L.Minimize problem) (L.Sparse $ balanceConstraints ++ periodicityConstraints ++ flowConstraints) [] of
+        case L.simplex (L.Minimize problem) (L.Sparse $ balanceConstraints ++ periodicityConstraints ++ flowConstraints ++ availabilityConstraints) [] of
           L.Optimal (value, solution) -> do
             logDebug $ "LP MINIMUM = " ++ show value
             sequence_
