@@ -1119,7 +1119,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                   edgeContext0 = case edgeContexts context'' M.! edge of
                                    x@EdgeContext{}          -> x
                                    EdgeReverseContext edge' -> edgeContexts context'' M.! edge'
-                  reserved0 = abs $ reserved edgeContext0
+                  reserved0 = reserved edgeContext0
                   k = storageRequirements reserved0
                   makeStorage edgeContext@EdgeContext{..} =
                     case (fStorage <:) . construction <$> adjustable of
@@ -1158,7 +1158,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                               else (storageContext', c')
                       _                -> (edgeContext, inf)
                   (storageContext, c) = makeStorage edgeContext0
-                  p = c / if False then k else totalFlow reserved0
+                  p = c / if False then k else abs $ totalFlow reserved0
             ]
           problem =
             [
