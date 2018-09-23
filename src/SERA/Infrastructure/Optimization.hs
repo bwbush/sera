@@ -1012,14 +1012,22 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                 ]
                 ++
                 [
-                  if s == 0
-                    then  1 L.# j
-                    else -1 L.# j
+                  1 L.# j
                 |
                   not disableStorage
-                , (_, edge) <- storages
+                , (_, edge) <- storagesIncoming
                 , let i = lpStoragesInverse M.! edge
-                , s <- [0,1] 
+                , let s = 0 
+                , let j = 2 * (nTimes * i + t) + s + offset
+                ]
+                ++
+                [
+                  -1 L.# j
+                |
+                  not disableStorage
+                , (_, edge) <- storagesOutgoing
+                , let i = lpStoragesInverse M.! edge
+                , let s = 1 
                 , let j = 2 * (nTimes * i + t) + s + offset
                 ]
               ) L.:==: 0
@@ -1028,7 +1036,8 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             , vertex `notElem` [SuperSource, SuperSink]
             , let incoming = filter (flip M.member lpEdgesInverse    . snd) . S.toList $ G.incomingEdges graph M.! vertex
             , let outgoing = filter (flip M.member lpEdgesInverse    . snd) . S.toList $ G.outgoingEdges graph M.! vertex
-            , let storages = filter (flip M.member lpStoragesInverse . snd) incoming
+            , let storagesIncoming = filter (flip M.member lpStoragesInverse . snd) incoming
+            , let storagesOutgoing = filter (flip M.member lpStoragesInverse . snd) outgoing
             , t <- times
             ]
           periodicityConstraints =
