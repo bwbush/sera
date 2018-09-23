@@ -1158,7 +1158,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                               else (storageContext', c')
                       _                -> (edgeContext, inf)
                   (storageContext, c) = makeStorage edgeContext0
-                  p = c / if False then k else totalFlow reserved0
+                  p = c / if False then k else abs $ totalFlow reserved0
             ]
           problem =
             [
