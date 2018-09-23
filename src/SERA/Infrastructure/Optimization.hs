@@ -1116,40 +1116,49 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                OnsiteEdge         x _   -> x
                                PathwayForwardEdge x _ _ -> x
                                PathwayReverseEdge x _ _ -> x
-                  EdgeContext{..} = case edgeContexts context'' M.! edge of
-                                      x@EdgeContext{}          -> x
-                                      EdgeReverseContext edge' -> edgeContexts context'' M.! edge'
-                  k = storageRequirements reserved
-                  Just (Storage h) = (fStorage <:) . construction <$> adjustable
-                  storageContext = rebuildEdgeContext
-                                     (head yearses)
-                                     (if False then veryConstantFlows (timeContext context'') k else reserved) -- FIXME
-                                     $ EdgeContext
-                                       {
-                                         builder    = Just
-                                                        $ \_ year' demand ->
-                                                          uncurry TechnologyContext
-                                                            <$> technologyReifier
-                                                                  processLibrary
-                                                                  (localize intensityCube location)
-                                                                  (fInfrastructure =: Infrastructure ("STOR-" ++ show i) <+> fLocation =: location)
-                                                                  (head year')
-                                                                  (foldl mostExtreme 0 demand)
-                                                                  0
-                                                                  (Technology h)
-                                       , capacity   = zeroFlows $ timeContext context''
-                                       , reserved   = zeroFlows $ timeContext context''
-                                       , fixed      = []
-                                       , adjustable = Nothing
-                                       , flows      = []
-                                       , cashes     = []
-                                       , impacts    = []
-                                       , reference  = Nothing
-                                       , debit      = 0
-                                       , pricer     = pricer
-                                       }
-                  c =  costEdge strategy discountRate (head yearses) (zeroFlows $ timeContext context'') storageContext
-                  p = c / if False then k else totalFlow reserved
+                  edgeContext0 = case edgeContexts context'' M.! edge of
+                                   x@EdgeContext{}          -> x
+                                   EdgeReverseContext edge' -> edgeContexts context'' M.! edge'
+                  reserved0 = reserved edgeContext0
+                  k = storageRequirements reserved0
+                  makeStorage edgeContext@EdgeContext{..} =
+                    case (fStorage <:) . construction <$> adjustable of
+                      Just (Storage h) -> let
+                                            storageContext' = rebuildEdgeContext
+                                                                (head yearses)
+                                                                (if False then veryConstantFlows (timeContext context'') k else reserved0) -- FIXME
+                                                                $ EdgeContext
+                                                                  {
+                                                                    builder    = Just
+                                                                                   $ \_ year' demand ->
+                                                                                     uncurry TechnologyContext
+                                                                                       <$> technologyReifier
+                                                                                             processLibrary
+                                                                                             (localize intensityCube location)
+                                                                                             (fInfrastructure =: Infrastructure ("STOR-" ++ show i) <+> fLocation =: location)
+                                                                                             (head year')
+                                                                                             (foldl mostExtreme 0 demand)
+                                                                                             0
+                                                                                             (Technology h)
+                                                                  , capacity   = zeroFlows $ timeContext context''
+                                                                  , reserved   = zeroFlows $ timeContext context''
+                                                                  , fixed      = []
+                                                                  , adjustable = Nothing
+                                                                  , flows      = []
+                                                                  , cashes     = []
+                                                                  , impacts    = []
+                                                                  , reference  = Nothing
+                                                                  , debit      = 0
+                                                                  , pricer     = pricer
+                                                                  }
+                                            c' =  costEdge strategy discountRate (head yearses) (zeroFlows $ timeContext context'') storageContext'
+                                          in
+                                            if isInfinite c'
+                                              then makeStorage storageContext'
+                                              else (storageContext', c')
+                      _                -> (edgeContext, inf)
+                  (storageContext, c) = makeStorage edgeContext0
+                  p = c / if False then k else totalFlow reserved0
             ]
           problem =
             [
