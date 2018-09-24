@@ -1168,6 +1168,12 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             ]
         case L.simplex (L.Minimize problem) (L.Sparse $ balanceConstraints ++ periodicityConstraints ++ flowConstraints ++ availabilityConstraints) [] of
           L.Optimal (value, solution) -> do
+            logDebug    $ "LP Edges: "                    ++ show lpEdges
+            logDebug    $ "LP Storage: "                  ++ show lpStorages
+            logDebug    $ "LP Balance constraints: "      ++ show balanceConstraints
+            logDebug    $ "LP Periodicity constraints: "  ++ show periodicityConstraints
+            logDebug    $ "LP Flow constraints: "         ++ show flowConstraints
+            logDebug    $ "LP Problem: "                  ++ show problem
             logDebug $ "LP MINIMUM = " ++ show value
             sequence_
               [
