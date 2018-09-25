@@ -967,23 +967,69 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
           (lpVertices, lpEdges, lpStorages) =
             let
               (vertices, edges, storages) =
-                visitVertices
-                  (Q.empty, S.empty, S.empty)
-                  (Q.singleton SuperSource)
-                  $ S.fromList
-                    [
-                      edge
-                    |
-                      edge <- S.toList $ G.allEdges graph
-                    , let existing = case edge of
-                                       DemandEdge{}   -> True
-                                       ExistingEdge{} -> True
-                                       _              -> False
-                    , let used = case edgeContexts context'' M.! edge of
-                                   EdgeContext{..}          -> totalFlow reserved > 0
-                                   EdgeReverseContext edge' -> totalFlow (reserved $ edgeContexts context'' M.! edge') < 0
-                    , not $ existing || used
-                    ]
+                if True
+                  then let
+                         edges' =
+                           S.fromList
+                             [
+                               edge
+                             |
+                               edge <- S.toList $ G.allEdges graph
+                             , let existing = case edge of
+                                                DemandEdge{}   -> True
+                                                ExistingEdge{} -> True
+                                                _              -> False
+                             , let used = case edgeContexts context'' M.! edge of
+                                            EdgeContext{..}          -> totalFlow reserved > 0
+                                            EdgeReverseContext edge' -> totalFlow (reserved $ edgeContexts context'' M.! edge') < 0
+                             , trace ("EDGE\t" ++ show edge ++ "\t" ++ show existing ++ "\t" ++ show used) $ existing || used
+                             ]
+                         vertices' =
+                           [
+                             vertex
+                           |
+                             vertex <- S.toList $ G.allVertices graph
+                           , let incoming = [
+                                              edge
+                                            |
+                                              (_, edge) <- S.toList . M.findWithDefault S.empty vertex $ G.incomingEdges graph
+                                            , edge `S.member` edges'
+                                            ]
+                           , let outgoing = [
+                                              edge
+                                            |
+                                              (_, edge) <- S.toList . M.findWithDefault S.empty vertex $ G.outgoingEdges graph
+                                            , edge `S.member` edges'
+                                            ]
+                           , trace ("VERTEX\t" ++ show vertex ++ "\t" ++ show (length incoming) ++ "\t" ++ show (length outgoing)) $ not $ null incoming && null outgoing
+                           ]
+                         storages' =
+                           [
+                             edge
+                           |
+                             edge <- S.toList edges'
+                           , let storing = canStore $ edgeContexts context'' M.! edge
+                           , trace ("STORAGE\t" ++ show edge ++ "\t" ++ show storing) storing
+                           ]
+                       in
+                         (Q.fromList vertices', edges', S.fromList storages')
+                  else visitVertices
+                         (Q.empty, S.empty, S.empty)
+                         (Q.singleton SuperSource)
+                         $ S.fromList
+                           [
+                             edge
+                           |
+                             edge <- S.toList $ G.allEdges graph
+                           , let existing = case edge of
+                                              DemandEdge{}   -> True
+                                              ExistingEdge{} -> True
+                                              _              -> False
+                           , let used = case edgeContexts context'' M.! edge of
+                                          EdgeContext{..}          -> totalFlow reserved > 0
+                                          EdgeReverseContext edge' -> totalFlow (reserved $ edgeContexts context'' M.! edge') < 0
+                           , not $ existing || used
+                           ]
             in
               (
                 S.fromList             $   toList vertices
