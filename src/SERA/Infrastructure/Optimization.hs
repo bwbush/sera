@@ -876,6 +876,8 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
       else do
         when (length yearses > 1)
           $ logCritical "Storage computations only available when there is just a single optimization period."
+        logDebug $ show graph
+        logDebug $ show answer
         logNotice $ "Cost of subannual variation in flows: " ++
           show (
             sum
@@ -1168,6 +1170,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
             ]
         case L.simplex (L.Minimize problem) (L.Sparse $ balanceConstraints ++ periodicityConstraints ++ flowConstraints ++ availabilityConstraints) [] of
           L.Optimal (value, solution) -> do
+            logDebug    $ "LP Vertices: "                 ++ show lpVertices
             logDebug    $ "LP Edges: "                    ++ show lpEdges
             logDebug    $ "LP Storage: "                  ++ show lpStorages
             logDebug    $ "LP Balance constraints: "      ++ show balanceConstraints
