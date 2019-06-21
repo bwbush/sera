@@ -330,7 +330,7 @@ reprice networkContext@NetworkContext{..} =
                                                      PathwayForwardEdge location' _ _ -> (location', True)
                                                      PathwayReverseEdge location' _ _ -> (location', False)
                              edgeContext' = edgeContext { pricer = M.findWithDefault (error $ "No prices for \"" ++ show location ++ "\".") location pricers }
-                             (flows', cashes', impacts') = costEdge' strategizing yearz (zeroFlows timeContext) edgeContext
+                             (flows', cashes', impacts') = costEdge' False strategizing yearz (zeroFlows timeContext) edgeContext
                            in
                              if forward
                                then edgeContext' { flows = flows' , cashes = cashes' , impacts = impacts' }
@@ -356,7 +356,7 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                   DemandEdge{}         -> edgeContext { debit = prioritization . totalFlow . capacity $ edgeContext }
                   PathwayReverseEdge{} -> edgeContext
                   _                    -> let
-                                            (flows', cashes', impacts') = costEdge' strategizing yearz ({- FIXME: Checkt this. -} zeroFlows timeContext) edgeContext
+                                            (flows', cashes', impacts') = costEdge' False strategizing yearz ({- FIXME: Checkt this. -} zeroFlows timeContext) edgeContext
                                           in
                                             edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
             ) $
@@ -521,14 +521,14 @@ costEdge strategy discount year delta =
                   ]
     . fmap (fSale <:)
     . snd3
-    . costEdge' strategy year delta -- FIXME: Handle salvage.
+    . costEdge' False strategy year delta -- FIXME: Handle salvage.
 
 
-costEdge' :: Strategy -> [Year] -> VaryingFlows -> EdgeContext -> ([Flow], [Cash], [Impact])
-costEdge' strategy year delta EdgeContext{..} =
+costEdge' :: Bool -> Strategy -> [Year] -> VaryingFlows -> EdgeContext -> ([Flow], [Cash], [Impact])
+costEdge' isStorage strategy year delta EdgeContext{..} =
   let
     technologyContexts = maybe id (:) adjustable fixed
-    (flows', cashes', impacts') = unzip3 . zipWith (\year' flow' -> costTechnologies pricer year' flow' technologyContexts) year . unvaryingFlows $ reserved .+. delta
+    (flows', cashes', impacts') = unzip3 . zipWith (\year' flow' -> costTechnologies isStorage pricer year' flow' technologyContexts) year . unvaryingFlows $ reserved .+. delta
   in
     (
       concat flows'
@@ -544,15 +544,15 @@ costEdge' strategy year delta EdgeContext{..} =
         _                  -> concat cashes'
     , concat impacts'
     )
-costEdge' _ _ _ _ = error "costEdge': edge is reversed."
+costEdge' _ _ _ _ _ = error "costEdge': edge is reversed."
 
 
-costTechnologies :: Pricer -> Year -> VaryingFlow -> [TechnologyContext] -> ([Flow], [Cash], [Impact])
-costTechnologies pricer year flow technologyContexts =
+costTechnologies :: Bool -> Pricer -> Year -> VaryingFlow -> [TechnologyContext] -> ([Flow], [Cash], [Impact])
+costTechnologies isStorage pricer year flow technologyContexts =
   let
     (flows', cashes', impacts', _) = -- FIXME: check residue
       foldr (\t (flows'', cashes'', impacts'', residue'') -> let
-                                                               (flows''', cashes''', impacts''', residue''') = costTechnology pricer year residue'' t
+                                                               (flows''', cashes''', impacts''', residue''') = costTechnology isStorage pricer year residue'' t
                                                              in
                                                                (flows''' ++ flows'', cashes''' ++ cashes'', impacts''' ++ impacts'', residue''')
             )
@@ -562,16 +562,16 @@ costTechnologies pricer year flow technologyContexts =
     (flows', cashes', impacts')
 
 
-costTechnology :: Pricer -> Year -> VaryingFlow -> TechnologyContext -> ([Flow], [Cash], [Impact], VaryingFlow) -- TODO: Move into operations, which will return flow and residue.
-costTechnology pricer year flow TechnologyContext{..} =                                            -- FIXME: Guard against overflow.
+costTechnology :: Bool -> Pricer -> Year -> VaryingFlow -> TechnologyContext -> ([Flow], [Cash], [Impact], VaryingFlow) -- TODO: Move into operations, which will return flow and residue.
+costTechnology isStorage pricer year flow TechnologyContext{..} =                                            -- FIXME: Guard against overflow.
   let
     capacity' = fNameplate <: construction * fDutyCycle <: construction
     flow' =
-      if peakFlow flow <= capacity'
+      if isStorage || peakFlow flow <= capacity'
         then flow
         else signum flow #* capacity'
     residue = flow - flow'
-    (flows', cashes', impacts', _) = operation pricer year $ sumFlow flow'
+    (flows', cashes', impacts', _) = (\ww@(w,_,_,_) -> trace'(show (flow, flow', residue, capacity', w)) ww) $ operation pricer year $ sumFlow flow'
   in
     if year < fYear <: construction
       then ([], [], [], flow)
@@ -676,7 +676,7 @@ adjustEdge storageAvailable strategy years delta edgeContext@EdgeContext{..} =
                    , adjustable = Just adjustable'
                    }
     let
-      (flows', cashes', impacts') = costEdge' strategy years (zeroFlows' delta) edgeContext'
+      (flows', cashes', impacts') = costEdge' False strategy years (zeroFlows' delta) edgeContext'
     return
       $ edgeContext'
         {
@@ -772,7 +772,7 @@ canBuild' year flow (Just builder) = isJust $ builder 0 year $ peakAnnualFlows f
 
 flowFunction :: Bool -> [Year] -> Capacity -> NetworkContext -> Edge -> NetworkContext
 flowFunction storageAvailable year (Capacity flow) context edge =
-  fromMaybe (trace ("FAILED TO SET FLOW\t" ++ show edge ++ "\t" ++ show (construction <$> adjustable (edgeContexts context M.! edge)) ++ "\t" ++ show (construction <$> fixed (edgeContexts context M.! edge)) ++ "\t" ++ show year ++ "\t" ++ show flow) context)
+  fromMaybe (trace'("FAILED TO SET FLOW\t" ++ show edge ++ "\t" ++ show (construction <$> adjustable (edgeContexts context M.! edge)) ++ "\t" ++ show (construction <$> fixed (edgeContexts context M.! edge)) ++ "\t" ++ show year ++ "\t" ++ show flow) context)
     $ do
         let
           edgeContext = edgeContexts context M.! edge
@@ -787,7 +787,7 @@ flowFunction storageAvailable year (Capacity flow) context edge =
         case edge of
           DemandEdge _                              -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show flow) $ return . update $ edgeContext { reserved = reserved edgeContext .+. flow}
           ExistingEdge _                            -> trace' ("FLOW\t" ++ show edge ++ "\t" ++ show flow) $ return . update $ let
-                                                                  (flows', cashes', impacts') = costEdge' (strategizing context) year (zeroFlows $ timeContext context) $ edgeContext { reserved = reserved edgeContext .+. flow }
+                                                                  (flows', cashes', impacts') = costEdge' False (strategizing context) year (zeroFlows $ timeContext context) $ edgeContext { reserved = reserved edgeContext .+. flow }
                                                                 in
                                                                   edgeContext
                                                                   {
@@ -815,7 +815,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                 timeContext' = (timeContext context) { yearz = years }
                 reflow edgeContext =
                   let
-                    (flows', cashes', impacts') = costEdge' strategy years ({- FIXME: Check this. -} zeroFlows timeContext') edgeContext
+                    (flows', cashes', impacts') = costEdge' False strategy years ({- FIXME: Check this. -} zeroFlows timeContext') edgeContext
                   in
                     edgeContext { flows = flows' , cashes = cashes' , impacts = impacts' }
                 rebuild PathwayReverseEdge{}  edgeContext = edgeContext
@@ -982,7 +982,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                              , let used = case edgeContexts context'' M.! edge of
                                             EdgeContext{..}          -> totalFlow reserved > 0
                                             EdgeReverseContext edge' -> totalFlow (reserved $ edgeContexts context'' M.! edge') < 0
-                             , trace ("EDGE\t" ++ show edge ++ "\t" ++ show existing ++ "\t" ++ show used) $ existing || used
+                             , trace'("EDGE\t" ++ show edge ++ "\t" ++ show existing ++ "\t" ++ show used) $ existing || used
                              ]
                          vertices' =
                            [
@@ -1001,7 +1001,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                               (_, edge) <- S.toList . M.findWithDefault S.empty vertex $ G.outgoingEdges graph
                                             , edge `S.member` edges'
                                             ]
-                           , trace ("VERTEX\t" ++ show vertex ++ "\t" ++ show (length incoming) ++ "\t" ++ show (length outgoing)) $ not $ null incoming && null outgoing
+                           , trace'("VERTEX\t" ++ show vertex ++ "\t" ++ show (length incoming) ++ "\t" ++ show (length outgoing)) $ not $ null incoming && null outgoing
                            ]
                          storages' =
                            [
@@ -1009,7 +1009,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                            |
                              edge <- S.toList edges'
                            , let storing = canStore $ edgeContexts context'' M.! edge
-                           , trace ("STORAGE\t" ++ show edge ++ "\t" ++ show storing) storing
+                           , trace'("STORAGE\t" ++ show edge ++ "\t" ++ show storing) storing
                            ]
                        in
                          (Q.fromList vertices', edges', S.fromList storages')
@@ -1266,6 +1266,17 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                             [
                               VaryingFlow
                                 [
+                                  (\w -> trace'(  
+                                                    "VF\t"       ++ show edge
+                                                 ++ "\ti = "     ++ show i
+                                                 ++ "\tt = "     ++ show t
+                                                 ++ "\tj = "     ++ show j
+                                                 ++ "\tx  = "    ++ show x
+                                                 ++ "\tsense = " ++ show sense
+                                                 ++ "\trs = "    ++ show rs
+                                                 ++ "\tw  = "    ++ show w
+                                               ) w
+                                  )
                                   (df, sense * x / df)
                                 |
                                   ((df, _), t) <- zip rs times
@@ -1281,7 +1292,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                                 (head yearses)
                                                 reserved'
                                                 edgeContext
-                        (flows', cashes', impacts') = costEdge' strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
+                        (flows', cashes', impacts') = (\ww@(w,_,_) -> trace'(show (w, reserved', reserved edgeContext')) ww) $ costEdge' False strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
                       in
                         Optimum (construction <$> maybe id (:) (adjustable edgeContext') (fixed edgeContext')) flows' cashes' impacts'
                   )
@@ -1302,7 +1313,14 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                         storageCapacity = maximum storageCumulative - minimum storageCumulative
                         VaryingFlows [VaryingFlow rs] = reserved edgeContext
                         reserved' =
-                          VaryingFlows
+                          (\w -> trace'(
+                                            "SF\t"      ++ show edge
+                                         ++ "\tstfl = " ++ show storageFlows
+                                         ++ "\tstcu = " ++ show storageCumulative
+                                         ++ "\tstca = " ++ show storageCapacity
+                                         ++ "\tw ="     ++ show w
+                                        ) w
+                          ) $ VaryingFlows
                             [
                               VaryingFlow
                                 [
@@ -1316,7 +1334,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                          (veryConstantFlows (timeContext context'') storageCapacity)
                                          edgeContext
                                        ) { reserved = reserved' } -- FIXME
-                        (flows', cashes', impacts') = costEdge' strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
+                        (flows', cashes', impacts') = (\ww@(w,_,_) -> trace'(show (w, reserved', reserved edgeContext')) ww) $ costEdge' True strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
                       in
                         if all ((< 1e-3) . abs) storageFlows
                           then mempty
@@ -1368,7 +1386,7 @@ optimize' storageAvailable graph context@NetworkContext{..} =
           ]
       reflow edgeContext =
         let
-          (flows'', cashes'', impacts'') = costEdge' strategizing yearz ({- FIXME: Check this. -} zeroFlows timeContext) edgeContext
+          (flows'', cashes'', impacts'') = costEdge' False strategizing yearz ({- FIXME: Check this. -} zeroFlows timeContext) edgeContext
         in
           edgeContext { flows = flows'' , cashes = cashes'' , impacts = impacts'' }
       clear edgeContext@EdgeReverseContext{} = edgeContext
