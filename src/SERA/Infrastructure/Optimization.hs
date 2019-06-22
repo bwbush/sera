@@ -391,7 +391,12 @@ buildContext Graph{..} network@Network{..} processLibrary@ProcessLibrary{..} int
                                                                                                <+> fProductive     =: Central
                                                                                                <+> fYear           =: fYear <: existing
                                                                                                <+> fLifetime       =: 1000
-                                                                                               <+> fNameplate      =: fCapacity <: existing
+                                                                                               <+> fNameplate      =: sum
+                                                                                                                        [
+                                                                                                                          fCapacity <: (existingCube ! (fInfrastructure =: infrastructure <+> fPeriod =: period)) * duration
+                                                                                                                        |
+                                                                                                                          (period, duration) <- zip periods durations
+                                                                                                                        ]
                                                                                                <+> fDutyCycle      =: 1
                                                                                                <+> fLength         =: 0
                                                                                                <+> fCapitalCost    =: 0
@@ -1292,7 +1297,7 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                                 (head yearses)
                                                 reserved'
                                                 edgeContext
-                        (flows', cashes', impacts') = (\ww@(w,_,_) -> trace'(show (w, reserved', reserved edgeContext')) ww) $ costEdge' False strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
+                        (flows', cashes', impacts') = (\ww@(w,_,_) -> trace'(show (w, reserved', reserved edgeContext')) ww) $ costEdge' {-# FIXME #-} True strategy (head yearses) (zeroFlows $ timeContext context'') edgeContext'
                       in
                         Optimum (construction <$> maybe id (:) (adjustable edgeContext') (fixed edgeContext')) flows' cashes' impacts'
                   )
