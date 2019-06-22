@@ -21,7 +21,7 @@ let
     };
   };
 
-  fetchNixpkgs = import /home/bbush/.config/nixpkgs/fetchNixpkgs.nix;
+  fetchNixpkgs = import ./fetchNixpkgs.nix;
   pin1709  = import (
     fetchNixpkgs {
       rev = "b62c50ce5d3b6053f6f4afa10f2c4013ac0bfe9c";
