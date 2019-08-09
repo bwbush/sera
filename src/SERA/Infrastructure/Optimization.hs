@@ -705,7 +705,15 @@ instance Ord Capacity where
   Unlimited  `compare` Unlimited  = EQ
   Unlimited  `compare` Capacity y = if allInfiniteVaryingFlows y then EQ else LT
   Capacity x `compare` Unlimited  = if allInfiniteVaryingFlows x then EQ else GT
-  Capacity x `compare` Capacity y = minimumOfVaryingFlows y `compare` minimumOfVaryingFlows x
+  Capacity x `compare` Capacity y = if True
+                                      then minimumOfVaryingFlows y `compare` minimumOfVaryingFlows x
+                                      else let
+                                             x' = maximum (concat $ (snd <$>) . unvaryingFlow <$> unvaryingFlows x)
+                                             y' = maximum (concat $ (snd <$>) . unvaryingFlow <$> unvaryingFlows y)
+                                           in
+                                             if x' == 0
+                                               then GT
+                                               else y' `compare` x'
 
 instance Monoid Capacity where
   mempty = Unlimited
@@ -836,6 +844,20 @@ optimize yearses periodCube network demandCube intensityCube processLibrary pric
                                                             , impacts    = []
                                                             , reference  = Nothing
                                                             }
+                rebuild (ExistingEdge infrastructure) edgeContext =
+                                                            let
+                                                              existingCube' = existingCube network
+                                                            in
+                                                              edgeContext
+                                                              {
+                                                                capacity   = varyingFlows' timeContext' existingCube' infrastructure
+                                                              , reserved   = zeroFlows timeContext'
+                                                              , adjustable = Nothing
+                                                              , flows      = []
+                                                              , cashes     = []
+                                                              , impacts    = []
+                                                              , reference  = Nothing
+                                                              }
                 rebuild _                     edgeContext = reflow $ edgeContext
                                                             {
                                                               capacity   = case builder edgeContext of
