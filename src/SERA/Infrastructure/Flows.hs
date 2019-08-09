@@ -108,24 +108,41 @@ varyingFlows TimeContext{..} demandCube location =
 
 varyingFlows':: TimeContext -> ExistingCube -> Infrastructure -> VaryingFlows
 varyingFlows' TimeContext{..} existingCube infrastructure =
-  VaryingFlows
-    [
-      VaryingFlow [
-        (
-          duration
-        , maybe 0 (\rec -> fCapacity <: rec)
-          $ do
-             existing <- existingCube `evaluate` (fInfrastructure =: infrastructure <+> fPeriod =: period)
-             guard
-               $ fYear <: existing <= year
-             return existing
-        )
-      |
-        (period, duration) <- zip periods durations
-      ]
-    |
-      year <- yearz
-    ]
+  let
+    q = VaryingFlows
+          [
+            VaryingFlow [
+              (
+                duration
+              , maybe 0 (\rec -> fCapacity <: rec)
+                $ do
+                   existing <- existingCube `evaluate` (fInfrastructure =: infrastructure <+> fPeriod =: period)
+                   guard
+                     $ fYear <: existing <= year
+                   return existing
+              )
+            |
+              (period, duration) <- zip periods durations
+            ]
+          |
+            year <- yearz
+          ]
+  in
+    if nonZeroFlows q
+      then VaryingFlows
+             [
+               VaryingFlow
+               [
+                 (d, maximum [y, 0.001])
+               |
+                 let VaryingFlow ys = x
+               , (d, y) <- ys
+               ]
+             |
+               let VaryingFlows xs = q
+             , x <- xs
+             ]
+      else q
 
 
 totalFlow :: VaryingFlows -> Double
