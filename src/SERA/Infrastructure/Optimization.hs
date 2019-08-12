@@ -754,7 +754,9 @@ costFunction storageAvailable year (Capacity flow) context edge =
       $ positiveFlow capacity' && compatibleFlow capacity' flow || canBuild
     case edge of
       DemandEdge _                              -> return (Sum $ debit edgeContext, context)
-      ExistingEdge _                            -> return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
+      ExistingEdge _                            -> if False -- FIXME: Pricing formerly was incomplete.
+                                                     then return (Sum . sum $ (fVariableCost <:) . construction <$> fixed edgeContext, context)
+                                                     else  return (Sum $ marginalCost storageAvailable (strategizing context) (discounting context) year flow edgeContext, context)
       PathwayReverseEdge location pathway stage -> costFunction storageAvailable year (Capacity (negate flow)) context $ PathwayForwardEdge location pathway stage
       _                                         -> return (Sum $ marginalCost storageAvailable (strategizing context) (discounting context) year flow edgeContext, context)
 costFunction _ _ _ _ _ = Nothing -- error "costFunction: no flow."
